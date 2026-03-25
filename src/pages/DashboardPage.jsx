@@ -1,0 +1,253 @@
+import { useCallback } from 'react';
+import { useParams } from 'react-router-dom';
+import useApi from '../hooks/useApi';
+import useFeedFilters from '../hooks/useFeedFilters';
+import useContacted from '../hooks/useContacted';
+import useStripePayment from '../hooks/useStripePayment';
+import { fetchFeed, createPortalSession, logEvent, unlockHotLead, createLeadPackCheckout } from '../api/dashboard';
+import Navbar from '../components/layout/Navbar';
+import StatsBar from '../components/dashboard/StatsBar';
+import LeadCard from '../components/dashboard/LeadCard';
+import ReactivateBanner from '../components/dashboard/ReactivateBanner';
+import CancelModal from '../components/dashboard/CancelModal';
+import LeadPackSection from '../components/dashboard/LeadPackSection';
+import LeadPackModal from '../components/dashboard/LeadPackModal';
+import LeadPackHistory from '../components/dashboard/LeadPackHistory';
+import DashboardHeroBanner from '../components/dashboard/DashboardHeroBanner';
+import OnboardingChecklist from '../components/dashboard/OnboardingChecklist';
+import SearchBar from '../components/dashboard/SearchBar';
+import FilterBar from '../components/dashboard/FilterBar';
+import SortDropdown from '../components/dashboard/SortDropdown';
+import ExportButton from '../components/dashboard/ExportButton';
+import UpgradeBanner from '../components/dashboard/UpgradeBanner';
+import LeadCardSkeletonList from '../components/dashboard/LeadCardSkeleton';
+import Pagination from '../components/ui/Pagination';
+import ErrorState from '../components/ui/ErrorState';
+import EmptyState from '../components/ui/EmptyState';
+import { useState } from 'react';
+
+export default function DashboardPage() {
+  const { feedUuid } = useParams();
+  const { filters, setFilter, setPage, searchInput, setSearchInput } = useFeedFilters();
+  const { isContacted, toggleContacted } = useContacted();
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [lpZip, setLpZip] = useState('');
+  const [lpOpen, setLpOpen] = useState(false);
+
+  const { data, loading, error } = useApi(
+    () => fetchFeed(feedUuid, {
+      page: filters.page,
+      sort: filters.sort,
+      minScore: filters.minScore,
+      incidentType: filters.incidentType,
+      search: filters.search,
+    }),
+    [feedUuid, filters.page, filters.sort, filters.minScore, filters.incidentType, filters.search],
+  );
+
+  const stripePayment = useStripePayment();
+
+  const subscriber = data?.subscriber || {};
+  const leads = data?.leads || [];
+  const totalPages = data?.pages || 1;
+
+  const handlePageChange = useCallback((page) => {
+    setPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [setPage]);
+
+  const handleUnlockHotLead = useCallback(async (propertyId) => {
+    try {
+      const { checkout_url } = await unlockHotLead(feedUuid, propertyId);
+      window.open(checkout_url, '_blank');
+    } catch (err) {
+      alert(err.detail || 'Unable to create checkout. Please try again.');
+    }
+  }, [feedUuid]);
+
+  const handleCancelConfirm = useCallback(async () => {
+    await logEvent('cancel_confirm', feedUuid);
+    try {
+      const { url } = await createPortalSession(feedUuid);
+      window.location.href = url;
+    } catch {
+      alert('Unable to open the billing portal. Please email support@forcedaction.io');
+    }
+  }, [feedUuid]);
+
+  const handleCancelAbort = useCallback(async () => {
+    await logEvent('cancel_abort', feedUuid);
+    setCancelOpen(false);
+  }, [feedUuid]);
+
+  const handleReactivate = useCallback(async () => {
+    try {
+      const { url } = await createPortalSession(feedUuid);
+      window.location.href = url;
+    } catch {
+      alert('Unable to open the billing portal. Please email support@forcedaction.io');
+    }
+  }, [feedUuid]);
+
+  const handleOpenLpModal = useCallback((zip) => {
+    if (!zip || zip.length < 5) { alert('Enter a valid 5-digit ZIP code.'); return; }
+    setLpZip(zip);
+    setLpOpen(true);
+    stripePayment.reset();
+    logEvent('lead_pack_modal_open', feedUuid);
+  }, [feedUuid, stripePayment]);
+
+  const handleStartLeadPackPayment = useCallback(async () => {
+    try {
+      const { client_secret, publishable_key } = await createLeadPackCheckout({
+        feedUuid,
+        zipCode: lpZip,
+        vertical: subscriber.vertical,
+        countyId: subscriber.county_id || 'hillsborough',
+      });
+      const paymentElement = await stripePayment.initPayment(client_secret, publishable_key);
+      setTimeout(() => {
+        const el = document.getElementById('lp-payment-element');
+        if (el) paymentElement.mount(el);
+      }, 50);
+    } catch (err) {
+      const msg = err.detail?.message || 'Payment unavailable. Please try again.';
+      alert(msg);
+      if (err.detail?.error === 'zip_already_owned') { setLpOpen(false); }
+    }
+  }, [feedUuid, lpZip, subscriber, stripePayment]);
+
+  const handleConfirmLeadPackPayment = useCallback(async () => {
+    await stripePayment.confirmPayment();
+    if (stripePayment.step === 'success') {
+      logEvent('lead_pack_purchased', feedUuid);
+    }
+  }, [stripePayment, feedUuid]);
+
+  const handleCloseLpModal = useCallback(() => {
+    setLpOpen(false);
+    stripePayment.reset();
+  }, [stripePayment]);
+
+  const handleUpgrade = useCallback(async () => {
+    try {
+      const { url } = await createPortalSession(feedUuid);
+      window.location.href = url;
+    } catch {
+      alert('Unable to open the billing portal.');
+    }
+  }, [feedUuid]);
+
+  return (
+    <div className="gradient-bg-dashboard min-h-screen text-white">
+      <div className="relative z-[1]">
+        <Navbar variant="dashboard">
+          {subscriber.founding_member && (
+            <span className="text-xs font-semibold bg-yellow-400/10 border border-yellow-400/40 text-yellow-400 px-3.5 py-1.5 rounded-full founding-badge-glow">
+              <span className="inline-block w-1.5 h-1.5 bg-yellow-400 rounded-full mr-1.5 align-middle founding-pulse" />
+              Founding Member — Rate Locked Forever
+            </span>
+          )}
+          <button
+            onClick={() => setCancelOpen(true)}
+            className="text-sm text-slate-400 hover:text-white transition-colors duration-200 px-3 py-1.5 rounded-lg hover:bg-white/5"
+          >
+            Manage Subscription
+          </button>
+        </Navbar>
+
+        <main id="main-content" className="max-w-6xl mx-auto px-6 py-8">
+          {loading && <LeadCardSkeletonList count={5} />}
+          {error && <ErrorState />}
+
+          {!loading && !error && (
+            <>
+              {subscriber.status === 'grace' && (
+                <ReactivateBanner onReactivate={handleReactivate} />
+              )}
+
+              <StatsBar subscriber={subscriber} />
+              <OnboardingChecklist totalLeads={data?.total} />
+              <DashboardHeroBanner total={data?.total} zips={subscriber.locked_zips} />
+
+              {/* Search, Filter, Sort, Export */}
+              <div className="mb-6 space-y-3">
+                <div className="flex gap-3 items-center flex-wrap">
+                  <div className="flex-1 min-w-[200px]">
+                    <SearchBar value={searchInput} onChange={setSearchInput} />
+                  </div>
+                  <SortDropdown value={filters.sort} onChange={(v) => setFilter('sort', v)} />
+                  <ExportButton leads={leads} page={filters.page} />
+                </div>
+                <FilterBar
+                  minScore={filters.minScore}
+                  incidentType={filters.incidentType}
+                  onFilterChange={setFilter}
+                />
+              </div>
+
+              <div className="flex items-center justify-between mb-4">
+                <h1 className="text-2xl font-extrabold tracking-tight">Your Lead Feed</h1>
+                <span className="text-slate-400 text-sm font-medium">
+                  {data.total} lead{data.total !== 1 ? 's' : ''} · Page {filters.page} of {totalPages}
+                </span>
+              </div>
+
+              {leads.length === 0 ? (
+                <EmptyState />
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {leads.map((lead, i) => (
+                      <LeadCard
+                        key={lead.property_id}
+                        lead={lead}
+                        index={i}
+                        onUnlockHotLead={handleUnlockHotLead}
+                        isContacted={isContacted}
+                        onToggleContacted={toggleContacted}
+                      />
+                    ))}
+                  </div>
+
+                  <UpgradeBanner
+                    tier={subscriber.tier}
+                    currentPage={filters.page}
+                    onUpgrade={handleUpgrade}
+                  />
+
+                  <Pagination
+                    currentPage={filters.page}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                  />
+                </>
+              )}
+
+              <LeadPackHistory feedUuid={feedUuid} />
+              <LeadPackSection onOpenModal={handleOpenLpModal} />
+            </>
+          )}
+        </main>
+
+        <CancelModal
+          isOpen={cancelOpen}
+          onClose={handleCancelAbort}
+          onConfirm={handleCancelConfirm}
+        />
+
+        <LeadPackModal
+          isOpen={lpOpen}
+          onClose={handleCloseLpModal}
+          zip={lpZip}
+          vertical={subscriber.vertical}
+          step={stripePayment.step}
+          error={stripePayment.error}
+          processing={stripePayment.processing}
+          onStartPayment={handleStartLeadPackPayment}
+          onConfirmPayment={handleConfirmLeadPackPayment}
+        />
+      </div>
+    </div>
+  );
+}
