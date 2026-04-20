@@ -12,6 +12,10 @@ export function checkZip(zipCode, vertical, countyId) {
   return api.get('/api/zip-check', { zip_code: zipCode, vertical, county_id: countyId });
 }
 
+export function fetchZipAvailability(vertical, countyId) {
+  return api.get('/api/zip-availability', { vertical, county_id: countyId });
+}
+
 export function fetchSampleLeads(zipCode, vertical, countyId) {
   return api.get('/api/sample-leads', { zip_code: zipCode, vertical, county_id: countyId });
 }

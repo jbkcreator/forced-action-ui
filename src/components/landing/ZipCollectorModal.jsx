@@ -1,125 +1,215 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TIER_ZIP_LIMITS } from '../../config/pricing';
 import Modal, { ModalClose } from '../ui/Modal';
 import { useLanding } from './LandingContext';
-import { checkZip } from '../../api/landing';
+import { fetchZipAvailability } from '../../api/landing';
 
 export default function ZipCollectorModal({ isOpen, onClose, tier, initialZip, onProceed }) {
   const { selectedVertical, countyId } = useLanding();
   const limit = TIER_ZIP_LIMITS[tier] || 3;
-  const [zips, setZips] = useState(initialZip ? [initialZip] : []);
-  const [input, setInput] = useState('');
-  const [checking, setChecking] = useState(false);
-  const [feedback, setFeedback] = useState(null); // { message, type: 'success'|'error'|'warning' }
+  const [selected, setSelected] = useState(initialZip ? [initialZip] : []);
+  const [allZips, setAllZips] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [search, setSearch] = useState('');
 
-  async function addZip() {
-    const z = input.trim();
-    setFeedback(null);
+  // Fetch all ZIP availability when modal opens or vertical changes
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
 
-    if (!/^\d{5}$/.test(z)) {
-      setFeedback({ message: 'Enter a valid 5-digit ZIP code.', type: 'error' });
-      return;
+    fetchZipAvailability(selectedVertical, countyId)
+      .then((data) => {
+        if (!cancelled) {
+          setAllZips(data.zips || []);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setError('Could not load ZIP codes. Please try again.');
+          setLoading(false);
+        }
+      });
+
+    return () => { cancelled = true; };
+  }, [isOpen, selectedVertical, countyId]);
+
+  // Reset selection when modal opens with a new tier
+  useEffect(() => {
+    if (isOpen) {
+      setSelected(initialZip ? [initialZip] : []);
+      setSearch('');
     }
-    if (zips.includes(z)) {
-      setFeedback({ message: `ZIP ${z} is already in your list.`, type: 'warning' });
-      return;
-    }
-    if (zips.length >= limit) {
-      setFeedback({ message: `You can only select ${limit} ZIP${limit !== 1 ? 's' : ''} for the ${tier} plan.`, type: 'error' });
-      return;
-    }
+  }, [isOpen, initialZip]);
 
-    setChecking(true);
-    try {
-      const data = await checkZip(z, selectedVertical, countyId);
-
-      if (data.status === 'available') {
-        setZips(prev => [...prev, z]);
-        setInput('');
-        setFeedback({ message: `✓ ZIP ${z} is available.`, type: 'success' });
-      } else if (data.status === 'taken') {
-        setFeedback({ message: `✗ ZIP ${z} is already locked by another subscriber. Please choose a different ZIP.`, type: 'error' });
-      } else if (data.status === 'grace') {
-        setFeedback({ message: `ZIP ${z} is opening soon (in grace period). Please choose a different ZIP.`, type: 'warning' });
-      } else {
-        setFeedback({ message: `ZIP ${z} is not in the Hillsborough County service area.`, type: 'error' });
+  function toggleZip(zipCode) {
+    setSelected((prev) => {
+      if (prev.includes(zipCode)) {
+        return prev.filter((z) => z !== zipCode);
       }
-    } catch {
-      setFeedback({ message: 'Could not check availability — please try again.', type: 'error' });
-    } finally {
-      setChecking(false);
-    }
-  }
-
-  function removeZip(idx) {
-    setZips(zips.filter((_, i) => i !== idx));
-    setFeedback(null);
+      if (prev.length >= limit) return prev;
+      return [...prev, zipCode];
+    });
   }
 
   function handleClose() {
-    setFeedback(null);
+    setSelected([]);
+    setSearch('');
     onClose();
   }
 
-  const ready = zips.length === limit;
-
-  const feedbackColor = {
-    success: 'text-green-400',
-    error:   'text-red-400',
-    warning: 'text-yellow-400',
-  };
+  const ready = selected.length === limit;
+  const availableZips = allZips.filter((z) => z.status === 'available');
+  const filtered = search
+    ? allZips.filter((z) => z.zip_code.startsWith(search))
+    : allZips;
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose}>
-      <div className="relative" style={{ background: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '1.25rem', padding: '2rem', width: '100%', maxWidth: '480px', boxShadow: '0 24px 80px rgba(0,0,0,0.5)' }}>
+      <div
+        className="relative"
+        style={{
+          background: 'rgba(15,23,42,0.95)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '1.25rem',
+          padding: '2rem',
+          width: '100%',
+          maxWidth: '560px',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
+        }}
+      >
         <ModalClose onClick={handleClose} />
+
         <h2 className="text-xl font-bold mb-1">Select Your {limit} ZIP Territories</h2>
-        <p className="text-slate-400 text-sm mb-5">
-          Your {tier.charAt(0).toUpperCase() + tier.slice(1)} plan includes {limit} exclusive ZIP territories. Add {limit} ZIPs to continue.
+        <p className="text-slate-400 text-sm mb-4">
+          Your {tier.charAt(0).toUpperCase() + tier.slice(1)} plan includes {limit} exclusive ZIP
+          territories. Tap to select.{' '}
+          <span className="text-slate-500">
+            {availableZips.length} available
+          </span>
         </p>
 
-        <div className="space-y-2 mb-4">
-          {zips.length === 0 ? (
-            <p className="text-slate-500 text-sm">No ZIPs added yet.</p>
-          ) : (
-            zips.map((z, i) => (
-              <div key={i} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-2.5">
-                <span className="text-sm font-medium">
-                  <span style={{ color: '#4ade80', marginRight: '6px' }}>✓</span>ZIP {z}
-                </span>
-                <button onClick={() => removeZip(i)} className="text-slate-500 hover:text-red-400 text-xs transition">
-                  Remove
-                </button>
-              </div>
-            ))
+        {/* Search filter */}
+        <input
+          type="text"
+          maxLength={5}
+          placeholder="Filter by ZIP..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value.replace(/\D/g, ''))}
+          className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400/40 text-sm mb-3"
+        />
+
+        {/* ZIP grid */}
+        <div
+          style={{ flex: 1, overflowY: 'auto', marginBottom: '1rem', minHeight: '200px', maxHeight: '340px' }}
+          className="pr-1"
+        >
+          {loading && (
+            <p className="text-slate-400 text-sm text-center py-8">Loading ZIP codes...</p>
+          )}
+          {error && (
+            <p className="text-red-400 text-sm text-center py-8">{error}</p>
+          )}
+          {!loading && !error && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+              {filtered.map((z) => {
+                const isSelected = selected.includes(z.zip_code);
+                const isTaken = z.status === 'taken';
+                const isGrace = z.status === 'grace';
+                const isDisabled = isTaken || isGrace;
+                const atLimit = selected.length >= limit && !isSelected;
+
+                let borderColor = 'rgba(255,255,255,0.08)';
+                let bg = 'rgba(255,255,255,0.03)';
+                let cursor = 'pointer';
+                let opacity = 1;
+
+                if (isSelected) {
+                  borderColor = '#fbbf24';
+                  bg = 'rgba(251,191,36,0.12)';
+                } else if (isTaken) {
+                  borderColor = 'rgba(239,68,68,0.3)';
+                  bg = 'rgba(239,68,68,0.06)';
+                  cursor = 'not-allowed';
+                  opacity = 0.5;
+                } else if (isGrace) {
+                  borderColor = 'rgba(251,191,36,0.2)';
+                  bg = 'rgba(251,191,36,0.04)';
+                  cursor = 'not-allowed';
+                  opacity = 0.5;
+                } else if (atLimit) {
+                  opacity = 0.4;
+                  cursor = 'not-allowed';
+                }
+
+                return (
+                  <button
+                    key={z.zip_code}
+                    onClick={() => !isDisabled && !atLimit && toggleZip(z.zip_code)}
+                    disabled={isDisabled || atLimit}
+                    style={{
+                      border: `1px solid ${borderColor}`,
+                      background: bg,
+                      borderRadius: '0.75rem',
+                      padding: '10px 8px',
+                      cursor,
+                      opacity,
+                      transition: 'all 0.15s ease',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: isSelected ? '#fbbf24' : isTaken ? '#ef4444' : '#ffffff' }}>
+                      {z.zip_code}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                      {isTaken ? 'Taken' : isGrace ? 'Opening soon' : `${z.lead_count} leads`}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           )}
         </div>
 
-        <div className="flex gap-2 mb-2">
-          <input
-            type="text"
-            maxLength={5}
-            placeholder="Add ZIP code"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !checking && addZip()}
-            className="flex-1 bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400/40 text-sm"
-          />
-          <button
-            onClick={addZip}
-            disabled={checking}
-            className="px-4 py-2.5 bg-white/[0.08] border border-white/[0.1] hover:bg-white/[0.14] rounded-xl text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {checking ? 'Checking…' : 'Add'}
-          </button>
-        </div>
-
-        <p className={`text-xs mb-4 min-h-[1.25rem] ${feedback ? feedbackColor[feedback.type] : ''}`}>
-          {feedback?.message || ''}
-        </p>
+        {/* Selected summary */}
+        {selected.length > 0 && (
+          <div className="mb-3">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {selected.map((z) => (
+                <span
+                  key={z}
+                  onClick={() => toggleZip(z)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'rgba(251,191,36,0.12)',
+                    border: '1px solid rgba(251,191,36,0.3)',
+                    borderRadius: '999px',
+                    padding: '4px 12px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: '#fbbf24',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {z}
+                  <span style={{ color: '#94a3b8', fontSize: '10px' }}>x</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         <button
-          onClick={() => ready && onProceed(zips)}
+          onClick={() => ready && onProceed(selected)}
           disabled={!ready}
           className={`w-full font-bold py-3 rounded-xl transition ${
             ready
@@ -127,7 +217,9 @@ export default function ZipCollectorModal({ isOpen, onClose, tier, initialZip, o
               : 'bg-white/10 text-slate-500 cursor-not-allowed'
           }`}
         >
-          {ready ? 'Continue to Payment' : `Add ${limit - zips.length} more ZIP${limit - zips.length !== 1 ? 's' : ''} to continue`}
+          {ready
+            ? 'Continue to Payment'
+            : `Select ${limit - selected.length} more ZIP${limit - selected.length !== 1 ? 's' : ''} to continue`}
         </button>
       </div>
     </Modal>

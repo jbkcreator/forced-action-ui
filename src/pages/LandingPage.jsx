@@ -31,26 +31,12 @@ function LandingContent() {
     setEmailGate({ open: true, tier });
   }, []);
 
-  // Step 2: Email collected → proceed to ZIP selection or direct checkout
+  // Step 2: Email collected → always open ZIP collector grid (all tiers)
   const handleEmailProceed = useCallback((email) => {
     setUserEmail(email);
     setEmailGate({ open: false, tier: null });
-
-    const tier = emailGate.tier;
-    const limit = TIER_ZIP_LIMITS[tier];
-
-    if (limit === 1) {
-      if (!lastCheckedZip) {
-        alert('Please check a ZIP code above before subscribing.');
-        return;
-      }
-      openCheckout({ tier, vertical: selectedVertical, countyId, zipCodes: [lastCheckedZip], email });
-      return;
-    }
-
-    // Multi-ZIP plans → open ZIP collector
-    setZipCollector({ open: true, tier });
-  }, [emailGate.tier, lastCheckedZip, selectedVertical, countyId, openCheckout]);
+    setZipCollector({ open: true, tier: emailGate.tier });
+  }, [emailGate.tier]);
 
   // Step 3: ZIPs collected → launch Stripe checkout with email
   const handleZipCollectorProceed = useCallback((zips) => {
