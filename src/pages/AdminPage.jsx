@@ -217,8 +217,8 @@ function UploadCard({ token, onLogout }) {
             </p>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: 'Matched', value: result.matched, color: 'emerald' },
-                { label: 'Skipped', value: result.skipped, color: 'yellow' },
+                { label: 'Inserted', value: result.matched, color: 'emerald' },
+                { label: 'Updated', value: result.updated, color: 'yellow' },
                 { label: 'Unmatched', value: result.unmatched, color: 'red' },
               ].map(({ label, value, color }) => (
                 <div
