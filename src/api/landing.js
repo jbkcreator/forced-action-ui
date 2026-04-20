@@ -26,11 +26,12 @@ export function submitWaitlist({ zipCode, vertical, countyId, name, email }) {
   });
 }
 
-export function createCheckout({ tier, vertical, countyId, zipCodes }) {
+export function createCheckout({ tier, vertical, countyId, zipCodes, email }) {
   return api.post('/api/checkout', {
     tier,
     vertical,
     county_id: countyId,
     zip_codes: zipCodes,
+    email,
   });
 }

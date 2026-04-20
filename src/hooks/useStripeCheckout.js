@@ -11,14 +11,14 @@ export default function useStripeCheckout() {
   const embeddedRef = useRef(null);
   const checkoutCtxRef = useRef(null);
 
-  const openCheckout = useCallback(async ({ tier, vertical, countyId, zipCodes }) => {
+  const openCheckout = useCallback(async ({ tier, vertical, countyId, zipCodes, email }) => {
     checkoutCtxRef.current = { tier, zipCodes };
     setIsOpen(true);
     setLoading(true);
     setCheckoutError(null);
 
     try {
-      const { client_secret } = await createCheckout({ tier, vertical, countyId, zipCodes });
+      const { client_secret } = await createCheckout({ tier, vertical, countyId, zipCodes, email });
       const stripe = await stripePromise;
 
       embeddedRef.current = await stripe.initEmbeddedCheckout({

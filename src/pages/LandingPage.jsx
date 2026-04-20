@@ -11,6 +11,7 @@ import ZipChecker from '../components/landing/ZipChecker';
 import PricingSection from '../components/landing/PricingSection';
 import FAQ from '../components/landing/FAQ';
 import StickyHeaderCTA from '../components/landing/StickyHeaderCTA';
+import EmailGateModal from '../components/landing/EmailGateModal';
 import ZipCollectorModal from '../components/landing/ZipCollectorModal';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
 import useStripeCheckout from '../hooks/useStripeCheckout';
@@ -18,12 +19,24 @@ import { TIER_ZIP_LIMITS } from '../config/pricing';
 
 function LandingContent() {
   const { selectedVertical, countyId } = useLanding();
+  const [emailGate, setEmailGate] = useState({ open: false, tier: null });
+  const [userEmail, setUserEmail] = useState('');
   const [zipCollector, setZipCollector] = useState({ open: false, tier: null });
   const [lastCheckedZip, setLastCheckedZip] = useState('');
   const { isOpen, loading, checkoutError, openCheckout, closeCheckout, embeddedRef } = useStripeCheckout();
   const pricingRef = useRef(null);
 
+  // Step 1: User clicks a plan → open email gate first
   const handleCheckout = useCallback((tier) => {
+    setEmailGate({ open: true, tier });
+  }, []);
+
+  // Step 2: Email collected → proceed to ZIP selection or direct checkout
+  const handleEmailProceed = useCallback((email) => {
+    setUserEmail(email);
+    setEmailGate({ open: false, tier: null });
+
+    const tier = emailGate.tier;
     const limit = TIER_ZIP_LIMITS[tier];
 
     if (limit === 1) {
@@ -31,17 +44,19 @@ function LandingContent() {
         alert('Please check a ZIP code above before subscribing.');
         return;
       }
-      openCheckout({ tier, vertical: selectedVertical, countyId, zipCodes: [lastCheckedZip] });
+      openCheckout({ tier, vertical: selectedVertical, countyId, zipCodes: [lastCheckedZip], email });
       return;
     }
 
+    // Multi-ZIP plans → open ZIP collector
     setZipCollector({ open: true, tier });
-  }, [lastCheckedZip, selectedVertical, countyId, openCheckout]);
+  }, [emailGate.tier, lastCheckedZip, selectedVertical, countyId, openCheckout]);
 
+  // Step 3: ZIPs collected → launch Stripe checkout with email
   const handleZipCollectorProceed = useCallback((zips) => {
     setZipCollector({ open: false, tier: null });
-    openCheckout({ tier: zipCollector.tier, vertical: selectedVertical, countyId, zipCodes: zips });
-  }, [zipCollector.tier, selectedVertical, countyId, openCheckout]);
+    openCheckout({ tier: zipCollector.tier, vertical: selectedVertical, countyId, zipCodes: zips, email: userEmail });
+  }, [zipCollector.tier, selectedVertical, countyId, openCheckout, userEmail]);
 
   return (
     <div className="gradient-bg min-h-screen text-white" style={{ scrollBehavior: 'smooth' }}>
@@ -67,6 +82,12 @@ function LandingContent() {
         </div>
 
         <Footer />
+
+        <EmailGateModal
+          isOpen={emailGate.open}
+          onClose={() => setEmailGate({ open: false, tier: null })}
+          onProceed={handleEmailProceed}
+        />
 
         <ZipCollectorModal
           isOpen={zipCollector.open}
