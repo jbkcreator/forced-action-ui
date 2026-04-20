@@ -5,7 +5,6 @@ import Footer from '../components/layout/Footer';
 import HeroBanner from '../components/landing/HeroBanner';
 import TrustBar from '../components/landing/TrustBar';
 import VerticalSelector from '../components/landing/VerticalSelector';
-import FoundingCounter from '../components/landing/FoundingCounter';
 import HowItWorks from '../components/landing/HowItWorks';
 import ZipChecker from '../components/landing/ZipChecker';
 import PricingSection from '../components/landing/PricingSection';
@@ -55,7 +54,6 @@ function LandingContent() {
           <div className="max-w-6xl mx-auto px-6 text-center">
             <TrustBar />
             <VerticalSelector />
-            <FoundingCounter />
           </div>
           <HowItWorks />
           <div id="zip-check">

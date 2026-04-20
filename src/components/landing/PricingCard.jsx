@@ -15,11 +15,6 @@ export default function PricingCard({ tier, isPopular, onCheckout }) {
   const foundingAvailable = data?.founding_available ?? true;
   const price = foundingAvailable ? PRICES[tier].founding : PRICES[tier].regular;
   const crossedOut = foundingAvailable ? PRICES[tier].regular : PRICES[tier].future;
-  const spotsText = data
-    ? foundingAvailable
-      ? `${data.founding_remaining} founding spot${data.founding_remaining !== 1 ? 's' : ''} remaining`
-      : 'Founding spots sold out'
-    : '';
   const savingsText = foundingAvailable
     ? `★ Save $${(PRICES[tier].regular - PRICES[tier].founding).toLocaleString()}/mo forever`
     : 'Regular pricing';
@@ -41,7 +36,46 @@ export default function PricingCard({ tier, isPopular, onCheckout }) {
         <p className={`text-xs mt-2 ${foundingAvailable ? 'text-yellow-400' : 'text-slate-400'}`}>
           {savingsText}
         </p>
-        <p className="text-xs text-slate-500 mt-0.5">{spotsText}</p>
+        {data && (
+          <div className="mt-2">
+            {foundingAvailable ? (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  background: 'rgba(251,191,36,0.12)',
+                  border: '1px solid rgba(251,191,36,0.35)',
+                  borderRadius: '999px',
+                  padding: '3px 10px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: '#fbbf24',
+                }}
+              >
+                <span style={{ fontSize: '10px', opacity: 0.8 }}>&#9679;</span>
+                {data.founding_remaining} founding spot{data.founding_remaining !== 1 ? 's' : ''} left
+              </span>
+            ) : (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  background: 'rgba(100,116,139,0.1)',
+                  border: '1px solid rgba(100,116,139,0.2)',
+                  borderRadius: '999px',
+                  padding: '3px 10px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: '#64748b',
+                }}
+              >
+                Founding spots sold out
+              </span>
+            )}
+          </div>
+        )}
       </div>
       <ul className="space-y-3 text-sm text-slate-300 mb-8 flex-1">
         {TIER_FEATURES[tier].map((feat, i) => (
