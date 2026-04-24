@@ -6,6 +6,19 @@
  */
 import { api } from './client';
 
+// ─── Free Signup ────────────────────────────────────────────────────────────
+// POST /api/free-signup — creates (or reuses) a free-tier subscriber by email.
+// Returns { subscriber_id, feed_uuid, tier, status, email, vertical, county_id }
+export function createFreeSignup({ email, vertical = 'roofing', countyId = 'hillsborough', name = null, referralCode = null }) {
+  return api.post('/api/free-signup', {
+    email,
+    vertical,
+    county_id: countyId,
+    name,
+    referral_code: referralCode,
+  });
+}
+
 // ─── Proof Moment ───────────────────────────────────────────────────────────
 // GET /api/proof-leads?vertical=roofing&county_id=hillsborough
 export function fetchProofLeads({ vertical = 'roofing', countyId = 'hillsborough' } = {}) {

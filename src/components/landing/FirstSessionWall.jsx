@@ -1,0 +1,456 @@
+/**
+ * FirstSessionWall — v9 first-session monetization wall on the landing page.
+ *
+ * Shows:
+ *   - 1 fully enriched lead + 2 blurred leads (real data from
+ *     /api/proof-leads, scoped to the selected vertical + county)
+ *   - A client-side 15-minute countdown that anchors urgency
+ *   - A vertical-specific ROI frame rendered above the leads
+ *   - Unlock CTAs on each blurred lead
+ *
+ * For anonymous landing-page visitors there is no feed_uuid yet, so the
+ * Unlock CTAs cannot hit /api/payment-intent directly (that endpoint
+ * requires a subscriber). Until a free-tier signup endpoint exists, the
+ * CTAs route to the EmailGate modal via onRequestUnlock(lead) — the
+ * existing signup funnel can capture the email + eventually create the
+ * subscriber and re-open this wall on the dashboard.
+ *
+ * Props:
+ *   onRequestUnlock(lead) — callback invoked when a user taps any Unlock CTA
+ */
+import { useEffect, useMemo, useState } from 'react';
+import { useLanding } from './LandingContext';
+import { fetchProofLeads, createFreeSignup, createPaymentIntent } from '../../api/phase2b';
+import PaymentSheetModal from '../common/PaymentSheetModal';
+import Icon from '../ui/Icon';
+
+const COUNTDOWN_SECONDS = 15 * 60;          // 15 minutes
+const LS_KEY = 'fa.landing.wall.expires';   // survive refresh within the window
+
+// Static ROI frame per vertical — mirrors the backend's _ROI_FRAMES in
+// src/services/monetization_wall.py. Duplicated intentionally so the
+// landing wall renders fast without a backend round-trip; if these drift
+// the UI just shows slightly different framing copy — not a correctness
+// bug. Labeled "industry avg" so users don't read them as personal figures.
+const ROI_FRAMES = {
+	roofing: {
+		avg_job_value: 8500,
+		monthly_revenue: 102000,
+		headline: 'Roofers in Hillsborough close 12+ storm/distress jobs/mo',
+	},
+	remediation: {
+		avg_job_value: 6500,
+		monthly_revenue: 52000,
+		headline: 'Remediation contractors average 8 distress calls/mo at ~$6,500 each',
+	},
+	public_adjusters: {
+		avg_job_value: 14000,
+		monthly_revenue: 112000,
+		headline: 'Public adjusters average 8 settled claims/mo',
+	},
+	investor: {
+		avg_deal_value: 22000,
+		monthly_revenue: 44000,
+		headline: 'Distressed-property investors average 2 deals/mo at $22K profit each',
+	},
+	plumbing: {
+		avg_job_value: 3200,
+		monthly_revenue: 48000,
+		headline: 'Plumbers on distressed leads average 15 emergency jobs/mo',
+	},
+	hvac: {
+		avg_job_value: 4800,
+		monthly_revenue: 48000,
+		headline: 'HVAC contractors find 10+ urgent replacements/mo via distress leads',
+	},
+};
+const DEFAULT_ROI = {
+	avg_job_value: 5000,
+	monthly_revenue: 50000,
+	headline: 'Contractors using Forced Action data close 30–50% more distressed jobs',
+};
+
+const UNLOCK_PRICE_CENTS = 400;                 // $4.00 — mid-range of v9 $2.50–$7 band
+const UNLOCK_PRICE = `$${(UNLOCK_PRICE_CENTS / 100).toFixed(2).replace(/\.00$/, '')}`;
+
+function fmt(ms) {
+	if (ms <= 0) return '0:00';
+	const total = Math.floor(ms / 1000);
+	const m = Math.floor(total / 60);
+	const s = total % 60;
+	return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function tierBadgeClass(t) {
+	const k = (t || '').toLowerCase();
+	if (k.includes('platinum') || k.includes('ultra')) return 'score-platinum';
+	if (k.includes('gold')) return 'score-gold';
+	return 'score-silver';
+}
+
+function tierCardClass(t) {
+	const k = (t || '').toLowerCase();
+	if (k.includes('platinum') || k.includes('ultra')) return 'sample-lead-platinum';
+	if (k.includes('gold')) return 'sample-lead-gold';
+	return 'sample-lead-silver';
+}
+
+function tierLabel(t) {
+	if (!t) return 'Scored';
+	return t.toString().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function RevealedLead({ lead }) {
+	return (
+		<div className={`sample-lead-card ${tierCardClass(lead.lead_tier)}`}>
+			<div className="flex items-start justify-between gap-4">
+				<div className="flex-1 min-w-0">
+					<p className="font-semibold text-white text-sm">{lead.address}</p>
+					<p className="text-slate-400 text-xs mt-0.5">
+						{lead.city ? `${lead.city}, FL` : ''} {lead.zip}
+					</p>
+					{lead.distress_types?.length > 0 && (
+						<p className="text-slate-500 text-xs mt-1">{lead.distress_types.join(' · ')}</p>
+					)}
+					{lead.contact?.owner_name && (
+						<p className="text-emerald-300 text-xs mt-1 flex items-center gap-1">
+							<Icon name="user" size={12} /> Owner: <span className="text-white">{lead.contact.owner_name}</span>
+						</p>
+					)}
+					{lead.contact?.mobile_phone && (
+						<p className="text-emerald-300 text-xs mt-1 flex items-center gap-1">
+							<Icon name="phone" size={12} /> <span className="font-mono text-white">{lead.contact.mobile_phone}</span>
+						</p>
+					)}
+				</div>
+				<div className="flex flex-col items-end gap-1 shrink-0">
+					<span className={`score-badge ${tierBadgeClass(lead.lead_tier)}`}>{tierLabel(lead.lead_tier)}</span>
+					{lead.score != null && (
+						<span className="text-xs text-slate-400">
+							Score: <span className="text-white font-medium">{Math.round(lead.score)}</span>
+						</span>
+					)}
+					<span className="text-xs text-emerald-400 font-semibold mt-1">FREE preview</span>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+function BlurredLead({ lead, onUnlock }) {
+	const maskedAddress = lead.address
+		? lead.address.replace(/^\d+\s+[A-Za-z]+/, '••• ••••••')
+		: '••• •••••• St';
+	return (
+		<div className={`sample-lead-card ${tierCardClass(lead.lead_tier)}`}>
+			<div className="flex items-start justify-between gap-4">
+				<div className="flex-1 min-w-0">
+					<p className="font-semibold text-white text-sm blur-[3px] select-none">{maskedAddress}</p>
+					<p className="text-slate-500 text-xs mt-0.5">
+						{lead.city ? `${lead.city}, FL` : ''} {lead.zip}
+					</p>
+					{lead.distress_types?.length > 0 && (
+						<p className="text-slate-500 text-xs mt-1">{lead.distress_types.join(' · ')}</p>
+					)}
+					<p className="text-slate-500 text-xs mt-1 flex items-center gap-1">
+						<Icon name="lock" size={12} /> Owner + phone hidden
+					</p>
+				</div>
+				<div className="flex flex-col items-end gap-1 shrink-0">
+					<span className={`score-badge ${tierBadgeClass(lead.lead_tier)}`}>{tierLabel(lead.lead_tier)}</span>
+					{lead.score != null && (
+						<span className="text-xs text-slate-400">
+							Score: <span className="text-white font-medium">{Math.round(lead.score)}</span>
+						</span>
+					)}
+				</div>
+			</div>
+			<div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between">
+				<span className="text-xs text-slate-500">Unlock full address + owner + phone</span>
+				<button
+					onClick={() => onUnlock?.(lead)}
+					className="cta-primary text-xs px-4 py-1.5"
+					type="button"
+				>
+					Unlock {UNLOCK_PRICE}
+				</button>
+			</div>
+		</div>
+	);
+}
+
+
+export default function FirstSessionWall({ onRequestUnlock }) {
+	const { selectedVertical, countyId } = useLanding();
+
+	const [payload, setPayload] = useState(null);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
+
+	// 15-min countdown — persists across refresh within the same session
+	const [expiresMs, setExpiresMs] = useState(() => {
+		const existing = Number(localStorage.getItem(LS_KEY));
+		if (existing && existing > Date.now()) return existing;
+		const fresh = Date.now() + COUNTDOWN_SECONDS * 1000;
+		localStorage.setItem(LS_KEY, String(fresh));
+		return fresh;
+	});
+	const [nowMs, setNowMs] = useState(Date.now());
+
+	// Unlock-flow state machine:
+	//   idle            — no unlock in progress
+	//   email           — asking for email before creating a subscriber
+	//   signing_up      — POST /api/free-signup in flight
+	//   creating_intent — POST /api/payment-intent in flight
+	//   payment         — PaymentSheetModal open
+	//   done            — success; lead revealed inline
+	// Note: feed_uuid is NOT cached across page loads. Every fresh Unlock
+	// click re-prompts for email so QA + real users both see the whole flow.
+	// Backend /api/free-signup is idempotent on email, so re-entering the
+	// same email returns the same subscriber without creating duplicates.
+	const [flow, setFlow] = useState({
+		state: 'idle',
+		lead: null,
+		email: '',
+		feedUuid: null,
+		clientSecret: null,
+		publishableKey: null,
+		err: null,
+	});
+	const [revealedIds, setRevealedIds] = useState(() => new Set());
+
+	useEffect(() => {
+		const t = setInterval(() => setNowMs(Date.now()), 1000);
+		return () => clearInterval(t);
+	}, []);
+
+	useEffect(() => {
+		let cancelled = false;
+		setLoading(true);
+		setError(null);
+		fetchProofLeads({ vertical: selectedVertical, countyId })
+			.then(data => { if (!cancelled) setPayload(data); })
+			.catch(err => { if (!cancelled) setError(err?.message || 'Could not load leads'); })
+			.finally(() => { if (!cancelled) setLoading(false); });
+		return () => { cancelled = true; };
+	}, [selectedVertical, countyId]);
+
+	const countdownMs = Math.max(0, expiresMs - nowMs);
+
+	const roi = useMemo(() => ROI_FRAMES[selectedVertical] || DEFAULT_ROI, [selectedVertical]);
+	const verticalLabel = (selectedVertical || '').charAt(0).toUpperCase() + (selectedVertical || '').slice(1);
+
+	// Begin the unlock flow for a specific blurred lead.
+	const handleUnlock = (lead) => {
+		// If no feed_uuid yet → ask for email first.
+		if (!flow.feedUuid) {
+			setFlow(f => ({ ...f, state: 'email', lead, err: null }));
+			return;
+		}
+		// Have feed_uuid already → jump straight to payment intent creation.
+		runPaymentIntentFlow(lead, flow.feedUuid);
+	};
+
+	const runPaymentIntentFlow = async (lead, feedUuid) => {
+		setFlow(f => ({ ...f, state: 'creating_intent', lead, feedUuid, err: null }));
+		try {
+			const result = await createPaymentIntent({
+				feedUuid,
+				amountCents: UNLOCK_PRICE_CENTS,
+				description: `Unlock ${lead.lead_tier || 'Gold'} lead in ${lead.zip || 'your ZIP'}`,
+				saveCard: true,
+				metadata: {
+					product: 'lead_unlock',                         // routed by stripe_webhooks
+					property_id: String(lead.property_id || ''),
+				},
+			});
+			setFlow(f => ({
+				...f,
+				state: 'payment',
+				clientSecret: result.client_secret || result.clientSecret,
+				publishableKey: result.publishable_key || result.publishableKey,
+			}));
+		} catch (e) {
+			setFlow(f => ({ ...f, state: 'idle', err: e?.detail?.message || e?.message || 'Could not start payment' }));
+			// Also surface via legacy callback so parent can react.
+			onRequestUnlock?.(lead);
+		}
+	};
+
+	const handleEmailSubmit = async (e) => {
+		e?.preventDefault?.();
+		const email = (flow.email || '').trim().toLowerCase();
+		if (!email || !email.includes('@') || !email.includes('.')) {
+			setFlow(f => ({ ...f, err: 'Enter a valid email' }));
+			return;
+		}
+		setFlow(f => ({ ...f, state: 'signing_up', err: null }));
+		try {
+			const result = await createFreeSignup({ email, vertical: selectedVertical, countyId });
+			const feedUuid = result.feed_uuid;
+			await runPaymentIntentFlow(flow.lead, feedUuid);
+		} catch (e) {
+			setFlow(f => ({ ...f, state: 'email', err: e?.detail?.message || e?.message || 'Signup failed' }));
+		}
+	};
+
+	const handlePaymentSuccess = () => {
+		if (flow.lead?.property_id != null) {
+			setRevealedIds(prev => new Set(prev).add(flow.lead.property_id));
+		}
+		// Briefly keep the success state visible then close.
+		setTimeout(() => {
+			setFlow({
+				state: 'idle', lead: null, email: flow.email,
+				feedUuid: flow.feedUuid, clientSecret: null, publishableKey: null, err: null,
+			});
+		}, 1500);
+	};
+
+	const handlePaymentClose = () => {
+		setFlow(f => ({ ...f, state: 'idle', clientSecret: null, publishableKey: null }));
+	};
+
+	// Live qualified-lead count from the proof payload. Backend returns
+	// revealed + blurred; total visible count is 1 + blurred.length but the
+	// population size for the headline is the county/vertical qualified count.
+	const visibleCount = (payload?.revealed ? 1 : 0) + (payload?.blurred?.length || 0);
+
+	return (
+		<section id="first-session-wall" className="max-w-3xl mx-auto px-6 py-12">
+			{/* ROI frame + countdown header */}
+			<div className="rounded-xl border border-yellow-400/30 bg-gradient-to-br from-yellow-400/10 to-amber-600/10 p-5 mb-5">
+				<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+					<div className="flex-1 min-w-0">
+						<div className="flex items-center gap-2">
+							<Icon name="bolt" size={16} className="text-yellow-400" />
+							<h3 className="text-white font-semibold text-base">
+								Your first unlock window
+							</h3>
+						</div>
+						<p className="text-slate-300 text-sm mt-1">
+							{roi.headline}.{' '}
+							{roi.avg_job_value && (
+								<>One closed job ≈ <span className="text-white font-semibold">${roi.avg_job_value.toLocaleString()}</span> (industry avg).</>
+							)}
+							{roi.avg_deal_value && (
+								<>One closed deal ≈ <span className="text-white font-semibold">${roi.avg_deal_value.toLocaleString()}</span> profit (industry avg).</>
+							)}
+						</p>
+						<p className="text-slate-400 text-xs mt-1">
+							Typical top-quartile {verticalLabel.toLowerCase() || 'contractor'}: ≈ ${roi.monthly_revenue.toLocaleString()}/mo (industry avg — your results will vary).
+						</p>
+					</div>
+
+					<div className="flex flex-col items-end gap-1 shrink-0">
+						<div className="text-xs text-slate-400 uppercase tracking-wider">Window</div>
+						<div className="text-2xl font-mono font-bold text-yellow-400 tabular-nums">
+							{fmt(countdownMs)}
+						</div>
+					</div>
+				</div>
+			</div>
+
+			{/* Headline + sub */}
+			<div className="text-center mb-6">
+				<h2 className="text-2xl font-bold text-white">Here's what Forced Action just scored for you</h2>
+				<p className="text-slate-400 text-sm mt-1">
+					3 real properties in {countyId === 'hillsborough' ? 'Hillsborough, FL' : countyId}.{' '}
+					<span className="text-emerald-400">1 free preview.</span>{' '}
+					<span className="text-yellow-400">2 hidden — unlock one tap, card saved after.</span>
+				</p>
+			</div>
+
+			{/* Leads */}
+			{loading && <p className="text-slate-400 text-sm text-center">Pulling your first leads…</p>}
+			{error && <p className="text-red-400 text-sm text-center">{error}</p>}
+			{!loading && !error && visibleCount === 0 && (
+				<p className="text-slate-400 text-sm text-center">
+					No qualified {verticalLabel.toLowerCase() || ''} leads in this area yet — new data arrives nightly.
+				</p>
+			)}
+			{!loading && !error && visibleCount > 0 && (
+				<div className="space-y-3">
+					{payload.revealed && <RevealedLead lead={payload.revealed} />}
+					{(payload.blurred || []).map((lead, i) => {
+						// If the user has unlocked this blurred lead, flip to revealed view.
+						if (revealedIds.has(lead.property_id)) {
+							return <RevealedLead key={lead.property_id || i} lead={lead} />;
+						}
+						return <BlurredLead key={lead.property_id || i} lead={lead} onUnlock={handleUnlock} />;
+					})}
+				</div>
+			)}
+
+			{/* Inline email prompt — shown only during the unlock flow */}
+			{(flow.state === 'email' || flow.state === 'signing_up' || flow.state === 'creating_intent') && (
+				<div
+					className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+					role="dialog"
+					aria-modal="true"
+					onClick={(e) => { if (e.target === e.currentTarget && flow.state === 'email') handlePaymentClose(); }}
+				>
+					<form
+						onSubmit={handleEmailSubmit}
+						className="max-w-sm w-full rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl"
+					>
+						<h3 className="text-white font-semibold text-base">Enter your email to unlock</h3>
+						<p className="text-slate-400 text-xs mt-1">
+							We need an email to attach your card + track this unlock. Free tier — no
+							subscription, no surprises.
+						</p>
+						<input
+							type="email"
+							autoFocus
+							required
+							placeholder="you@contracting.com"
+							value={flow.email}
+							onChange={e => setFlow(f => ({ ...f, email: e.target.value, err: null }))}
+							disabled={flow.state !== 'email'}
+							className="mt-4 w-full rounded-md bg-white/5 border border-white/10 px-3 py-2 text-white placeholder:text-slate-500 focus:border-yellow-400/60 focus:outline-none"
+						/>
+						{flow.err && <p className="mt-2 text-red-400 text-xs">{flow.err}</p>}
+						<p className="mt-3 text-slate-500 text-[11px]">
+							Card saved on unlock. <span className="text-emerald-400">+2 bonus credits</span> if saved within 10 min.
+						</p>
+						<div className="mt-5 flex items-center justify-end gap-3">
+							<button
+								type="button"
+								onClick={handlePaymentClose}
+								disabled={flow.state !== 'email'}
+								className="text-slate-400 hover:text-white text-sm px-3 py-2"
+							>
+								Cancel
+							</button>
+							<button
+								type="submit"
+								disabled={flow.state !== 'email'}
+								className="cta-primary text-sm px-5 py-2 disabled:opacity-60"
+							>
+								{flow.state === 'signing_up' ? 'Creating account…'
+									: flow.state === 'creating_intent' ? 'Preparing payment…'
+									: `Continue to pay ${UNLOCK_PRICE}`}
+							</button>
+						</div>
+					</form>
+				</div>
+			)}
+
+			{/* Payment Sheet — Stripe Elements */}
+			<PaymentSheetModal
+				isOpen={flow.state === 'payment' && !!flow.clientSecret}
+				clientSecret={flow.clientSecret}
+				publishableKey={flow.publishableKey}
+				amountLabel={UNLOCK_PRICE}
+				description={flow.lead ? `Unlock ${flow.lead.lead_tier || 'Gold'} lead in ${flow.lead.zip || 'your area'}` : 'Unlock this lead'}
+				saveCardDefault={true}
+				onSuccess={handlePaymentSuccess}
+				onClose={handlePaymentClose}
+			/>
+
+			<p className="text-slate-500 text-xs text-center mt-6">
+				Card saved on unlock. <span className="text-emerald-400">+2 bonus credits</span> if you save the card within 10 minutes.
+			</p>
+		</section>
+	);
+}

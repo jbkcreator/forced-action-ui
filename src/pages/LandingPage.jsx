@@ -6,6 +6,7 @@ import HeroBanner from '../components/landing/HeroBanner';
 import TrustBar from '../components/landing/TrustBar';
 import VerticalSelector from '../components/landing/VerticalSelector';
 import HowItWorks from '../components/landing/HowItWorks';
+import FirstSessionWall from '../components/landing/FirstSessionWall';
 import ZipChecker from '../components/landing/ZipChecker';
 import PricingSection from '../components/landing/PricingSection';
 import FAQ from '../components/landing/FAQ';
@@ -56,6 +57,15 @@ function LandingContent() {
             <VerticalSelector />
           </div>
           <HowItWorks />
+
+          {/* First-Session Monetization Wall (Phase 2B, §1):
+              proof moment + countdown + ROI framing. Unlock CTAs route to
+              EmailGate since there's no free-tier signup endpoint yet — the
+              email gate funnels into the existing pricing/checkout flow. */}
+          <FirstSessionWall
+            onRequestUnlock={() => setEmailGate({ open: true, tier: 'starter' })}
+          />
+
           <div id="zip-check">
             <ZipChecker onZipChecked={setLastCheckedZip} />
           </div>

@@ -137,12 +137,14 @@ export default function MonetizationWall({
 
   // ─── Derived ────────────────────────────────────────────────────────────
   const countdownMs = useMemo(() => {
-    if (!state?.countdown_expires_at) return COUNTDOWN_FLOOR_MS;
+    // Backend returns `countdown_expires` (ISO string).
+    const expiresAt = state?.countdown_expires || state?.countdown_expires_at;
+    if (!expiresAt) return COUNTDOWN_FLOOR_MS;
     return Math.max(
       COUNTDOWN_FLOOR_MS,
-      new Date(state.countdown_expires_at).getTime() - nowMs,
+      new Date(expiresAt).getTime() - nowMs,
     );
-  }, [state?.countdown_expires_at, nowMs]);
+  }, [state?.countdown_expires, state?.countdown_expires_at, nowMs]);
 
   // ─── Render conditions ──────────────────────────────────────────────────
   if (!subscriberId) return null;
@@ -156,7 +158,10 @@ export default function MonetizationWall({
   }
   if (!state) return null;  // still loading
 
-  const leadCount = state.qualified_lead_count ?? roi?.live_lead_count ?? '—';
+  // Backend field names: roi.live_lead_count, roi.avg_job_value, roi.monthly_revenue.
+  const leadCount = roi?.live_lead_count ?? state?.qualified_lead_count ?? '—';
+  const avgJobValue = roi?.avg_job_value ?? roi?.avg_deal_value;
+  const monthlyRevenue = roi?.monthly_revenue;
   const verticalLabel = vertical.charAt(0).toUpperCase() + vertical.slice(1);
 
   return (
@@ -184,13 +189,13 @@ export default function MonetizationWall({
           <p className="text-slate-300 text-sm mt-1">
             <span className="text-yellow-400 font-semibold">{leadCount}</span> qualified {verticalLabel.toLowerCase()} leads
             active in your area right now.
-            {roi?.avg_job_value_usd && (
-              <> One closed job = <span className="text-white font-semibold">${roi.avg_job_value_usd.toLocaleString()}</span>.</>
+            {avgJobValue && (
+              <> One closed job ≈ <span className="text-white font-semibold">${avgJobValue.toLocaleString()}</span> (industry avg).</>
             )}
           </p>
-          {roi?.monthly_revenue_example && (
+          {monthlyRevenue && (
             <p className="text-slate-400 text-xs mt-1">
-              Typical top-quartile {verticalLabel.toLowerCase()} contractor: ${roi.monthly_revenue_example.toLocaleString()}/mo from our leads.
+              Typical top-quartile {verticalLabel.toLowerCase()} contractor: ≈ ${monthlyRevenue.toLocaleString()}/mo (industry avg — your results will vary).
             </p>
           )}
         </div>
