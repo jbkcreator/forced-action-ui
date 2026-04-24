@@ -184,12 +184,7 @@ export default function DashboardPage() {
                   subscriberId={subscriber.id}
                   vertical={subscriber.vertical}
                   countyId={subscriber.county_id || 'hillsborough'}
-                  onUnlock={() => {
-                    // TODO: open PaymentSheet — for Stage 1 testing, route to lead-pack
-                    // checkout as a placeholder so the flow is observable.
-                    const firstZip = subscriber.locked_zips?.[0];
-                    if (firstZip) handleOpenLpModal(firstZip);
-                  }}
+                  onUnlock={(zip) => handleOpenLpModal(zip)}
                 />
               )}
 

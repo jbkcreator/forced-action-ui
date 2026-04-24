@@ -52,9 +52,21 @@ export default function MonetizationWall({
   const [roi, setRoi] = useState(null);
   const [error, setError] = useState(null);
   const [dismissed, setDismissed] = useState(false);
+  const [zipInput, setZipInput] = useState('');
+  const [zipError, setZipError] = useState(null);
   const pollTimer = useRef(null);
   const sessionIdRef = useRef(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
+
+  const handleUnlockClick = useCallback(() => {
+    const zip = zipInput.trim();
+    if (!/^\d{5}$/.test(zip)) {
+      setZipError('Enter a 5-digit ZIP.');
+      return;
+    }
+    setZipError(null);
+    onUnlock?.(zip);
+  }, [zipInput, onUnlock]);
 
   // ─── Session init ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -200,20 +212,38 @@ export default function MonetizationWall({
           )}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <div className="text-center">
             <div className="text-xs text-slate-400 uppercase tracking-wider">Window</div>
             <div className="text-2xl font-mono font-bold text-yellow-400 tabular-nums">
               {formatCountdown(countdownMs)}
             </div>
           </div>
-          <button
-            onClick={onUnlock}
-            className="cta-primary text-sm px-5 py-2 shrink-0"
-            type="button"
-          >
-            Unlock a lead
-          </button>
+          <div className="flex flex-col items-start gap-1">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={5}
+                placeholder="Target ZIP"
+                value={zipInput}
+                onChange={(e) => { setZipInput(e.target.value.replace(/\D/g, '')); if (zipError) setZipError(null); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleUnlockClick(); }}
+                className="w-28 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400/50 text-sm transition"
+                aria-label="Target ZIP code"
+              />
+              <button
+                onClick={handleUnlockClick}
+                className="cta-primary text-sm px-5 py-2 shrink-0"
+                type="button"
+              >
+                Unlock leads
+              </button>
+            </div>
+            {zipError && (
+              <p className="text-red-400 text-xs">{zipError}</p>
+            )}
+          </div>
         </div>
       </div>
     </section>
