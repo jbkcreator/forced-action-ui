@@ -15,6 +15,8 @@ import LeadPackModal from '../components/dashboard/LeadPackModal';
 import LeadPackHistory from '../components/dashboard/LeadPackHistory';
 import DashboardHeroBanner from '../components/dashboard/DashboardHeroBanner';
 import OnboardingChecklist from '../components/dashboard/OnboardingChecklist';
+import MonetizationWall from '../components/dashboard/MonetizationWall';
+import DealCapture from '../components/dashboard/DealCapture';
 import SearchBar from '../components/dashboard/SearchBar';
 import FilterBar from '../components/dashboard/FilterBar';
 import SortDropdown from '../components/dashboard/SortDropdown';
@@ -26,6 +28,13 @@ import ErrorState from '../components/ui/ErrorState';
 import EmptyState from '../components/ui/EmptyState';
 import { useState } from 'react';
 
+function isWithinFirst48h(createdAtIso) {
+  if (!createdAtIso) return false;
+  const created = new Date(createdAtIso).getTime();
+  if (Number.isNaN(created)) return false;
+  return (Date.now() - created) < 48 * 3600 * 1000;
+}
+
 export default function DashboardPage() {
   const { feedUuid } = useParams();
   const { filters, setFilter, setPage, searchInput, setSearchInput } = useFeedFilters();
@@ -33,6 +42,7 @@ export default function DashboardPage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [lpZip, setLpZip] = useState('');
   const [lpOpen, setLpOpen] = useState(false);
+  const [dealCaptureOpen, setDealCaptureOpen] = useState(false);
 
   const { data, loading, error } = useApi(
     () => fetchFeed(feedUuid, {
@@ -167,8 +177,35 @@ export default function DashboardPage() {
               )}
 
               <StatsBar subscriber={subscriber} />
+
+              {/* Phase 2B: Monetization Wall — first-48h countdown + ROI frame. */}
+              {subscriber.id && isWithinFirst48h(subscriber.created_at) && (
+                <MonetizationWall
+                  subscriberId={subscriber.id}
+                  vertical={subscriber.vertical}
+                  countyId={subscriber.county_id || 'hillsborough'}
+                  onUnlock={() => {
+                    // TODO: open PaymentSheet — for Stage 1 testing, route to lead-pack
+                    // checkout as a placeholder so the flow is observable.
+                    const firstZip = subscriber.locked_zips?.[0];
+                    if (firstZip) handleOpenLpModal(firstZip);
+                  }}
+                />
+              )}
+
               <OnboardingChecklist totalLeads={data?.total} />
               <DashboardHeroBanner total={data?.total} zips={subscriber.locked_zips} />
+
+              {/* Phase 2B: Deal-Size Capture trigger */}
+              <div className="mb-4 flex items-center justify-end">
+                <button
+                  onClick={() => setDealCaptureOpen(true)}
+                  type="button"
+                  className="text-sm text-yellow-300 hover:text-yellow-200 underline underline-offset-2"
+                >
+                  I closed a deal &rarr;
+                </button>
+              </div>
 
               {/* Search, Filter, Sort, Export */}
               <div className="mb-6 space-y-3">
@@ -247,6 +284,24 @@ export default function DashboardPage() {
           onStartPayment={handleStartLeadPackPayment}
           onConfirmPayment={handleConfirmLeadPackPayment}
         />
+
+        {/* Phase 2B: Deal-Size Capture modal */}
+        {dealCaptureOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => { if (e.target === e.currentTarget) setDealCaptureOpen(false); }}
+          >
+            <div className="max-w-lg w-full">
+              <DealCapture
+                feedUuid={feedUuid}
+                onCaptured={() => setTimeout(() => setDealCaptureOpen(false), 1500)}
+                onDismiss={() => setDealCaptureOpen(false)}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

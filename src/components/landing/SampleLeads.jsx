@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLanding } from './LandingContext';
 import { fetchSampleLeads } from '../../api/landing';
+import { fetchZipActivity } from '../../api/phase2b';
 import Icon from '../ui/Icon';
 
 function tierClass(t) {
@@ -19,6 +20,7 @@ export default function SampleLeads({ zip }) {
   const { selectedVertical, countyId } = useLanding();
   const [leads, setLeads] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeViewers, setActiveViewers] = useState(0);
 
   useEffect(() => {
     setLoading(true);
@@ -28,11 +30,35 @@ export default function SampleLeads({ zip }) {
       .finally(() => setLoading(false));
   }, [zip, selectedVertical, countyId]);
 
+  // ── FOMO: live viewer count for this ZIP ────────────────────────────────
+  // Poll every 20 s while the component is mounted. Degrades silently if
+  // the endpoint or Redis is unavailable (count stays at 0).
+  useEffect(() => {
+    let cancelled = false;
+    const load = () => {
+      fetchZipActivity(zip, selectedVertical)
+        .then(data => { if (!cancelled) setActiveViewers(data?.active_viewers ?? 0); })
+        .catch(() => {});
+    };
+    load();
+    const iv = setInterval(load, 20_000);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, [zip, selectedVertical]);
+
   return (
     <section className="max-w-6xl mx-auto px-6 pb-6">
       <div className="max-w-xl mx-auto">
         <h3 className="text-lg font-bold mb-1 text-center">Sample Leads from ZIP {zip}</h3>
-        <p className="text-slate-400 text-sm text-center mb-5">Real scored properties — phone numbers unlocked when you subscribe</p>
+        <p className="text-slate-400 text-sm text-center mb-2">Real scored properties — phone numbers unlocked when you subscribe</p>
+
+        {activeViewers > 0 && (
+          <p className="text-yellow-400 text-xs text-center mb-4 flex items-center justify-center gap-1">
+            <Icon name="bolt" size={12} className="text-yellow-400" />
+            <span>
+              {activeViewers} contractor{activeViewers === 1 ? '' : 's'} currently viewing ZIP {zip}
+            </span>
+          </p>
+        )}
 
         {loading && <p className="text-slate-400 text-sm text-center">Loading sample leads...</p>}
 

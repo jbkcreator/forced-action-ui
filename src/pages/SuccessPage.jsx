@@ -1,5 +1,6 @@
 import { useSearchParams, Link } from 'react-router-dom';
 import { theme } from '../theme/ThemeProvider';
+import ProofMoment from '../components/landing/ProofMoment';
 
 const CONFETTI_PIECES = [
   { left: '5%',  w: 8,  h: 8,  bg: 'rgba(250,204,21,0.25)', radius: '2px',  dur: '14s', delay: '0s',   rotate: '' },
@@ -30,6 +31,8 @@ export default function SuccessPage() {
   const feedUuid = params.get('feed_uuid');
   const tier = params.get('tier') || '';
   const zips = params.get('zips') || '';
+  const vertical = params.get('vertical') || 'roofing';
+  const countyId = params.get('county_id') || 'hillsborough';
   const tierLabel = TIER_LABELS[tier] || '';
   const tierPrice = TIER_PRICES[tier] || '';
   const zipList = zips ? zips.split(',').filter(Boolean) : [];
@@ -170,6 +173,11 @@ export default function SuccessPage() {
               </div>
             </div>
           )}
+
+          {/* Proof Moment — Phase 2B: show 1 revealed + 2 blurred teaser leads */}
+          <div className="mt-10 animate-fade-in-up delay-500">
+            <ProofMoment vertical={vertical} countyId={countyId} />
+          </div>
 
           {/* Resend email */}
           <p className="text-slate-500 text-xs mb-8 animate-fade-in-up delay-400">
