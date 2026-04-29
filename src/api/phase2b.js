@@ -20,9 +20,15 @@ export function createFreeSignup({ email, vertical = 'roofing', countyId = 'hill
 }
 
 // ─── Proof Moment ───────────────────────────────────────────────────────────
-// GET /api/proof-leads?vertical=roofing&county_id=hillsborough
-export function fetchProofLeads({ vertical = 'roofing', countyId = 'hillsborough' } = {}) {
-  return api.get('/api/proof-leads', { vertical, county_id: countyId });
+// GET /api/proof-leads?vertical=roofing&county_id=hillsborough[&feed_uuid=...]
+//
+// Pass feedUuid after the user has signed up + paid for an unlock so the
+// backend can mark previously-blurred leads as unlocked=true with full
+// contact data.
+export function fetchProofLeads({ vertical = 'roofing', countyId = 'hillsborough', feedUuid } = {}) {
+  const params = { vertical, county_id: countyId };
+  if (feedUuid) params.feed_uuid = feedUuid;
+  return api.get('/api/proof-leads', params);
 }
 
 // ─── Monetization Wall ──────────────────────────────────────────────────────

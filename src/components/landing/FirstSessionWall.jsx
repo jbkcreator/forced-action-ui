@@ -101,6 +101,8 @@ function tierLabel(t) {
 }
 
 function RevealedLead({ lead }) {
+	const isPaidUnlock = lead.unlocked === true;
+	const ownerName = lead.contact?.owner_name || lead.owner_name;
 	return (
 		<div className={`sample-lead-card ${tierCardClass(lead.lead_tier)}`}>
 			<div className="flex items-start justify-between gap-4">
@@ -112,14 +114,19 @@ function RevealedLead({ lead }) {
 					{lead.distress_types?.length > 0 && (
 						<p className="text-slate-500 text-xs mt-1">{lead.distress_types.join(' · ')}</p>
 					)}
-					{lead.contact?.owner_name && (
+					{ownerName && (
 						<p className="text-emerald-300 text-xs mt-1 flex items-center gap-1">
-							<Icon name="user" size={12} /> Owner: <span className="text-white">{lead.contact.owner_name}</span>
+							<Icon name="user" size={12} /> Owner: <span className="text-white">{ownerName}</span>
 						</p>
 					)}
 					{lead.contact?.mobile_phone && (
 						<p className="text-emerald-300 text-xs mt-1 flex items-center gap-1">
 							<Icon name="phone" size={12} /> <span className="font-mono text-white">{lead.contact.mobile_phone}</span>
+						</p>
+					)}
+					{lead.contact?.email && (
+						<p className="text-emerald-300 text-xs mt-1 flex items-center gap-1">
+							<Icon name="mail" size={12} /> <span className="font-mono text-white">{lead.contact.email}</span>
 						</p>
 					)}
 				</div>
@@ -130,7 +137,16 @@ function RevealedLead({ lead }) {
 							Score: <span className="text-white font-medium">{Math.round(lead.score)}</span>
 						</span>
 					)}
-					<span className="text-xs text-emerald-400 font-semibold mt-1">FREE preview</span>
+					{isPaidUnlock ? (
+						<span
+							className="text-xs font-semibold mt-1 px-2 py-0.5 rounded-full"
+							style={{ background: 'rgba(34,197,94,0.12)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.25)' }}
+						>
+							✓ Unlocked
+						</span>
+					) : (
+						<span className="text-xs text-emerald-400 font-semibold mt-1">FREE preview</span>
+					)}
 				</div>
 			</div>
 		</div>
@@ -228,12 +244,12 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 		let cancelled = false;
 		setLoading(true);
 		setError(null);
-		fetchProofLeads({ vertical: selectedVertical, countyId })
+		fetchProofLeads({ vertical: selectedVertical, countyId, feedUuid: flow.feedUuid || undefined })
 			.then(data => { if (!cancelled) setPayload(data); })
 			.catch(err => { if (!cancelled) setError(err?.message || 'Could not load leads'); })
 			.finally(() => { if (!cancelled) setLoading(false); });
 		return () => { cancelled = true; };
-	}, [selectedVertical, countyId]);
+	}, [selectedVertical, countyId, flow.feedUuid]);
 
 	const countdownMs = Math.max(0, expiresMs - nowMs);
 
@@ -298,11 +314,24 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 		if (flow.lead?.property_id != null) {
 			setRevealedIds(prev => new Set(prev).add(flow.lead.property_id));
 		}
+		// Refetch proof-leads with feed_uuid so the just-purchased lead comes
+		// back with real contact data and unlocked=true. Without this, the
+		// blurred lead object stays empty and the UI shows the FREE-preview
+		// badge on a paid card. Stripe webhook writes the SentLead row in the
+		// background; brief delay gives it time to land before we requery.
+		const feedUuid = flow.feedUuid;
+		if (feedUuid) {
+			setTimeout(() => {
+				fetchProofLeads({ vertical: selectedVertical, countyId, feedUuid })
+					.then(data => setPayload(data))
+					.catch(() => {});
+			}, 1200);
+		}
 		// Briefly keep the success state visible then close.
 		setTimeout(() => {
 			setFlow({
 				state: 'idle', lead: null, email: flow.email,
-				feedUuid: flow.feedUuid, clientSecret: null, publishableKey: null, err: null,
+				feedUuid, clientSecret: null, publishableKey: null, err: null,
 			});
 		}, 1500);
 	};
@@ -373,8 +402,10 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 				<div className="space-y-3">
 					{payload.revealed && <RevealedLead lead={payload.revealed} />}
 					{(payload.blurred || []).map((lead, i) => {
-						// If the user has unlocked this blurred lead, flip to revealed view.
-						if (revealedIds.has(lead.property_id)) {
+						// Treat as unlocked if the backend says so (post-refetch with feed_uuid)
+						// OR if we just paid in this session (set in handlePaymentSuccess).
+						const isUnlocked = lead.unlocked === true || revealedIds.has(lead.property_id);
+						if (isUnlocked) {
 							return <RevealedLead key={lead.property_id || i} lead={lead} />;
 						}
 						return <BlurredLead key={lead.property_id || i} lead={lead} onUnlock={handleUnlock} />;
