@@ -25,7 +25,10 @@ export default function SampleLeads({ zip }) {
   useEffect(() => {
     setLoading(true);
     fetchSampleLeads(zip, selectedVertical, countyId)
-      .then(data => setLeads(data.leads || []))
+      .then(data => {
+        setLeads(data.leads || []);
+        if ((data.active_viewers ?? 0) > 0) setActiveViewers(data.active_viewers);
+      })
       .catch(() => setLeads(null))
       .finally(() => setLoading(false));
   }, [zip, selectedVertical, countyId]);
