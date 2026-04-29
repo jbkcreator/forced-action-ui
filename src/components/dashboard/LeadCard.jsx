@@ -126,6 +126,19 @@ export default function LeadCard({ lead, index, onUnlockHotLead, isContacted, on
             {lead.lat && <div><span className="text-slate-500">Lat:</span> <span className="text-slate-300">{lead.lat}</span></div>}
             {lead.lon && <div><span className="text-slate-500">Lon:</span> <span className="text-slate-300">{lead.lon}</span></div>}
           </div>
+          {lead.unlocked && (lead.phone || lead.email) && (
+            <div className="mt-3 pt-3 border-t border-white/[0.06] flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              {lead.phone && (
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-300">📞 {lead.phone}</span>
+                  <PhoneQualityBadge quality={lead.phone_quality} />
+                </div>
+              )}
+              {lead.email && (
+                <span className="text-slate-300 text-xs">✉️ {lead.email}</span>
+              )}
+            </div>
+          )}
           <div className="mt-2 flex items-center gap-3">
             <button
               onClick={(e) => { e.stopPropagation(); onToggleContacted?.(lead.property_id); }}
@@ -143,5 +156,48 @@ export default function LeadCard({ lead, index, onUnlockHotLead, isContacted, on
 
       {/* Hot lead unlock — hidden until skip tracing is wired up */}
     </div>
+  );
+}
+
+/**
+ * Tiny chip rendering skip-trace metadata for a phone number.
+ * Returns null silently when no metadata is present (graceful degrade).
+ */
+function PhoneQualityBadge({ quality }) {
+  if (!quality) return null;
+
+  const type = (quality.type || '').toLowerCase();
+  const score = quality.score || 0;
+  const reachable = !!quality.reachable;
+
+  const typeLabel = {
+    mobile:   'Mobile',
+    landline: 'Landline',
+    voip:     'VoIP',
+  }[type] || 'Phone';
+
+  // Verified = reachable OR high BatchData score
+  const verified = reachable || score >= 80;
+
+  const styles = verified
+    ? 'text-emerald-300 bg-emerald-500/10 border border-emerald-500/30'
+    : score >= 50
+      ? 'text-yellow-300 bg-yellow-500/10 border border-yellow-500/30'
+      : 'text-slate-400 bg-white/5 border border-white/10';
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium ${styles}`}
+      title={[
+        `Type: ${typeLabel}`,
+        quality.carrier ? `Carrier: ${quality.carrier}` : null,
+        `Score: ${score}/100`,
+        verified ? 'Verified reachable' : 'Not yet verified',
+        quality.source ? `Source: ${quality.source}` : null,
+      ].filter(Boolean).join('\n')}
+    >
+      {typeLabel}
+      {verified && <span aria-hidden>✓</span>}
+    </span>
   );
 }

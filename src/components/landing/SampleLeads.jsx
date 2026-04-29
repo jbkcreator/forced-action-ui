@@ -98,8 +98,14 @@ export default function SampleLeads({ zip }) {
                   </div>
                 </div>
                 <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between">
-                  <span className="text-xs text-slate-500 flex items-center gap-1"><Icon name="phone" size={12} className="text-slate-500" /> Phone: <span className="font-mono text-slate-400">{l.phone}</span></span>
-                  <span className="text-xs text-yellow-400 font-medium">Unlock with subscription →</span>
+                  <span className="text-xs text-slate-500 flex items-center gap-1.5">
+                    <Icon name="phone" size={12} className="text-slate-500" /> Phone: <span className="font-mono text-slate-400">{l.phone}</span>
+                    {l.unlocked && <PhoneQualityBadge quality={l.phone_quality} />}
+                  </span>
+                  {l.unlocked
+                    ? <span className="text-xs text-emerald-400 font-medium">✓ Purchased — full contact</span>
+                    : <span className="text-xs text-yellow-400 font-medium">Unlock with subscription →</span>
+                  }
                 </div>
               </div>
             ))}
@@ -107,5 +113,32 @@ export default function SampleLeads({ zip }) {
         )}
       </div>
     </section>
+  );
+}
+
+function PhoneQualityBadge({ quality }) {
+  if (!quality) return null;
+  const type = (quality.type || '').toLowerCase();
+  const score = quality.score || 0;
+  const reachable = !!quality.reachable;
+  const typeLabel = { mobile: 'Mobile', landline: 'Landline', voip: 'VoIP' }[type] || 'Phone';
+  const verified = reachable || score >= 80;
+  const styles = verified
+    ? 'text-emerald-300 bg-emerald-500/10 border border-emerald-500/30'
+    : score >= 50
+      ? 'text-yellow-300 bg-yellow-500/10 border border-yellow-500/30'
+      : 'text-slate-400 bg-white/5 border border-white/10';
+  return (
+    <span
+      className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${styles}`}
+      title={[
+        `Type: ${typeLabel}`,
+        quality.carrier ? `Carrier: ${quality.carrier}` : null,
+        `Score: ${score}/100`,
+        verified ? 'Verified reachable' : 'Not yet verified',
+      ].filter(Boolean).join('\n')}
+    >
+      {typeLabel}{verified && <span aria-hidden>✓</span>}
+    </span>
   );
 }
