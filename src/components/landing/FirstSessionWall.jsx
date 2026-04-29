@@ -252,6 +252,13 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 	}, [selectedVertical, countyId, flow.feedUuid]);
 
 	const countdownMs = Math.max(0, expiresMs - nowMs);
+	const windowExpired = countdownMs === 0;
+
+	// Clear the stored expiry once the window lapses so the next page-load
+	// starts a fresh 15-minute window instead of landing straight on "expired".
+	useEffect(() => {
+		if (windowExpired) localStorage.removeItem(LS_KEY);
+	}, [windowExpired]);
 
 	const roi = useMemo(() => ROI_FRAMES[selectedVertical] || DEFAULT_ROI, [selectedVertical]);
 	const verticalLabel = (selectedVertical || '').charAt(0).toUpperCase() + (selectedVertical || '').slice(1);
@@ -348,34 +355,46 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 	return (
 		<section id="first-session-wall" className="max-w-3xl mx-auto px-6 py-12">
 			{/* ROI frame + countdown header */}
-			<div className="rounded-xl border border-yellow-400/30 bg-gradient-to-br from-yellow-400/10 to-amber-600/10 p-5 mb-5">
+			<div className={`rounded-xl border p-5 mb-5 ${
+				windowExpired
+					? 'border-slate-600/40 bg-white/[0.03]'
+					: 'border-yellow-400/30 bg-gradient-to-br from-yellow-400/10 to-amber-600/10'
+			}`}>
 				<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-2">
-							<Icon name="bolt" size={16} className="text-yellow-400" />
+							<Icon name="bolt" size={16} className={windowExpired ? 'text-slate-500' : 'text-yellow-400'} />
 							<h3 className="text-white font-semibold text-base">
-								Your first unlock window
+								{windowExpired ? 'Unlock window closed — leads still available' : 'Your first unlock window'}
 							</h3>
 						</div>
-						<p className="text-slate-300 text-sm mt-1">
-							{roi.headline}.{' '}
-							{roi.avg_job_value && (
-								<>One closed job ≈ <span className="text-white font-semibold">${roi.avg_job_value.toLocaleString()}</span> (industry avg).</>
-							)}
-							{roi.avg_deal_value && (
-								<>One closed deal ≈ <span className="text-white font-semibold">${roi.avg_deal_value.toLocaleString()}</span> profit (industry avg).</>
-							)}
+						<p className={`text-sm mt-1 ${windowExpired ? 'text-slate-500' : 'text-slate-300'}`}>
+							{windowExpired
+								? 'Your 15-minute priority window has passed. You can still unlock any lead below — subscribe to get unlimited access.'
+								: <>
+										{roi.headline}.{' '}
+										{roi.avg_job_value && (
+											<>One closed job ≈ <span className="text-white font-semibold">${roi.avg_job_value.toLocaleString()}</span> (industry avg).</>
+										)}
+										{roi.avg_deal_value && (
+											<>One closed deal ≈ <span className="text-white font-semibold">${roi.avg_deal_value.toLocaleString()}</span> profit (industry avg).</>
+										)}
+									</>
+							}
 						</p>
-						<p className="text-slate-400 text-xs mt-1">
-							Typical top-quartile {verticalLabel.toLowerCase() || 'contractor'}: ≈ ${roi.monthly_revenue.toLocaleString()}/mo (industry avg — your results will vary).
-						</p>
+						{!windowExpired && (
+							<p className="text-slate-400 text-xs mt-1">
+								Typical top-quartile {verticalLabel.toLowerCase() || 'contractor'}: ≈ ${roi.monthly_revenue.toLocaleString()}/mo (industry avg — your results will vary).
+							</p>
+						)}
 					</div>
 
 					<div className="flex flex-col items-end gap-1 shrink-0">
 						<div className="text-xs text-slate-400 uppercase tracking-wider">Window</div>
-						<div className="text-2xl font-mono font-bold text-yellow-400 tabular-nums">
-							{fmt(countdownMs)}
-						</div>
+						{windowExpired
+							? <div className="text-sm font-medium text-slate-500">Closed</div>
+							: <div className="text-2xl font-mono font-bold text-yellow-400 tabular-nums">{fmt(countdownMs)}</div>
+						}
 					</div>
 				</div>
 			</div>
