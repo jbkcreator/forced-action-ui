@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useCallback, useMemo } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import useApi from '../hooks/useApi';
 import useFeedFilters from '../hooks/useFeedFilters';
 import useContacted from '../hooks/useContacted';
@@ -17,6 +17,12 @@ import DashboardHeroBanner from '../components/dashboard/DashboardHeroBanner';
 import OnboardingChecklist from '../components/dashboard/OnboardingChecklist';
 import MonetizationWall from '../components/dashboard/MonetizationWall';
 import DealCapture from '../components/dashboard/DealCapture';
+import PremiumCreditsModal from '../components/dashboard/PremiumCreditsModal';
+import AnnualOfferBanner from '../components/dashboard/AnnualOfferBanner';
+import APProUpsellBanner from '../components/dashboard/APProUpsellBanner';
+import BundleOfferModal from '../components/dashboard/BundleOfferModal';
+import TeamViewTile from '../components/dashboard/TeamViewTile';
+import LeaderboardWidget from '../components/dashboard/LeaderboardWidget';
 import SearchBar from '../components/dashboard/SearchBar';
 import FilterBar from '../components/dashboard/FilterBar';
 import SortDropdown from '../components/dashboard/SortDropdown';
@@ -37,12 +43,52 @@ function isWithinFirst48h(createdAtIso) {
 
 export default function DashboardPage() {
   const { feedUuid } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { filters, setFilter, setPage, searchInput, setSearchInput } = useFeedFilters();
   const { isContacted, toggleContacted } = useContacted();
   const [cancelOpen, setCancelOpen] = useState(false);
   const [lpZip, setLpZip] = useState('');
   const [lpOpen, setLpOpen] = useState(false);
   const [dealCaptureOpen, setDealCaptureOpen] = useState(false);
+  const [premiumLead, setPremiumLead] = useState(null);   // lead obj for premium modal
+  const [annualBannerDismissed, setAnnualBannerDismissed] = useState(false);
+  const [apProDismissed, setApProDismissed] = useState(false);
+  const [bundleDismissed, setBundleDismissed] = useState(false);
+
+  // Stage 5 — URL-driven offer surfaces
+  const showAnnualOffer = useMemo(() =>
+    !annualBannerDismissed && searchParams.get('annual') === 'accept',
+  [annualBannerDismissed, searchParams]);
+
+  const showApProOffer = useMemo(() =>
+    !apProDismissed && searchParams.get('upgrade') === 'autopilot_pro',
+  [apProDismissed, searchParams]);
+
+  const dismissAnnual = useCallback(() => {
+    setAnnualBannerDismissed(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete('annual');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  const dismissApPro = useCallback(() => {
+    setApProDismissed(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete('upgrade');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  // Stage 5 — bundle deep link from SMS dispatcher
+  const bundleParam = searchParams.get('bundle');
+  const variantParam = searchParams.get('variant') || 'a';
+  const showBundleOffer = !bundleDismissed && !!bundleParam;
+  const dismissBundle = useCallback(() => {
+    setBundleDismissed(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete('bundle');
+    next.delete('variant');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const { data, loading, error } = useApi(
     () => fetchFeed(feedUuid, {
@@ -176,6 +222,24 @@ export default function DashboardPage() {
                 <ReactivateBanner onReactivate={handleReactivate} />
               )}
 
+              {/* Stage 5: Annual offer banner — surfaces from email deep link or backend flag */}
+              {showAnnualOffer && (
+                <AnnualOfferBanner
+                  feedUuid={feedUuid}
+                  onAccepted={dismissAnnual}
+                  onDismiss={dismissAnnual}
+                />
+              )}
+
+              {/* Stage 5: AP Pro upgrade — surfaces from email deep link */}
+              {showApProOffer && (
+                <APProUpsellBanner
+                  feedUuid={feedUuid}
+                  onUpgraded={dismissApPro}
+                  onDismiss={dismissApPro}
+                />
+              )}
+
               <StatsBar subscriber={subscriber} />
 
               {/* Phase 2B: Monetization Wall — first-48h countdown + ROI frame. */}
@@ -190,6 +254,15 @@ export default function DashboardPage() {
 
               <OnboardingChecklist totalLeads={data?.total} />
               <DashboardHeroBanner total={data?.total} zips={subscriber.locked_zips} />
+
+              {/* Stage 5: Referral team Shared ZIP heat map (renders only when unlocked) */}
+              <TeamViewTile feedUuid={feedUuid} />
+
+              {/* Stage 5: Weekly leaderboard, scoped to subscriber's cohort */}
+              <LeaderboardWidget
+                countyId={subscriber.county_id}
+                vertical={subscriber.vertical}
+              />
 
               {/* Phase 2B: Deal-Size Capture trigger */}
               <div className="mb-4 flex items-center justify-end">
@@ -238,6 +311,7 @@ export default function DashboardPage() {
                         onUnlockHotLead={handleUnlockHotLead}
                         isContacted={isContacted}
                         onToggleContacted={toggleContacted}
+                        onOpenPremium={setPremiumLead}
                       />
                     ))}
                   </div>
@@ -278,6 +352,30 @@ export default function DashboardPage() {
           processing={stripePayment.processing}
           onStartPayment={handleStartLeadPackPayment}
           onConfirmPayment={handleConfirmLeadPackPayment}
+        />
+
+        {/* Stage 5: Bundle offer modal — opens on ?bundle=<type>&variant=<a|b> deep link */}
+        <BundleOfferModal
+          isOpen={showBundleOffer}
+          feedUuid={feedUuid}
+          bundleType={bundleParam}
+          variant={variantParam}
+          zipCode={subscriber?.locked_zips?.[0]}
+          vertical={subscriber?.vertical}
+          countyId={subscriber?.county_id || 'hillsborough'}
+          onClose={dismissBundle}
+          onSuccess={dismissBundle}
+        />
+
+        {/* Stage 5: Premium credits modal */}
+        <PremiumCreditsModal
+          isOpen={!!premiumLead}
+          feedUuid={feedUuid}
+          propertyId={premiumLead?.property_id || null}
+          propertyAddress={premiumLead?.address || null}
+          walletBalance={subscriber.wallet_balance || 0}
+          onClose={() => setPremiumLead(null)}
+          onSuccess={() => setTimeout(() => setPremiumLead(null), 1500)}
         />
 
         {/* Phase 2B: Deal-Size Capture modal */}

@@ -10,6 +10,7 @@ import FirstSessionWall from '../components/landing/FirstSessionWall';
 import ZipChecker from '../components/landing/ZipChecker';
 import PricingSection from '../components/landing/PricingSection';
 import FAQ from '../components/landing/FAQ';
+import SocialProofWall from '../components/landing/SocialProofWall';
 import StickyHeaderCTA from '../components/landing/StickyHeaderCTA';
 import EmailGateModal from '../components/landing/EmailGateModal';
 import ZipCollectorModal from '../components/landing/ZipCollectorModal';
@@ -72,6 +73,10 @@ function LandingContent() {
           <div id="pricing" ref={pricingRef}>
             <PricingSection onCheckout={handleCheckout} />
           </div>
+
+          {/* Stage 5: anonymized social proof wall — recent contractor wins */}
+          <SocialProofWall />
+
           <FAQ />
         </div>
 

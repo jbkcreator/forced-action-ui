@@ -11,7 +11,7 @@ function formatTagLabel(s) {
   return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-export default function LeadCard({ lead, index, onUnlockHotLead, isContacted, onToggleContacted }) {
+export default function LeadCard({ lead, index, onUnlockHotLead, isContacted, onToggleContacted, onOpenPremium }) {
   const [expanded, setExpanded] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -139,7 +139,7 @@ export default function LeadCard({ lead, index, onUnlockHotLead, isContacted, on
               )}
             </div>
           )}
-          <div className="mt-2 flex items-center gap-3">
+          <div className="mt-2 flex items-center gap-2 flex-wrap">
             <button
               onClick={(e) => { e.stopPropagation(); onToggleContacted?.(lead.property_id); }}
               className={`text-xs px-3 py-1.5 rounded-lg font-medium transition ${
@@ -150,6 +150,15 @@ export default function LeadCard({ lead, index, onUnlockHotLead, isContacted, on
             >
               {contacted ? 'Contacted' : 'Mark Contacted'}
             </button>
+            {onOpenPremium && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onOpenPremium(lead); }}
+                className="text-xs px-3 py-1.5 rounded-lg font-medium bg-yellow-400/10 text-yellow-300 border border-yellow-400/30 hover:bg-yellow-400/20 transition"
+                title="Property report, brief, or skip-trace transfer"
+              >
+                Premium →
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -21,6 +21,8 @@ import { useState } from 'react';
 import { captureDeal } from '../../api/phase2b';
 import Icon from '../ui/Icon';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+
 
 const BUCKETS = [
   { key: '5_10k',    label: '< $10K',    detail: 'Under $10,000' },
@@ -43,6 +45,9 @@ export default function DealCapture({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [done, setDone] = useState(false);
+  // Stage 5: capture endpoint now returns graphic_url + annual_offered
+  const [result, setResult] = useState(null);
+  const [shareCopied, setShareCopied] = useState(false);
 
   if (!feedUuid) return null;
 
@@ -53,15 +58,16 @@ export default function DealCapture({
     setSubmitting(true);
     setError(null);
     try {
-      const result = await captureDeal({
+      const res = await captureDeal({
         feedUuid,
         bucket: selected,
         dealAmount: amount ? parseFloat(amount) : null,
         daysToClose: daysToClose ? parseInt(daysToClose, 10) : null,
         propertyId,
       });
+      setResult(res);
       setDone(true);
-      onCaptured?.(result);
+      onCaptured?.(res);
     } catch (err) {
       setError(err?.message || 'Could not record deal. Try again?');
     } finally {
@@ -69,14 +75,90 @@ export default function DealCapture({
     }
   };
 
+  const handleCopyShare = async () => {
+    if (!result?.graphic_url) return;
+    const fullUrl = `${API_BASE || window.location.origin}${result.graphic_url}`;
+    try {
+      await navigator.clipboard.writeText(fullUrl);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      // Fallback: select the URL in the input below
+    }
+  };
+
+  const handleNativeShare = async () => {
+    if (!result?.graphic_url) return;
+    const fullUrl = `${API_BASE || window.location.origin}${result.graphic_url}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Closed a deal with Forced Action',
+          text: 'Just closed another one.',
+          url: fullUrl,
+        });
+      } catch {
+        /* user cancelled */
+      }
+    } else {
+      handleCopyShare();
+    }
+  };
+
   if (done) {
+    const graphicUrl = result?.graphic_url
+      ? `${API_BASE}${result.graphic_url}`
+      : null;
     return (
       <section className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-5 text-center">
         <Icon name="check-circle" size={32} className="mx-auto text-emerald-400" />
-        <h3 className="text-white font-semibold mt-2">Deal logged — thanks.</h3>
+        <h3 className="text-white font-semibold mt-2">Deal logged — nice work.</h3>
         <p className="text-slate-300 text-sm mt-1">
           We're tracking your wins so we can show you better leads.
         </p>
+
+        {graphicUrl && (
+          <div className="mt-4">
+            <p className="text-slate-300 text-xs mb-2">Your share-ready win card:</p>
+            <a href={graphicUrl} target="_blank" rel="noreferrer" className="block">
+              <img
+                src={graphicUrl}
+                alt="Your deal-win share card"
+                className="rounded-lg border border-white/10 mx-auto max-w-full"
+                style={{ maxHeight: 280 }}
+              />
+            </a>
+            <div className="mt-3 flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={handleNativeShare}
+                className="cta-primary text-xs px-4 py-2"
+              >
+                Share win
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyShare}
+                className="text-xs px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10"
+              >
+                {shareCopied ? 'Copied ✓' : 'Copy link'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {result?.annual_offered && (
+          <div className="mt-5 rounded-lg border border-yellow-400/30 bg-yellow-400/10 p-3 text-left">
+            <p className="text-yellow-200 text-xs font-semibold">
+              You just earned the annual lock offer.
+            </p>
+            <p className="text-slate-300 text-xs mt-1">
+              Lock 12 months at $1,970/yr — 2 months free. Check your email
+              for the one-tap link, or visit your dashboard with{' '}
+              <code className="text-yellow-200">?annual=accept</code>.
+            </p>
+          </div>
+        )}
       </section>
     );
   }
