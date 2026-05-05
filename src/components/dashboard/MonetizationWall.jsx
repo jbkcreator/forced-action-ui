@@ -28,6 +28,7 @@ import { openWallSession, fetchWallSession } from '../../api/phase2b';
 import Icon from '../ui/Icon';
 
 const STORAGE_KEY_PREFIX = 'fa.wall.session.';
+const ROI_STORAGE_KEY_PREFIX = 'fa.wall.roi.';
 const POLL_MS = 10_000;
 const COUNTDOWN_FLOOR_MS = 0;
 
@@ -91,7 +92,20 @@ export default function MonetizationWall({
           if (e.status !== 404) throw e;
         }
 
-        if (!session) {
+        // Treat an expired countdown the same as a missing session — create a
+        // fresh one so the 15-min window and ROI frame always start live.
+        const expiresAt = session?.countdown_expires || session?.countdown_expires_at;
+        const countdownExpired = !expiresAt || new Date(expiresAt).getTime() <= Date.now();
+
+        if (!session || countdownExpired) {
+          if (countdownExpired && session) {
+            // Clear stale session so the new ID is stored cleanly.
+            localStorage.removeItem(storageKey);
+            const freshId = `wall-${subscriberId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+            localStorage.setItem(storageKey, freshId);
+            sessionIdRef.current = freshId;
+            sessionId = freshId;
+          }
           const created = await openWallSession({
             subscriberId,
             sessionId,
@@ -101,11 +115,15 @@ export default function MonetizationWall({
           if (cancelled) return;
           setState(created.session);
           setRoi(created.roi_frame);
+          try { localStorage.setItem(ROI_STORAGE_KEY_PREFIX + subscriberId, JSON.stringify(created.roi_frame)); } catch { /* noop */ }
         } else {
           if (cancelled) return;
           setState(session);
-          // ROI frame is only returned on creation. For subsequent loads we
-          // don't have it. The UI still works — ROI is optional polish.
+          // ROI frame only comes back on session creation — restore from cache.
+          try {
+            const cached = localStorage.getItem(ROI_STORAGE_KEY_PREFIX + subscriberId);
+            if (cached) setRoi(JSON.parse(cached));
+          } catch { /* noop */ }
         }
       } catch (err) {
         if (!cancelled) setError(err?.message || 'Could not open wall session');
@@ -200,7 +218,7 @@ export default function MonetizationWall({
           </div>
           <p className="text-slate-300 text-sm mt-1">
             <span className="text-yellow-400 font-semibold">{leadCount}</span> qualified {verticalLabel.toLowerCase()} leads
-            active in your area right now.
+            active in Hillsborough County right now.
             {avgJobValue && (
               <> One closed job ≈ <span className="text-white font-semibold">${avgJobValue.toLocaleString()}</span> (industry avg).</>
             )}
