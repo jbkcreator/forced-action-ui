@@ -2,14 +2,17 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 export async function apiRequest(path, options = {}) {
   const url = `${API_BASE}${path}`;
+  const { signal, ...rest } = options;
   const config = {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    ...options,
+    headers: { 'Content-Type': 'application/json', ...rest.headers },
+    ...rest,
   };
 
   if (config.body && typeof config.body === 'object') {
     config.body = JSON.stringify(config.body);
   }
+
+  if (signal) config.signal = signal;
 
   const res = await fetch(url, config);
 
@@ -22,11 +25,15 @@ export async function apiRequest(path, options = {}) {
 }
 
 export const api = {
-  get(path, params) {
+  get(path, params, options = {}) {
     const qs = params ? '?' + new URLSearchParams(params) : '';
-    return apiRequest(`${path}${qs}`);
+    return apiRequest(`${path}${qs}`, options);
   },
-  post(path, body) {
-    return apiRequest(path, { method: 'POST', body });
+  post(path, body, options = {}) {
+    return apiRequest(path, { method: 'POST', body, ...options });
   },
 };
+
+export function isAbortError(err) {
+  return err && (err.name === 'AbortError' || err.code === 20);
+}

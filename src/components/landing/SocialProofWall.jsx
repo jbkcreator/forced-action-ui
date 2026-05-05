@@ -77,22 +77,43 @@ function ProofCard({ item }) {
 }
 
 
-export default function SocialProofWall() {
-  const { data, loading, error } = useApi(() => fetchProofWall({ limit: 24 }), []);
+export default function SocialProofWall({ limit = 24, heading = 'Recent contractor wins', subheading = 'Real deals closed by Forced Action members. Identifying details stay private; only the bucket size, trade, and county appear here.', hideWhenEmpty = true }) {
+  const { data, loading, error } = useApi(() => fetchProofWall({ limit }), [limit]);
 
-  if (loading || error) return null;
+  if (loading) {
+    return (
+      <section className="max-w-6xl mx-auto px-6 py-16" aria-busy="true">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white">{heading}</h2>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="rounded-xl border border-white/10 bg-slate-900/60 aspect-[1200/630] animate-pulse" />
+          ))}
+        </div>
+      </section>
+    );
+  }
+  if (error) return null;
   const items = data?.items || [];
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    if (hideWhenEmpty) return null;
+    return (
+      <section className="max-w-6xl mx-auto px-6 py-16 text-center">
+        <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white">{heading}</h2>
+        <p className="text-slate-500 text-sm mt-4">No wins yet — check back soon.</p>
+      </section>
+    );
+  }
 
   return (
     <section className="max-w-6xl mx-auto px-6 py-16">
       <div className="text-center mb-8">
         <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white">
-          Recent contractor wins
+          {heading}
         </h2>
         <p className="text-slate-400 text-sm mt-3 max-w-xl mx-auto">
-          Real deals closed by Forced Action members. Identifying details
-          stay private; only the bucket size, trade, and county appear here.
+          {subheading}
         </p>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

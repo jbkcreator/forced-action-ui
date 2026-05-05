@@ -1,9 +1,10 @@
 import { useCallback, useMemo } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import useApi from '../hooks/useApi';
 import useFeedFilters from '../hooks/useFeedFilters';
 import useContacted from '../hooks/useContacted';
 import useStripePayment from '../hooks/useStripePayment';
+import useZipActivityMap from '../hooks/useZipActivityMap';
 import { fetchFeed, createPortalSession, logEvent, unlockHotLead, createLeadPackCheckout } from '../api/dashboard';
 import Navbar from '../components/layout/Navbar';
 import StatsBar from '../components/dashboard/StatsBar';
@@ -18,6 +19,7 @@ import OnboardingChecklist from '../components/dashboard/OnboardingChecklist';
 import MonetizationWall from '../components/dashboard/MonetizationWall';
 import DealCapture from '../components/dashboard/DealCapture';
 import PremiumCreditsModal from '../components/dashboard/PremiumCreditsModal';
+import WalletTopupModal from '../components/dashboard/WalletTopupModal';
 import AnnualOfferBanner from '../components/dashboard/AnnualOfferBanner';
 import APProUpsellBanner from '../components/dashboard/APProUpsellBanner';
 import BundleOfferModal from '../components/dashboard/BundleOfferModal';
@@ -41,6 +43,31 @@ function isWithinFirst48h(createdAtIso) {
   return (Date.now() - created) < 48 * 3600 * 1000;
 }
 
+function daysSince(createdAtIso) {
+  if (!createdAtIso) return 0;
+  const created = new Date(createdAtIso).getTime();
+  if (Number.isNaN(created)) return 0;
+  return (Date.now() - created) / (24 * 3600 * 1000);
+}
+
+const ANNUAL_DISMISS_TTL_MS = 7 * 24 * 3600 * 1000;
+function readAnnualDismissed(feedUuid) {
+  try {
+    const raw = localStorage.getItem(`fa.dashboard.annual_dismissed.${feedUuid}`);
+    if (!raw) return false;
+    const ts = Number(raw);
+    if (Number.isNaN(ts)) return false;
+    if (Date.now() - ts > ANNUAL_DISMISS_TTL_MS) {
+      localStorage.removeItem(`fa.dashboard.annual_dismissed.${feedUuid}`);
+      return false;
+    }
+    return true;
+  } catch { return false; }
+}
+function writeAnnualDismissed(feedUuid) {
+  try { localStorage.setItem(`fa.dashboard.annual_dismissed.${feedUuid}`, String(Date.now())); } catch { /* noop */ }
+}
+
 export default function DashboardPage() {
   const { feedUuid } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -56,9 +83,7 @@ export default function DashboardPage() {
   const [bundleDismissed, setBundleDismissed] = useState(false);
 
   // Stage 5 — URL-driven offer surfaces
-  const showAnnualOffer = useMemo(() =>
-    !annualBannerDismissed && searchParams.get('annual') === 'accept',
-  [annualBannerDismissed, searchParams]);
+  const urlAnnualOffer = searchParams.get('annual') === 'accept';
 
   const showApProOffer = useMemo(() =>
     !apProDismissed && searchParams.get('upgrade') === 'autopilot_pro',
@@ -66,15 +91,24 @@ export default function DashboardPage() {
 
   const dismissAnnual = useCallback(() => {
     setAnnualBannerDismissed(true);
+    if (feedUuid) writeAnnualDismissed(feedUuid);
     const next = new URLSearchParams(searchParams);
     next.delete('annual');
     setSearchParams(next, { replace: true });
-  }, [searchParams, setSearchParams]);
+  }, [feedUuid, searchParams, setSearchParams]);
 
   const dismissApPro = useCallback(() => {
     setApProDismissed(true);
     const next = new URLSearchParams(searchParams);
     next.delete('upgrade');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  // Stage 5+ — wallet topup deep link from 402 insufficient-credits responses
+  const topupOpen = searchParams.get('wallet') === 'topup';
+  const closeTopup = useCallback(() => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('wallet');
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
@@ -91,12 +125,13 @@ export default function DashboardPage() {
   }, [searchParams, setSearchParams]);
 
   const { data, loading, error } = useApi(
-    () => fetchFeed(feedUuid, {
+    (signal) => fetchFeed(feedUuid, {
       page: filters.page,
       sort: filters.sort,
       minScore: filters.minScore,
       incidentType: filters.incidentType,
       search: filters.search,
+      signal,
     }),
     [feedUuid, filters.page, filters.sort, filters.minScore, filters.incidentType, filters.search],
   );
@@ -106,6 +141,25 @@ export default function DashboardPage() {
   const subscriber = data?.subscriber || {};
   const leads = data?.leads || [];
   const totalPages = data?.pages || 1;
+
+  // Always-on Annual offer: monthly subscribers ≥ 14 days who haven't dismissed in the last 7 days.
+  // URL deep-link continues to win over any local dismissal.
+  const evergreenAnnualEligible = useMemo(() => {
+    if (!subscriber?.id) return false;
+    if (subscriber.tier === 'annual_lock') return false;
+    if (annualBannerDismissed) return false;
+    if (feedUuid && readAnnualDismissed(feedUuid)) return false;
+    return daysSince(subscriber.created_at) >= 14;
+  }, [subscriber?.id, subscriber?.tier, subscriber?.created_at, annualBannerDismissed, feedUuid]);
+
+  const showAnnualOffer = urlAnnualOffer || evergreenAnnualEligible;
+
+  // Group urgency polling by unique ZIP — one poll per ZIP, not per LeadCard.
+  const visibleZips = useMemo(
+    () => leads.map((l) => l.zip).filter(Boolean),
+    [leads],
+  );
+  const zipActivity = useZipActivityMap(visibleZips, subscriber.vertical);
 
   const handlePageChange = useCallback((page) => {
     setPage(page);
@@ -204,6 +258,12 @@ export default function DashboardPage() {
               Founding Member — Rate Locked Forever
             </span>
           )}
+          <Link
+            to={`/dashboard/${feedUuid}/settings`}
+            className="text-sm text-slate-400 hover:text-white transition-colors duration-200 px-3 py-1.5 rounded-lg hover:bg-white/5"
+          >
+            Settings
+          </Link>
           <button
             onClick={() => setCancelOpen(true)}
             className="text-sm text-slate-400 hover:text-white transition-colors duration-200 px-3 py-1.5 rounded-lg hover:bg-white/5"
@@ -309,9 +369,10 @@ export default function DashboardPage() {
                         lead={lead}
                         index={i}
                         onUnlockHotLead={handleUnlockHotLead}
-                        isContacted={isContacted}
+                        contacted={isContacted(lead.property_id)}
                         onToggleContacted={toggleContacted}
                         onOpenPremium={setPremiumLead}
+                        urgencyViewers={zipActivity[lead.zip]?.active_viewers}
                       />
                     ))}
                   </div>
@@ -365,6 +426,14 @@ export default function DashboardPage() {
           countyId={subscriber?.county_id || 'hillsborough'}
           onClose={dismissBundle}
           onSuccess={dismissBundle}
+        />
+
+        {/* Stage 5+ — Wallet topup modal (opens via ?wallet=topup deep link) */}
+        <WalletTopupModal
+          isOpen={topupOpen}
+          feedUuid={feedUuid}
+          onClose={closeTopup}
+          onSuccess={closeTopup}
         />
 
         {/* Stage 5: Premium credits modal */}

@@ -1,16 +1,16 @@
 import { api } from './client';
 
-export function fetchFeed(feedUuid, { page = 1, pageSize = 25, sort, minScore, incidentType, search } = {}) {
+export function fetchFeed(feedUuid, { page = 1, pageSize = 25, sort, minScore, incidentType, search, signal } = {}) {
   const params = { page, page_size: pageSize };
   if (sort && sort !== 'score_desc') params.sort = sort;
   if (minScore) params.min_score = minScore;
   if (incidentType) params.incident_type = incidentType;
   if (search) params.search = search;
-  return api.get(`/api/feed/${feedUuid}`, params);
+  return api.get(`/api/feed/${feedUuid}`, params, { signal });
 }
 
-export function fetchFeedStats(feedUuid) {
-  return api.get(`/api/feed/${feedUuid}/stats`).catch(() => null);
+export function fetchFeedStats(feedUuid, { signal } = {}) {
+  return api.get(`/api/feed/${feedUuid}/stats`, undefined, { signal }).catch(() => null);
 }
 
 export function createPortalSession(feedUuid) {

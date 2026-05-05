@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { memo, useState, useCallback } from 'react';
 import { DISTRESS_TAG_COLORS } from '../../config/constants';
 import { formatRelativeDate } from '../../utils/format';
 import Icon from '../ui/Icon';
+import UrgencyBadge from './UrgencyBadge';
 
 function esc(s) {
   return String(s || '');
@@ -11,7 +12,7 @@ function formatTagLabel(s) {
   return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-export default function LeadCard({ lead, index, onUnlockHotLead, isContacted, onToggleContacted, onOpenPremium }) {
+function LeadCard({ lead, index, onUnlockHotLead, contacted, onToggleContacted, onOpenPremium, urgencyViewers }) {
   const [expanded, setExpanded] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -28,19 +29,29 @@ export default function LeadCard({ lead, index, onUnlockHotLead, isContacted, on
                     tier === 'Platinum' ? '#fbbf24' :
                     tier === 'Gold' ? '#f59e0b' : '#64748b';
   const delay = Math.min(index * 0.05, 0.5);
-  const contacted = isContacted?.(lead.property_id);
+
+  const handleToggle = useCallback((e) => {
+    e.stopPropagation();
+    onToggleContacted?.(lead.property_id);
+  }, [lead.property_id, onToggleContacted]);
+
+  const handlePremium = useCallback((e) => {
+    e.stopPropagation();
+    onOpenPremium?.(lead);
+  }, [lead, onOpenPremium]);
 
   return (
     <div
       className={`lead-card glass ${tierClass} rounded-2xl p-5 animate-in cursor-pointer ${contacted ? 'border-l-green-500' : ''}`}
       style={{ animationDelay: `${delay}s` }}
-      onClick={() => setExpanded(!expanded)}
+      onClick={() => setExpanded((v) => !v)}
     >
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <p className="font-semibold text-white text-base truncate">{esc(lead.address)}</p>
             {contacted && <Icon name="check" size={14} className="text-green-400 shrink-0" />}
+            <UrgencyBadge viewers={urgencyViewers} />
           </div>
           <p className="text-slate-400 text-sm mt-0.5">{esc(lead.city)}, {esc(lead.state)} {esc(lead.zip)}</p>
         </div>
@@ -50,7 +61,7 @@ export default function LeadCard({ lead, index, onUnlockHotLead, isContacted, on
             style={{ '--ring-color': ringColor, '--score-pct': scorePct }}
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
-            onClick={(e) => { e.stopPropagation(); setShowTooltip(!showTooltip); }}
+            onClick={(e) => { e.stopPropagation(); setShowTooltip((v) => !v); }}
           >
             <span className="text-lg font-extrabold leading-none">{score}</span>
             <span className="text-[9px] text-slate-400 font-medium leading-none mt-0.5">CDS</span>
@@ -141,7 +152,7 @@ export default function LeadCard({ lead, index, onUnlockHotLead, isContacted, on
           )}
           <div className="mt-2 flex items-center gap-2 flex-wrap">
             <button
-              onClick={(e) => { e.stopPropagation(); onToggleContacted?.(lead.property_id); }}
+              onClick={handleToggle}
               className={`text-xs px-3 py-1.5 rounded-lg font-medium transition ${
                 contacted
                   ? 'bg-green-400/10 text-green-400 border border-green-400/20'
@@ -152,7 +163,7 @@ export default function LeadCard({ lead, index, onUnlockHotLead, isContacted, on
             </button>
             {onOpenPremium && (
               <button
-                onClick={(e) => { e.stopPropagation(); onOpenPremium(lead); }}
+                onClick={handlePremium}
                 className="text-xs px-3 py-1.5 rounded-lg font-medium bg-yellow-400/10 text-yellow-300 border border-yellow-400/30 hover:bg-yellow-400/20 transition"
                 title="Property report, brief, or skip-trace transfer"
               >
@@ -167,6 +178,20 @@ export default function LeadCard({ lead, index, onUnlockHotLead, isContacted, on
     </div>
   );
 }
+
+function areEqual(prev, next) {
+  return (
+    prev.lead === next.lead &&
+    prev.index === next.index &&
+    prev.contacted === next.contacted &&
+    prev.urgencyViewers === next.urgencyViewers &&
+    prev.onToggleContacted === next.onToggleContacted &&
+    prev.onOpenPremium === next.onOpenPremium &&
+    prev.onUnlockHotLead === next.onUnlockHotLead
+  );
+}
+
+export default memo(LeadCard, areEqual);
 
 /**
  * Tiny chip rendering skip-trace metadata for a phone number.
@@ -185,7 +210,6 @@ function PhoneQualityBadge({ quality }) {
     voip:     'VoIP',
   }[type] || 'Phone';
 
-  // Verified = reachable OR high BatchData score
   const verified = reachable || score >= 80;
 
   const styles = verified

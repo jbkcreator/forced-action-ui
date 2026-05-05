@@ -13,26 +13,49 @@
  */
 import { useState } from 'react';
 import { acceptAnnual } from '../../api/stage5';
+import { createPortalSession } from '../../api/dashboard';
 import Icon from '../ui/Icon';
 
 
 export default function AnnualOfferBanner({ feedUuid, onAccepted, onDismiss }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [billingBlocked, setBillingBlocked] = useState(null);
   const [done, setDone] = useState(false);
 
   const handleAccept = async () => {
     if (submitting) return;
     setSubmitting(true);
     setError(null);
+    setBillingBlocked(null);
     try {
       const res = await acceptAnnual({ feedUuid });
       setDone(true);
       onAccepted?.(res);
     } catch (err) {
-      setError(err?.detail || err?.message || 'Could not switch — try again or email support.');
+      // Status 409 = billing_status_blocked; the API includes a portal_url
+      // so the user can fix their card before retrying. Render that case
+      // distinctly from a generic failure.
+      if (err?.status === 409 && err?.detail?.error === 'billing_status_blocked') {
+        setBillingBlocked(err.detail);
+      } else {
+        const detail = err?.detail;
+        const msg = (typeof detail === 'string' ? detail : detail?.message)
+          || err?.message
+          || 'Could not switch — try again or email support.';
+        setError(msg);
+      }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleFixBilling = async () => {
+    try {
+      const { url } = await createPortalSession(feedUuid);
+      window.location.href = url;
+    } catch {
+      setError('Could not open the billing portal. Email support@forcedaction.io.');
     }
   };
 
@@ -59,6 +82,11 @@ export default function AnnualOfferBanner({ feedUuid, onAccepted, onDismiss }) {
           handle Stripe proration automatically.
         </p>
         {error && <p className="text-red-300 text-xs mt-2">{error}</p>}
+        {billingBlocked && (
+          <p className="text-amber-300 text-xs mt-2" role="alert">
+            Your account is in <strong>{billingBlocked.current_status}</strong> status — update your card first, then retry.
+          </p>
+        )}
       </div>
       <div className="flex items-center gap-3 shrink-0">
         {onDismiss && (
@@ -71,14 +99,24 @@ export default function AnnualOfferBanner({ feedUuid, onAccepted, onDismiss }) {
             Not now
           </button>
         )}
-        <button
-          onClick={handleAccept}
-          disabled={submitting}
-          type="button"
-          className="px-5 py-2.5 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-900 font-bold rounded-xl text-sm transition-all shadow-lg shadow-yellow-400/20 disabled:opacity-50"
-        >
-          {submitting ? 'Switching…' : 'Lock 12 months'}
-        </button>
+        {billingBlocked ? (
+          <button
+            onClick={handleFixBilling}
+            type="button"
+            className="px-5 py-2.5 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-900 font-bold rounded-xl text-sm transition-all shadow-lg shadow-amber-400/20"
+          >
+            Fix billing →
+          </button>
+        ) : (
+          <button
+            onClick={handleAccept}
+            disabled={submitting}
+            type="button"
+            className="px-5 py-2.5 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-900 font-bold rounded-xl text-sm transition-all shadow-lg shadow-yellow-400/20 disabled:opacity-50"
+          >
+            {submitting ? 'Switching…' : 'Lock 12 months'}
+          </button>
+        )}
       </div>
     </div>
   );

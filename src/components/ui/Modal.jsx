@@ -39,7 +39,10 @@ export default function Modal({ isOpen, onClose, children, className = '', title
       });
     } else {
       document.body.style.overflow = '';
-      if (previousFocusRef.current) previousFocusRef.current.focus();
+      const prev = previousFocusRef.current;
+      if (prev && document.contains(prev) && typeof prev.focus === 'function') {
+        prev.focus();
+      }
     }
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);

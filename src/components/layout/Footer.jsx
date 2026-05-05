@@ -26,6 +26,7 @@ export default function Footer() {
               <li>Exclusive ZIP Territories</li>
               <li>Skip-Traced Contacts</li>
               <li>Daily Lead Delivery</li>
+              <li><a href="/wins" className="hover:text-white transition">Recent contractor wins</a></li>
             </ul>
           </div>
           <div>

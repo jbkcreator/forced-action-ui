@@ -12,26 +12,46 @@
  */
 import { useState } from 'react';
 import { upgradeTier } from '../../api/stage5';
+import { createPortalSession } from '../../api/dashboard';
 import Icon from '../ui/Icon';
 
 
 export default function APProUpsellBanner({ feedUuid, onUpgraded, onDismiss }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [billingBlocked, setBillingBlocked] = useState(null);
   const [done, setDone] = useState(false);
 
   const handleUpgrade = async () => {
     if (submitting) return;
     setSubmitting(true);
     setError(null);
+    setBillingBlocked(null);
     try {
       const res = await upgradeTier({ feedUuid, tier: 'autopilot_pro' });
       setDone(true);
       onUpgraded?.(res);
     } catch (err) {
-      setError(err?.detail || err?.message || 'Upgrade failed - try again.');
+      if (err?.status === 409 && err?.detail?.error === 'billing_status_blocked') {
+        setBillingBlocked(err.detail);
+      } else {
+        const detail = err?.detail;
+        const msg = (typeof detail === 'string' ? detail : detail?.message)
+          || err?.message
+          || 'Upgrade failed - try again.';
+        setError(msg);
+      }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleFixBilling = async () => {
+    try {
+      const { url } = await createPortalSession(feedUuid);
+      window.location.href = url;
+    } catch {
+      setError('Could not open the billing portal. Email support@forcedaction.io.');
     }
   };
 
@@ -59,6 +79,11 @@ export default function APProUpsellBanner({ feedUuid, onUpgraded, onDismiss }) {
           appointment setting.
         </p>
         {error && <p className="text-red-300 text-xs mt-2">{error}</p>}
+        {billingBlocked && (
+          <p className="text-amber-300 text-xs mt-2" role="alert">
+            Your account is in <strong>{billingBlocked.current_status}</strong> status — update your card first, then retry.
+          </p>
+        )}
       </div>
       <div className="flex items-center gap-3 shrink-0">
         {onDismiss && (
@@ -71,14 +96,24 @@ export default function APProUpsellBanner({ feedUuid, onUpgraded, onDismiss }) {
             Not now
           </button>
         )}
-        <button
-          onClick={handleUpgrade}
-          disabled={submitting}
-          type="button"
-          className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:from-purple-400 hover:to-fuchsia-400 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-purple-500/20 disabled:opacity-50"
-        >
-          {submitting ? 'Upgrading…' : 'Upgrade to Pro — $497/mo'}
-        </button>
+        {billingBlocked ? (
+          <button
+            onClick={handleFixBilling}
+            type="button"
+            className="px-5 py-2.5 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-900 font-bold rounded-xl text-sm transition-all shadow-lg shadow-amber-400/20"
+          >
+            Fix billing →
+          </button>
+        ) : (
+          <button
+            onClick={handleUpgrade}
+            disabled={submitting}
+            type="button"
+            className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-fuchsia-500 hover:from-purple-400 hover:to-fuchsia-400 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-purple-500/20 disabled:opacity-50"
+          >
+            {submitting ? 'Upgrading…' : 'Upgrade to Pro — $497/mo'}
+          </button>
+        )}
       </div>
     </div>
   );
