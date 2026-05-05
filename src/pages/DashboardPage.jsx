@@ -300,7 +300,14 @@ export default function DashboardPage() {
                 />
               )}
 
-              <StatsBar subscriber={subscriber} />
+              <StatsBar
+                subscriber={subscriber}
+                onTopup={() => {
+                  const next = new URLSearchParams(searchParams);
+                  next.set('wallet', 'topup');
+                  setSearchParams(next);
+                }}
+              />
 
               {/* Phase 2B: Monetization Wall — first-48h countdown + ROI frame. */}
               {subscriber.id && isWithinFirst48h(subscriber.created_at) && (

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import useApi from '../hooks/useApi';
 import { fetchFeed } from '../api/dashboard';
 import { acceptAnnual, upgradeTier, openBillingPortal } from '../api/account';
@@ -72,6 +72,7 @@ function StatRow({ label, value, accent }) {
 
 export default function SettingsPage() {
   const { feedUuid } = useParams();
+  const navigate = useNavigate();
   const { data, loading, error, refetch } = useApi(
     (signal) => fetchFeed(feedUuid, { page: 1, pageSize: 1, signal }),
     [feedUuid],
@@ -205,6 +206,26 @@ export default function SettingsPage() {
                   {portalState.error && <p className="text-red-300 text-xs mt-2">{portalState.error}</p>}
                 </div>
               </Tile>
+
+              {subscriber.wallet_balance != null && (
+                <Tile title="Wallet Credits" subtitle="Credits for skip-trace and premium lead SKUs.">
+                  <StatRow
+                    label="Balance"
+                    value={`${subscriber.wallet_balance} credits`}
+                    accent="text-emerald-300"
+                  />
+                  <div className="mt-5">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/dashboard/${feedUuid}?wallet=topup`)}
+                      className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
+                      style={{ background: 'linear-gradient(135deg, #3b82f6, #06b6d4)' }}
+                    >
+                      Top up wallet →
+                    </button>
+                  </div>
+                </Tile>
+              )}
 
               <Tile
                 title="Auto Mode"
