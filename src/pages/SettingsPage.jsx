@@ -84,9 +84,12 @@ export default function SettingsPage() {
   const [annualState, setAnnualState] = useState({ submitting: false, error: null, done: false });
   const [proState, setProState] = useState({ submitting: false, error: null, done: false });
   const [portalState, setPortalState] = useState({ submitting: false, error: null });
+  const [confirmAnnual, setConfirmAnnual] = useState(false);
+  const [confirmPro, setConfirmPro] = useState(false);
 
   const onAnnual = useCallback(async () => {
     if (annualState.submitting) return;
+    setConfirmAnnual(false);
     setAnnualState({ submitting: true, error: null, done: false });
     try {
       await acceptAnnual({ feedUuid });
@@ -99,6 +102,7 @@ export default function SettingsPage() {
 
   const onPro = useCallback(async () => {
     if (proState.submitting) return;
+    setConfirmPro(false);
     setProState({ submitting: true, error: null, done: false });
     try {
       await upgradeTier({ feedUuid, tier: 'autopilot_pro' });
@@ -161,27 +165,49 @@ export default function SettingsPage() {
                 <StatRow label="Status" value={(subscriber.status || 'active').toUpperCase()} />
 
                 <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={onAnnual}
-                    disabled={isAnnual || annualState.submitting || annualState.done}
-                    aria-live="polite"
-                    className="rounded-xl px-4 py-3 text-sm font-bold text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ background: 'linear-gradient(135deg, #facc15, #f59e0b)' }}
-                  >
-                    {isAnnual ? 'On annual lock' : annualState.done ? 'Switched ✓' : annualState.submitting ? 'Switching…' : 'Switch to annual — save 2 months'}
-                  </button>
+                  {/* Annual lock — confirm before committing */}
+                  {!confirmAnnual ? (
+                    <button
+                      type="button"
+                      onClick={() => !isAnnual && !annualState.done && !annualState.submitting && setConfirmAnnual(true)}
+                      disabled={isAnnual || annualState.submitting || annualState.done}
+                      aria-live="polite"
+                      className="rounded-xl px-4 py-3 text-sm font-bold text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ background: 'linear-gradient(135deg, #facc15, #f59e0b)' }}
+                    >
+                      {isAnnual ? 'On annual lock' : annualState.done ? 'Switched ✓' : annualState.submitting ? 'Switching…' : 'Switch to annual — save 2 months'}
+                    </button>
+                  ) : (
+                    <div className="rounded-xl p-3 border border-yellow-400/30 bg-yellow-400/5 space-y-2">
+                      <p className="text-xs text-yellow-300 font-medium">This charges your saved card at the annual rate and cannot be undone from the app. Continue?</p>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={onAnnual} className="flex-1 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-900" style={{ background: 'linear-gradient(135deg, #facc15, #f59e0b)' }}>Yes, switch</button>
+                        <button type="button" onClick={() => setConfirmAnnual(false)} className="flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-300 bg-white/5 border border-white/10">Cancel</button>
+                      </div>
+                    </div>
+                  )}
 
-                  <button
-                    type="button"
-                    onClick={onPro}
-                    disabled={isPro || isAnnual || proState.submitting || proState.done}
-                    aria-live="polite"
-                    className="rounded-xl px-4 py-3 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ background: 'linear-gradient(135deg, #a855f7, #d946ef)' }}
-                  >
-                    {isPro ? 'On AutoPilot Pro' : proState.done ? 'Upgraded ✓' : proState.submitting ? 'Upgrading…' : 'Upgrade to AutoPilot Pro'}
-                  </button>
+                  {/* AutoPilot Pro — confirm before committing */}
+                  {!confirmPro ? (
+                    <button
+                      type="button"
+                      onClick={() => !isPro && !isAnnual && !proState.done && !proState.submitting && setConfirmPro(true)}
+                      disabled={isPro || isAnnual || proState.submitting || proState.done}
+                      aria-live="polite"
+                      className="rounded-xl px-4 py-3 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ background: 'linear-gradient(135deg, #a855f7, #d946ef)' }}
+                    >
+                      {isPro ? 'On AutoPilot Pro' : proState.done ? 'Upgraded ✓' : proState.submitting ? 'Upgrading…' : 'Upgrade to AutoPilot Pro'}
+                    </button>
+                  ) : (
+                    <div className="rounded-xl p-3 border border-purple-400/30 bg-purple-400/5 space-y-2">
+                      <p className="text-xs text-purple-300 font-medium">Upgrades to AutoPilot Pro ($497/mo) via your saved card immediately. Continue?</p>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={onPro} className="flex-1 rounded-lg px-3 py-1.5 text-xs font-bold text-white" style={{ background: 'linear-gradient(135deg, #a855f7, #d946ef)' }}>Yes, upgrade</button>
+                        <button type="button" onClick={() => setConfirmPro(false)} className="flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-300 bg-white/5 border border-white/10">Cancel</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {annualState.error && <p className="text-red-300 text-xs mt-3">{annualState.error}</p>}
                 {proState.error && <p className="text-red-300 text-xs mt-3">{proState.error}</p>}
