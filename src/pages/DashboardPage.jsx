@@ -112,6 +112,11 @@ export default function DashboardPage() {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
+  const handleTopupSuccess = useCallback(() => {
+    closeTopup();
+    setTimeout(refetch, 2000);
+  }, [closeTopup, refetch]);
+
   // Stage 5 — bundle deep link from SMS dispatcher
   const bundleParam = searchParams.get('bundle');
   const variantParam = searchParams.get('variant') || 'a';
@@ -124,7 +129,7 @@ export default function DashboardPage() {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  const { data, loading, error } = useApi(
+  const { data, loading, error, refetch } = useApi(
     (signal) => fetchFeed(feedUuid, {
       page: filters.page,
       sort: filters.sort,
@@ -440,7 +445,7 @@ export default function DashboardPage() {
           isOpen={topupOpen}
           feedUuid={feedUuid}
           onClose={closeTopup}
-          onSuccess={closeTopup}
+          onSuccess={handleTopupSuccess}
         />
 
         {/* Stage 5: Premium credits modal */}

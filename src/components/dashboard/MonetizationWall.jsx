@@ -58,6 +58,7 @@ export default function MonetizationWall({
   const pollTimer = useRef(null);
   const sessionIdRef = useRef(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [initTrigger, setInitTrigger] = useState(0);
 
   const handleUnlockClick = useCallback(() => {
     const zip = zipInput.trim();
@@ -132,7 +133,9 @@ export default function MonetizationWall({
 
     init();
     return () => { cancelled = true; };
-  }, [subscriberId, vertical, countyId]);
+  // initTrigger lets the polling loop force a re-init when the countdown expires mid-session.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subscriberId, vertical, countyId, initTrigger]);
 
   // ─── Polling ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -140,12 +143,22 @@ export default function MonetizationWall({
     pollTimer.current = setInterval(async () => {
       try {
         const fresh = await fetchWallSession(sessionIdRef.current);
+        const exp = fresh?.countdown_expires || fresh?.countdown_expires_at;
+        const expired = !exp || new Date(exp).getTime() <= Date.now();
+        if (expired) {
+          localStorage.removeItem(STORAGE_KEY_PREFIX + subscriberId);
+          clearInterval(pollTimer.current);
+          setState(null);
+          setInitTrigger((t) => t + 1);
+          return;
+        }
         setState(fresh);
       } catch (err) {
-        // On 404 the session expired — remove from storage so next mount creates new
         if (err.status === 404) {
           localStorage.removeItem(STORAGE_KEY_PREFIX + subscriberId);
           clearInterval(pollTimer.current);
+          setState(null);
+          setInitTrigger((t) => t + 1);
         }
       }
     }, POLL_MS);
