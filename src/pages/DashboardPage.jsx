@@ -112,11 +112,6 @@ export default function DashboardPage() {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  const handleTopupSuccess = useCallback(() => {
-    closeTopup();
-    setTimeout(refetch, 2000);
-  }, [closeTopup, refetch]);
-
   // Stage 5 — bundle deep link from SMS dispatcher
   const bundleParam = searchParams.get('bundle');
   const variantParam = searchParams.get('variant') || 'a';
@@ -140,6 +135,11 @@ export default function DashboardPage() {
     }),
     [feedUuid, filters.page, filters.sort, filters.minScore, filters.incidentType, filters.search],
   );
+
+  const handleTopupSuccess = useCallback(() => {
+    closeTopup();
+    setTimeout(refetch, 2000);
+  }, [closeTopup, refetch]);
 
   const stripePayment = useStripePayment();
 
