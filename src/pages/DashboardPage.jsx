@@ -151,6 +151,7 @@ export default function DashboardPage() {
   const subscriber = data?.subscriber || {};
   const leads = data?.leads || [];
   const totalPages = data?.pages || 1;
+  const isPaused = subscriber.status === 'paused';
 
   // Always-on Annual offer: monthly subscribers ≥ 14 days who haven't dismissed in the last 7 days.
   // URL deep-link continues to win over any local dismissal.
@@ -301,7 +302,7 @@ export default function DashboardPage() {
               )}
 
               {/* Stage 5: Annual offer banner — surfaces from email deep link or backend flag */}
-              {showAnnualOffer && (
+              {showAnnualOffer && !isPaused && (
                 <AnnualOfferBanner
                   feedUuid={feedUuid}
                   onAccepted={dismissAnnual}
@@ -310,7 +311,7 @@ export default function DashboardPage() {
               )}
 
               {/* Stage 5: AP Pro upgrade — surfaces from email deep link */}
-              {showApProOffer && (
+              {showApProOffer && !isPaused && (
                 <APProUpsellBanner
                   feedUuid={feedUuid}
                   onUpgraded={dismissApPro}
@@ -321,7 +322,7 @@ export default function DashboardPage() {
               {/* Phase 2B: AP Lite upgrade — annual_lock subscribers who are eligible */}
               {subscriber.tier === 'annual_lock' &&
                subscriber.ap_lite_eligible === true &&
-               !apLiteDismissed && (
+               !apLiteDismissed && !isPaused && (
                 <ApLiteUpgradeBanner
                   feedUuid={feedUuid}
                   weeklyActions={subscriber.manual_actions_this_week}
@@ -343,7 +344,7 @@ export default function DashboardPage() {
               />
 
               {/* Phase 2B: Monetization Wall — first-48h countdown + ROI frame. */}
-              {subscriber.id && isWithinFirst48h(subscriber.created_at) && (
+              {subscriber.id && isWithinFirst48h(subscriber.created_at) && !isPaused && (
                 <MonetizationWall
                   subscriberId={subscriber.id}
                   vertical={subscriber.vertical}
@@ -356,7 +357,7 @@ export default function DashboardPage() {
               <DashboardHeroBanner
                 total={data?.total}
                 zips={subscriber.locked_zips}
-                partnerEligible={subscriber.partner_eligible}
+                partnerEligible={isPaused ? false : subscriber.partner_eligible}
               />
 
               {/* Stage 5: Referral team Shared ZIP heat map (renders only when unlocked) */}
@@ -421,11 +422,13 @@ export default function DashboardPage() {
                     ))}
                   </div>
 
-                  <UpgradeBanner
-                    tier={subscriber.tier}
-                    currentPage={filters.page}
-                    onUpgrade={handleUpgrade}
-                  />
+                  {!isPaused && (
+                    <UpgradeBanner
+                      tier={subscriber.tier}
+                      currentPage={filters.page}
+                      onUpgrade={handleUpgrade}
+                    />
+                  )}
 
                   <Pagination
                     currentPage={filters.page}
@@ -436,7 +439,7 @@ export default function DashboardPage() {
               )}
 
               <LeadPackHistory feedUuid={feedUuid} />
-              <LeadPackSection onOpenModal={handleOpenLpModal} />
+              {!isPaused && <LeadPackSection onOpenModal={handleOpenLpModal} />}
             </>
           )}
         </main>

@@ -14,6 +14,7 @@ import SocialProofWall from '../components/landing/SocialProofWall';
 import StickyHeaderCTA from '../components/landing/StickyHeaderCTA';
 import EmailGateModal from '../components/landing/EmailGateModal';
 import ZipCollectorModal from '../components/landing/ZipCollectorModal';
+import ZipTerritoryMap from '../components/landing/ZipTerritoryMap';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
 import useStripeCheckout from '../hooks/useStripeCheckout';
 import { TIER_ZIP_LIMITS } from '../config/pricing';
@@ -70,6 +71,14 @@ function LandingContent() {
           <div id="zip-check">
             <ZipChecker onZipChecked={setLastCheckedZip} />
           </div>
+
+          <div className="max-w-6xl mx-auto px-6">
+            <ZipTerritoryMap
+              highlightZip={lastCheckedZip}
+              onZipSelect={(zip) => setZipCollector({ open: true, tier: 'starter' })}
+            />
+          </div>
+
           <div id="pricing" ref={pricingRef}>
             <PricingSection onCheckout={handleCheckout} />
           </div>

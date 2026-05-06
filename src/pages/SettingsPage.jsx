@@ -7,6 +7,8 @@ import Navbar from '../components/layout/Navbar';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import ErrorState from '../components/ui/ErrorState';
 import Icon from '../components/ui/Icon';
+import PauseModal from '../components/dashboard/PauseModal';
+import PauseStatusBanner from '../components/dashboard/PauseStatusBanner';
 
 const TIER_LABEL = {
   free: 'Free',
@@ -86,6 +88,7 @@ export default function SettingsPage() {
   const [portalState, setPortalState] = useState({ submitting: false, error: null });
   const [confirmAnnual, setConfirmAnnual] = useState(false);
   const [confirmPro, setConfirmPro] = useState(false);
+  const [pauseModalOpen, setPauseModalOpen] = useState(false);
 
   const onAnnual = useCallback(async () => {
     if (annualState.submitting) return;
@@ -126,6 +129,7 @@ export default function SettingsPage() {
 
   const isAnnual = subscriber.tier === 'annual_lock';
   const isPro = subscriber.tier === 'autopilot_pro';
+  const isPaused = subscriber.status === 'paused';
 
   return (
     <div className="gradient-bg-dashboard min-h-screen text-white">
@@ -148,6 +152,13 @@ export default function SettingsPage() {
           {loading && <LoadingSpinner />}
           {error && <ErrorState />}
 
+          <PauseModal
+            isOpen={pauseModalOpen}
+            onClose={() => setPauseModalOpen(false)}
+            feedUuid={feedUuid}
+            onPaused={() => { setPauseModalOpen(false); refetch(); }}
+          />
+
           {!loading && !error && subscriber.id && (
             <div className="space-y-5">
               <Tile
@@ -164,53 +175,97 @@ export default function SettingsPage() {
                 <StatRow label="Plan" value={tierLabel} accent="text-yellow-300" />
                 <StatRow label="Status" value={(subscriber.status || 'active').toUpperCase()} />
 
-                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Annual lock — confirm before committing */}
-                  {!confirmAnnual ? (
-                    <button
-                      type="button"
-                      onClick={() => !isAnnual && !annualState.done && !annualState.submitting && setConfirmAnnual(true)}
-                      disabled={isAnnual || annualState.submitting || annualState.done}
-                      aria-live="polite"
-                      className="rounded-xl px-4 py-3 text-sm font-bold text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ background: 'linear-gradient(135deg, #facc15, #f59e0b)' }}
-                    >
-                      {isAnnual ? 'On annual lock' : annualState.done ? 'Switched ✓' : annualState.submitting ? 'Switching…' : 'Switch to annual — save 2 months'}
-                    </button>
-                  ) : (
-                    <div className="rounded-xl p-3 border border-yellow-400/30 bg-yellow-400/5 space-y-2">
-                      <p className="text-xs text-yellow-300 font-medium">This charges your saved card at the annual rate and cannot be undone from the app. Continue?</p>
-                      <div className="flex gap-2">
-                        <button type="button" onClick={onAnnual} className="flex-1 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-900" style={{ background: 'linear-gradient(135deg, #facc15, #f59e0b)' }}>Yes, switch</button>
-                        <button type="button" onClick={() => setConfirmAnnual(false)} className="flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-300 bg-white/5 border border-white/10">Cancel</button>
-                      </div>
-                    </div>
-                  )}
+                {isPaused && (
+                  <div className="mt-4">
+                    <PauseStatusBanner
+                      resumeAt={subscriber.pause_resume_at}
+                      feedUuid={feedUuid}
+                      onResumed={refetch}
+                    />
+                  </div>
+                )}
 
-                  {/* AutoPilot Pro — confirm before committing */}
-                  {!confirmPro ? (
+                {!isPaused && (
+                  <>
+                    <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Annual lock — confirm before committing */}
+                      {!confirmAnnual ? (
+                        <button
+                          type="button"
+                          onClick={() => !isAnnual && !annualState.done && !annualState.submitting && setConfirmAnnual(true)}
+                          disabled={isAnnual || annualState.submitting || annualState.done}
+                          aria-live="polite"
+                          className="rounded-xl px-4 py-3 text-sm font-bold text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={{ background: 'linear-gradient(135deg, #facc15, #f59e0b)' }}
+                        >
+                          {isAnnual ? 'On annual lock' : annualState.done ? 'Switched ✓' : annualState.submitting ? 'Switching…' : 'Switch to annual — save 2 months'}
+                        </button>
+                      ) : (
+                        <div className="rounded-xl p-3 border border-yellow-400/30 bg-yellow-400/5 space-y-2">
+                          <p className="text-xs text-yellow-300 font-medium">This charges your saved card at the annual rate and cannot be undone from the app. Continue?</p>
+                          <div className="flex gap-2">
+                            <button type="button" onClick={onAnnual} className="flex-1 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-900" style={{ background: 'linear-gradient(135deg, #facc15, #f59e0b)' }}>Yes, switch</button>
+                            <button type="button" onClick={() => setConfirmAnnual(false)} className="flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-300 bg-white/5 border border-white/10">Cancel</button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* AutoPilot Pro — confirm before committing */}
+                      {!confirmPro ? (
+                        <button
+                          type="button"
+                          onClick={() => !isPro && !isAnnual && !proState.done && !proState.submitting && setConfirmPro(true)}
+                          disabled={isPro || isAnnual || proState.submitting || proState.done}
+                          aria-live="polite"
+                          className="rounded-xl px-4 py-3 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={{ background: 'linear-gradient(135deg, #a855f7, #d946ef)' }}
+                        >
+                          {isPro ? 'On AutoPilot Pro' : proState.done ? 'Upgraded ✓' : proState.submitting ? 'Upgrading…' : 'Upgrade to AutoPilot Pro'}
+                        </button>
+                      ) : (
+                        <div className="rounded-xl p-3 border border-purple-400/30 bg-purple-400/5 space-y-2">
+                          <p className="text-xs text-purple-300 font-medium">Upgrades to AutoPilot Pro ($497/mo) via your saved card immediately. Continue?</p>
+                          <div className="flex gap-2">
+                            <button type="button" onClick={onPro} className="flex-1 rounded-lg px-3 py-1.5 text-xs font-bold text-white" style={{ background: 'linear-gradient(135deg, #a855f7, #d946ef)' }}>Yes, upgrade</button>
+                            <button type="button" onClick={() => setConfirmPro(false)} className="flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-300 bg-white/5 border border-white/10">Cancel</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {annualState.error && <p className="text-red-300 text-xs mt-3">{annualState.error}</p>}
+                    {proState.error && <p className="text-red-300 text-xs mt-3">{proState.error}</p>}
+                  </>
+                )}
+
+                {/* Phase 2B: Pause (only when active) */}
+                {subscriber.status === 'active' && (
+                  <div className="mt-4 pt-4 border-t border-white/[0.06] flex items-center justify-between flex-wrap gap-3">
+                    <div>
+                      <p className="text-sm text-white font-medium">Pause subscription</p>
+                      <p className="text-xs text-slate-500 mt-0.5">Pause billing for 60 days. ZIP reserved. Auto-resumes.</p>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => !isPro && !isAnnual && !proState.done && !proState.submitting && setConfirmPro(true)}
-                      disabled={isPro || isAnnual || proState.submitting || proState.done}
-                      aria-live="polite"
-                      className="rounded-xl px-4 py-3 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{ background: 'linear-gradient(135deg, #a855f7, #d946ef)' }}
+                      onClick={() => setPauseModalOpen(true)}
+                      className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-900 bg-amber-500 hover:bg-amber-400 transition-colors"
                     >
-                      {isPro ? 'On AutoPilot Pro' : proState.done ? 'Upgraded ✓' : proState.submitting ? 'Upgrading…' : 'Upgrade to AutoPilot Pro'}
+                      Pause 60 days
                     </button>
-                  ) : (
-                    <div className="rounded-xl p-3 border border-purple-400/30 bg-purple-400/5 space-y-2">
-                      <p className="text-xs text-purple-300 font-medium">Upgrades to AutoPilot Pro ($497/mo) via your saved card immediately. Continue?</p>
-                      <div className="flex gap-2">
-                        <button type="button" onClick={onPro} className="flex-1 rounded-lg px-3 py-1.5 text-xs font-bold text-white" style={{ background: 'linear-gradient(135deg, #a855f7, #d946ef)' }}>Yes, upgrade</button>
-                        <button type="button" onClick={() => setConfirmPro(false)} className="flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-300 bg-white/5 border border-white/10">Cancel</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                {annualState.error && <p className="text-red-300 text-xs mt-3">{annualState.error}</p>}
-                {proState.error && <p className="text-red-300 text-xs mt-3">{proState.error}</p>}
+                  </div>
+                )}
+
+                {/* Phase 2B: Partner upgrade link — hidden while paused */}
+                {!isPaused && (
+                  <div className="mt-3 pt-3 border-t border-white/[0.06]">
+                    <Link
+                      to={`/dashboard/${feedUuid}/partner`}
+                      className="text-sm text-amber-400 hover:text-amber-300 underline underline-offset-2"
+                    >
+                      Upgrade to Partner tier →
+                    </Link>
+                    <p className="text-xs text-slate-500 mt-0.5">Lock up to 5 ZIPs — $2,000/mo</p>
+                  </div>
+                )}
               </Tile>
 
               <Tile title="Billing" subtitle="Stripe billing portal — update card, view invoices, or cancel.">
