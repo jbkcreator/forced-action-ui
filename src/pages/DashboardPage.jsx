@@ -22,6 +22,9 @@ import PremiumCreditsModal from '../components/dashboard/PremiumCreditsModal';
 import WalletTopupModal from '../components/dashboard/WalletTopupModal';
 import AnnualOfferBanner from '../components/dashboard/AnnualOfferBanner';
 import APProUpsellBanner from '../components/dashboard/APProUpsellBanner';
+import ApLiteUpgradeBanner, { readApLiteDismissed, writeApLiteDismissed } from '../components/dashboard/ApLiteUpgradeBanner';
+import PauseStatusBanner from '../components/dashboard/PauseStatusBanner';
+import PauseModal from '../components/dashboard/PauseModal';
 import BundleOfferModal from '../components/dashboard/BundleOfferModal';
 import TeamViewTile from '../components/dashboard/TeamViewTile';
 import LeaderboardWidget from '../components/dashboard/LeaderboardWidget';
@@ -80,7 +83,9 @@ export default function DashboardPage() {
   const [premiumLead, setPremiumLead] = useState(null);   // lead obj for premium modal
   const [annualBannerDismissed, setAnnualBannerDismissed] = useState(false);
   const [apProDismissed, setApProDismissed] = useState(false);
+  const [apLiteDismissed, setApLiteDismissed] = useState(() => feedUuid ? readApLiteDismissed(feedUuid) : false);
   const [bundleDismissed, setBundleDismissed] = useState(false);
+  const [pauseModalOpen, setPauseModalOpen] = useState(false);
 
   // Stage 5 — URL-driven offer surfaces
   const urlAnnualOffer = searchParams.get('annual') === 'accept';
@@ -287,6 +292,14 @@ export default function DashboardPage() {
                 <ReactivateBanner onReactivate={handleReactivate} />
               )}
 
+              {subscriber.status === 'paused' && (
+                <PauseStatusBanner
+                  resumeAt={subscriber.pause_resume_at}
+                  feedUuid={feedUuid}
+                  onResumed={refetch}
+                />
+              )}
+
               {/* Stage 5: Annual offer banner — surfaces from email deep link or backend flag */}
               {showAnnualOffer && (
                 <AnnualOfferBanner
@@ -302,6 +315,21 @@ export default function DashboardPage() {
                   feedUuid={feedUuid}
                   onUpgraded={dismissApPro}
                   onDismiss={dismissApPro}
+                />
+              )}
+
+              {/* Phase 2B: AP Lite upgrade — annual_lock subscribers who are eligible */}
+              {subscriber.tier === 'annual_lock' &&
+               subscriber.ap_lite_eligible === true &&
+               !apLiteDismissed && (
+                <ApLiteUpgradeBanner
+                  feedUuid={feedUuid}
+                  weeklyActions={subscriber.manual_actions_this_week}
+                  onUpgraded={refetch}
+                  onDismiss={() => {
+                    setApLiteDismissed(true);
+                    if (feedUuid) writeApLiteDismissed(feedUuid);
+                  }}
                 />
               )}
 
@@ -325,7 +353,11 @@ export default function DashboardPage() {
               )}
 
               <OnboardingChecklist totalLeads={data?.total} />
-              <DashboardHeroBanner total={data?.total} zips={subscriber.locked_zips} />
+              <DashboardHeroBanner
+                total={data?.total}
+                zips={subscriber.locked_zips}
+                partnerEligible={subscriber.partner_eligible}
+              />
 
               {/* Stage 5: Referral team Shared ZIP heat map (renders only when unlocked) */}
               <TeamViewTile feedUuid={feedUuid} />
@@ -413,6 +445,13 @@ export default function DashboardPage() {
           isOpen={cancelOpen}
           onClose={handleCancelAbort}
           onConfirm={handleCancelConfirm}
+        />
+
+        <PauseModal
+          isOpen={pauseModalOpen}
+          onClose={() => setPauseModalOpen(false)}
+          feedUuid={feedUuid}
+          onPaused={refetch}
         />
 
         <LeadPackModal
