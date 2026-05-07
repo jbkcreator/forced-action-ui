@@ -103,6 +103,7 @@ export function fetchSkuMargin(token, options = {}) {
 }
 
 // ─── Gate Monitoring ─────────────────────────────────────────────────────────
+
 export function fetchGateMetrics(token, { days = 1, graph_name } = {}, options = {}) {
   const params = new URLSearchParams({ days: String(days) });
   if (graph_name) params.set('graph_name', graph_name);
@@ -115,4 +116,94 @@ export function fetchKillSwitchStatus(token, options = {}) {
 
 export function fetchDecisionAudit(token, decisionId, options = {}) {
   return adminFetch(token, `/api/admin/decision-audit/${encodeURIComponent(decisionId)}`, options);
+}
+
+// ─── County Management ───────────────────────────────────────────────────────
+
+export function fetchCounties(token, includeInactive = false, options = {}) {
+  return adminFetch(token, `/api/admin/counties?include_inactive=${includeInactive}`, options);
+}
+
+export function createCounty(token, body, options = {}) {
+  return adminFetch(token, '/api/admin/counties', { method: 'POST', body, ...options });
+}
+
+export function updateCounty(token, countyId, body, options = {}) {
+  return adminFetch(token, `/api/admin/counties/${encodeURIComponent(countyId)}`, {
+    method: 'PATCH', body, ...options,
+  });
+}
+
+export function deactivateCounty(token, countyId, options = {}) {
+  return adminFetch(token, `/api/admin/counties/${encodeURIComponent(countyId)}`, {
+    method: 'DELETE', ...options,
+  });
+}
+
+export function fetchSources(token, countyId, includeInactive = false, options = {}) {
+  return adminFetch(
+    token,
+    `/api/admin/counties/${encodeURIComponent(countyId)}/sources?include_inactive=${includeInactive}`,
+    options,
+  );
+}
+
+export function addSource(token, countyId, body, options = {}) {
+  return adminFetch(token, `/api/admin/counties/${encodeURIComponent(countyId)}/sources`, {
+    method: 'POST', body, ...options,
+  });
+}
+
+export function updateSource(token, countyId, sourceId, body, options = {}) {
+  return adminFetch(
+    token,
+    `/api/admin/counties/${encodeURIComponent(countyId)}/sources/${sourceId}`,
+    { method: 'PUT', body, ...options },
+  );
+}
+
+export function deactivateSource(token, countyId, sourceId, options = {}) {
+  return adminFetch(
+    token,
+    `/api/admin/counties/${encodeURIComponent(countyId)}/sources/${sourceId}`,
+    { method: 'DELETE', ...options },
+  );
+}
+
+// ─── Column Mapping Approvals ────────────────────────────────────────────────
+
+export function fetchPendingMappings(token, options = {}) {
+  return adminFetch(token, '/api/admin/mappings/pending', options);
+}
+
+export function fetchApprovedMappings(token, options = {}) {
+  return adminFetch(token, '/api/admin/mappings/approved', options);
+}
+
+export function fetchRejectedMappings(token, options = {}) {
+  return adminFetch(token, '/api/admin/mappings/rejected', options);
+}
+
+export function approveMapping(token, mappingId, mappingOverrides = null, options = {}) {
+  return adminFetch(token, `/api/admin/mappings/${mappingId}/approve`, {
+    method: 'POST',
+    body: { mapping_overrides: mappingOverrides },
+    ...options,
+  });
+}
+
+export function rejectMapping(token, mappingId, feedback, options = {}) {
+  return adminFetch(token, `/api/admin/mappings/${mappingId}/reject`, {
+    method: 'POST',
+    body: { feedback },
+    ...options,
+  });
+}
+
+export function updateMapping(token, mappingId, columnUpdates, options = {}) {
+  return adminFetch(token, `/api/admin/mappings/${mappingId}`, {
+    method: 'PATCH',
+    body: { column_updates: columnUpdates },
+    ...options,
+  });
 }

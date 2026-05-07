@@ -11,6 +11,7 @@ import RouteSkeleton from './components/ui/RouteSkeleton';
 
 const EmailPreviewsPage = lazy(() => import('./pages/EmailPreviewsPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
+const DevPage = lazy(() => import('./pages/DevPage'));
 const Stage5SandboxPage = lazy(() => import('./pages/Stage5SandboxPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ProofWallPage = lazy(() => import('./pages/ProofWallPage'));
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/wins" element={withBoundary(<ProofWallPage />)} />
           <Route path="/email-previews" element={withBoundary(<EmailPreviewsPage />)} />
           <Route path="/admin" element={withBoundary(<AdminPage />)} />
+          <Route path="/dev" element={withBoundary(<DevPage />)} />
           <Route path="/stage5-sandbox" element={withBoundary(<Stage5SandboxPage />)} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
