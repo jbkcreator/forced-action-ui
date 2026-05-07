@@ -44,3 +44,7 @@ export function unlockHotLead(feedUuid, leadId) {
     lead_id: String(leadId),
   });
 }
+
+export function acceptSaveOffer(feedUuid) {
+  return api.post('/api/upgrade', { feed_uuid: feedUuid, tier: 'data_only' });
+}

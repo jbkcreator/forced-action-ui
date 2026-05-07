@@ -21,6 +21,7 @@ import DealCapture from '../components/dashboard/DealCapture';
 import PremiumCreditsModal from '../components/dashboard/PremiumCreditsModal';
 import WalletTopupModal from '../components/dashboard/WalletTopupModal';
 import AnnualOfferBanner from '../components/dashboard/AnnualOfferBanner';
+import DataOnlySaveOfferBanner from '../components/dashboard/DataOnlySaveOfferBanner';
 import APProUpsellBanner from '../components/dashboard/APProUpsellBanner';
 import ApLiteUpgradeBanner, { readApLiteDismissed, writeApLiteDismissed } from '../components/dashboard/ApLiteUpgradeBanner';
 import PauseStatusBanner from '../components/dashboard/PauseStatusBanner';
@@ -86,9 +87,11 @@ export default function DashboardPage() {
   const [apLiteDismissed, setApLiteDismissed] = useState(() => feedUuid ? readApLiteDismissed(feedUuid) : false);
   const [bundleDismissed, setBundleDismissed] = useState(false);
   const [pauseModalOpen, setPauseModalOpen] = useState(false);
+  const [saveOfferDismissed, setSaveOfferDismissed] = useState(false);
 
   // Stage 5 — URL-driven offer surfaces
   const urlAnnualOffer = searchParams.get('annual') === 'accept';
+  const urlSaveOffer = searchParams.get('save_offer') === 'accept';
 
   const showApProOffer = useMemo(() =>
     !apProDismissed && searchParams.get('upgrade') === 'autopilot_pro',
@@ -101,6 +104,13 @@ export default function DashboardPage() {
     next.delete('annual');
     setSearchParams(next, { replace: true });
   }, [feedUuid, searchParams, setSearchParams]);
+
+  const dismissSaveOffer = useCallback(() => {
+    setSaveOfferDismissed(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete('save_offer');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const dismissApPro = useCallback(() => {
     setApProDismissed(true);
@@ -164,6 +174,11 @@ export default function DashboardPage() {
   }, [subscriber?.id, subscriber?.tier, subscriber?.created_at, annualBannerDismissed, feedUuid]);
 
   const showAnnualOffer = urlAnnualOffer || evergreenAnnualEligible;
+
+  const showSaveOffer = useMemo(() =>
+    !saveOfferDismissed && (urlSaveOffer || !!subscriber?.save_offer_active),
+    [saveOfferDismissed, urlSaveOffer, subscriber?.save_offer_active],
+  );
 
   // Group urgency polling by unique ZIP — one poll per ZIP, not per LeadCard.
   const visibleZips = useMemo(
@@ -298,6 +313,15 @@ export default function DashboardPage() {
                   resumeAt={subscriber.pause_resume_at}
                   feedUuid={feedUuid}
                   onResumed={refetch}
+                />
+              )}
+
+              {/* Data-Only save offer — surfaces from proactive-save email deep link or backend flag */}
+              {showSaveOffer && !isPaused && (
+                <DataOnlySaveOfferBanner
+                  feedUuid={feedUuid}
+                  onAccepted={dismissSaveOffer}
+                  onDismiss={dismissSaveOffer}
                 />
               )}
 
