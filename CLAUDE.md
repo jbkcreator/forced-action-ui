@@ -1,66 +1,114 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code working in this repo.
+
+## Project Overview
+
+**Forced Action UI** — React 19 SPA frontend for the Forced Action distressed property intelligence platform (Hillsborough County, FL). Serves 6 buyer verticals (Roofing, Restoration, Public Adjusters, Wholesalers, Fix & Flip, Attorneys). Backed by FastAPI server on port 8000 (separate `Forced-action-` repo). Bundled with Vite, styled with Tailwind via theme-token CSS variables.
 
 ## Commands
 
 ```bash
 npm install        # Install dependencies
-npm run dev        # Start dev server at http://localhost:5173
+npm run dev        # Start Vite dev server at http://localhost:5173
 npm run build      # Build to dist/
 npm run preview    # Preview production build
 ```
 
-No test runner is configured.
+No test runner is configured. No linter/formatter is configured.
 
 ## Environment Variables
 
 Copy `.env.example` to `.env` and set:
-- `VITE_API_BASE_URL` — Backend base URL (empty string in dev; Vite proxy handles `/api/*`)
+- `VITE_API_BASE_URL` — Backend base URL (empty string in dev; Vite proxy handles `/api/*` and `/webhooks/*` → `http://localhost:8000`)
 - `VITE_STRIPE_PUBLISHABLE_KEY` — Stripe publishable key
 
 ## Architecture
 
-**Forced Action** is a distressed property intelligence platform for Hillsborough County, serving 6 buyer verticals (Roofing, Restoration, Public Adjusters, Wholesalers, Fix & Flip, Attorneys). The frontend is a React 19 SPA backed by a FastAPI server on port 8001.
-
-### Routes
+### Routes (`src/App.jsx`)
 
 | Path | Page | Notes |
 |------|------|-------|
 | `/` | `LandingPage` | Public — founding counter, ZIP check, pricing, Stripe checkout |
 | `/dashboard/:feedUuid` | `DashboardPage` | Auth via UUID in URL; lead feed with filters |
 | `/success` | `SuccessPage` | Post-checkout; reads `?tier=&zips=` query params |
-| `/email-previews` | `EmailPreviewsPage` | Dev tool for previewing transactional email templates |
+| `/email-previews` | `EmailPreviewsPage` | Dev tool — preview transactional email templates |
+| `/admin` | `AdminPage` | Admin upload / ops surface |
 | `*` | `NotFoundPage` | |
+
+`SkipLink` (`src/components/ui/SkipLink.jsx`) renders above routes for a11y.
 
 ### Theme System
 
-All visual tokens live in `src/config/theme.json` — the single source of truth for colors, gradients, fonts, and border radius. `src/theme/ThemeProvider.jsx` flattens this JSON to CSS custom properties on `:root` using the `--fa-*` namespace. `tailwind.config.js` maps Tailwind utilities to these CSS variables (e.g., `bg-fa-bg-base`, `text-fa-text-primary`, `border-fa-border-default`). To retheme, edit only `theme.json`.
+All visual tokens in `src/config/theme.json` — single source of truth for colors, gradients, fonts, border radius. `src/theme/ThemeProvider.jsx` flattens JSON to CSS custom properties on `:root` under `--fa-*` namespace. `tailwind.config.js` maps Tailwind utilities to those vars (e.g. `bg-fa-bg-base`, `text-fa-text-primary`, `border-fa-border-default`). **To retheme, edit only `theme.json`.**
 
 ### State Management
 
-No state management library — uses React hooks exclusively:
+No state library. React hooks only:
 
-- **URL params** (`useFeedFilters`) — Dashboard filter state (sort, min_score, incident_type, search, page) is stored in the URL, making filters bookmarkable
-- **localStorage** (`useContacted`) — Tracks contacted property IDs under key `fa_contacted`
-- **React Context** (`LandingContext`) — Shares selected `vertical` and `countyId` across landing page components
-- **`useApi`** — Generic fetch hook returning `{ data, loading, error, refetch }`
-- **`usePolling`** — Polls an API function at a configurable interval (default 30s)
+- **URL params** (`useFeedFilters`) — Dashboard filter state (sort, min_score, incident_type, search, page) lives in URL → bookmarkable.
+- **localStorage** (`useContacted`) — Contacted property IDs under key `fa_contacted`.
+- **React Context** (`LandingContext`) — Selected `vertical` and `countyId` shared across landing components.
+- **`useApi`** — Generic fetch hook → `{ data, loading, error, refetch }`.
+- **`usePolling`** — Polls an API fn at configurable interval (default 30s).
 
-### API Layer
+### API Layer (`src/api/`)
 
-All API calls go through `src/api/client.js` (`apiRequest`, `api.get`, `api.post`). The dev server proxies `/api/*` and `/webhooks/*` to `http://localhost:8001`. Domain-specific functions are in:
-- `src/api/landing.js` — Founding summary, ZIP check, checkout, waitlist
-- `src/api/dashboard.js` — Lead feed, stats, lead packs, hot lead unlock
+All requests go through `src/api/client.js` (`apiRequest`, `api.get`, `api.post`). Dev server proxies `/api/*` and `/webhooks/*` → `http://localhost:8001`. Domain modules:
+- `landing.js` — Founding summary, ZIP check, checkout, waitlist.
+- `dashboard.js` — Lead feed, stats, lead packs, hot lead unlock.
+- `phase2b.js` — Phase 2B (Cora agent) endpoints.
 
 ### Stripe Integration
 
-- **Landing checkout** (`useStripeCheckout`) — Embedded checkout via `stripe.initEmbeddedCheckout(client_secret)`; on completion redirects to `/success?tier=&zips=`
-- **Lead pack purchases** (`useStripePayment`) — PaymentElement flow with steps: `choose → payment → success`
+- **Landing checkout** (`useStripeCheckout`) — Embedded checkout via `stripe.initEmbeddedCheckout(client_secret)`; on completion → `/success?tier=&zips=`.
+- **Lead pack purchases** (`useStripePayment`) — PaymentElement flow, steps `choose → payment → success`.
 
-### Key Config Files
+### Component Layout (`src/components/`)
+- `common/` — shared cross-page primitives
+- `dashboard/` — lead feed, filters, lead cards
+- `landing/` — hero, pricing, ZIP check, founding counter
+- `layout/` — page chrome (header/footer/nav)
+- `ui/` — design-system primitives (`SkipLink`, buttons, inputs)
 
-- `src/config/theme.json` — All visual tokens
-- `src/config/constants.js` — Vertical labels/icons, distress tag colors, trust stats
-- `src/config/pricing.js` — Tier pricing (Starter/Pro/Dominator), ZIP limits, feature lists
-- `src/data/emailTemplates.js` — 9 transactional email templates (HTML strings); preview at `/email-previews`
+### Key Config Files (`src/config/`)
+- `theme.json` — visual tokens (only place to edit theme).
+- `constants.js` — vertical labels/icons, distress tag colors, trust stats.
+- `pricing.js` — Tier pricing (Starter/Pro/Dominator), ZIP limits, feature lists.
+- `src/data/emailTemplates.js` — 9 transactional email templates (HTML strings); preview at `/email-previews`.
+
+## Tooling Rules (strict)
+
+- **Build**: Vite 6. No CRA, no webpack configs.
+- **Framework**: React 19 + react-dom. Use function components + hooks; no class components.
+- **Routing**: react-router-dom v7. Define routes only in `src/App.jsx`.
+- **Styling**: Tailwind CSS 3 via `--fa-*` CSS vars. Do not hard-code hex colors in JSX/CSS — reference Tailwind tokens or `var(--fa-*)`.
+- **Theme edits**: change `src/config/theme.json` only. Never edit generated CSS vars by hand.
+- **Stripe**: `@stripe/stripe-js` + `@stripe/react-stripe-js`. Use `useStripeCheckout` for landing flow, `useStripePayment` for lead packs — do not call `loadStripe` ad-hoc in components.
+- **HTTP**: Always go through `src/api/client.js`. No raw `fetch`/`axios` in components.
+- **State**: hooks only. Do not introduce Redux, Zustand, MobX, or React Query without an explicit decision recorded here.
+- **File ext**: components `.jsx`, plain modules `.js`. ESM only (`"type": "module"`).
+- **Dev port**: 5173 (Vite). API proxy target: 8000.
+- **Aliases**: none configured — use relative imports.
+- **Tests**: none configured. If adding, use Vitest (matches Vite) and update this file.
+
+## Important Notes
+
+- Backend lives in sibling repo `Forced-action-` (FastAPI on :8000). Frontend assumes that contract.
+- Dashboard auth is the UUID in the URL — treat the feed UUID as a secret.
+- `/email-previews` and `/admin` routes are not gated client-side; backend must enforce.
+- No `.env` is committed; copy `.env.example` for local dev.
+
+## Self-Maintenance
+
+Update this file automatically after any major architectural change. Triggers:
+
+1. New route added/removed in `src/App.jsx` → update **Routes** table.
+2. Dependency added/removed in `package.json` that changes a **Tooling Rule** (state lib, router, styling system, test runner) → update **Tooling Rules**.
+3. New top-level dir under `src/` (e.g. new `src/store/`) → add to architecture section.
+4. New file in `src/api/` → add to **API Layer**.
+5. New hook in `src/hooks/` that owns shared state or a cross-cutting concern → add to **State Management**.
+6. Vite/Tailwind/PostCSS config change affecting dev port, proxy, output dir, or token namespace → update **Commands** + **Theme System**.
+7. New env var consumed via `import.meta.env.VITE_*` → add to **Environment Variables**.
+
+When updating: keep file <200 lines, prefer specifics over generics, delete stale rules in the same edit.
