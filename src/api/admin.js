@@ -101,3 +101,18 @@ export function fetchSandboxOutbox(token, filters = {}, options = {}) {
 export function fetchSkuMargin(token, options = {}) {
   return adminFetch(token, '/api/admin/stats/sku-margin', options);
 }
+
+// ─── Gate Monitoring ─────────────────────────────────────────────────────────
+export function fetchGateMetrics(token, { days = 1, graph_name } = {}, options = {}) {
+  const params = new URLSearchParams({ days: String(days) });
+  if (graph_name) params.set('graph_name', graph_name);
+  return adminFetch(token, `/api/admin/gate-metrics?${params.toString()}`, options);
+}
+
+export function fetchKillSwitchStatus(token, options = {}) {
+  return adminFetch(token, '/api/admin/kill-switch-status', options);
+}
+
+export function fetchDecisionAudit(token, decisionId, options = {}) {
+  return adminFetch(token, `/api/admin/decision-audit/${encodeURIComponent(decisionId)}`, options);
+}

@@ -14,6 +14,7 @@ const AdminPage = lazy(() => import('./pages/AdminPage'));
 const Stage5SandboxPage = lazy(() => import('./pages/Stage5SandboxPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ProofWallPage = lazy(() => import('./pages/ProofWallPage'));
+const PartnerUpgradePage = lazy(() => import('./pages/PartnerUpgradePage'));
 
 function withBoundary(element) {
   return <ErrorBoundary>{element}</ErrorBoundary>;
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/success" element={withBoundary(<SuccessPage />)} />
           <Route path="/dashboard/:feedUuid" element={withBoundary(<DashboardPage />)} />
           <Route path="/dashboard/:feedUuid/settings" element={withBoundary(<SettingsPage />)} />
+          <Route path="/dashboard/:feedUuid/partner" element={withBoundary(<PartnerUpgradePage />)} />
           <Route path="/wins" element={withBoundary(<ProofWallPage />)} />
           <Route path="/email-previews" element={withBoundary(<EmailPreviewsPage />)} />
           <Route path="/admin" element={withBoundary(<AdminPage />)} />

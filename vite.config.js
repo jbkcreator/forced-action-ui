@@ -6,11 +6,16 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': 'http://localhost:8001',
-      '/webhooks': 'http://localhost:8001',
+      '/api': 'http://localhost:8000',
+      '/webhooks': 'http://localhost:8000',
     },
   },
   build: {
     outDir: 'dist',
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.js',
   },
 });
