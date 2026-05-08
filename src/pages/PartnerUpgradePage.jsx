@@ -14,6 +14,7 @@ export default function PartnerUpgradePage() {
   const [elig, setElig] = useState(null);
   const [selected, setSelected] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState(null);
   const [loadError, setLoadError] = useState(null);
 
@@ -63,6 +64,7 @@ export default function PartnerUpgradePage() {
 
   const onCheckout = async () => {
     if (!selected.length) return;
+    if (!confirming) { setConfirming(true); return; }
     setSubmitting(true);
     setError(null);
     try {
@@ -81,6 +83,7 @@ export default function PartnerUpgradePage() {
       }
     } finally {
       setSubmitting(false);
+      setConfirming(false);
     }
   };
 
@@ -107,6 +110,8 @@ export default function PartnerUpgradePage() {
             priceMonthly={2000}
             onCheckout={onCheckout}
             submitting={submitting}
+            confirming={confirming}
+            onCancelConfirm={() => setConfirming(false)}
           />
 
           {error && (

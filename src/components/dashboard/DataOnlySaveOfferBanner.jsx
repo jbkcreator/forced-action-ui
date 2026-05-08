@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { acceptSaveOffer } from '../../api/dashboard';
-import { createPortalSession } from '../../api/dashboard';
+import { acceptSaveOffer, createPortalSession } from '../../api/dashboard';
 import Icon from '../ui/Icon';
 
 export default function DataOnlySaveOfferBanner({ feedUuid, onAccepted, onDismiss }) {

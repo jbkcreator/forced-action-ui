@@ -1,22 +1,14 @@
-import { useState } from 'react';
 import useTerritoryMap from '../../hooks/useTerritoryMap';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import ErrorState from '../ui/ErrorState';
 
-const STATUS_COLOR = {
-  available: '#10b981',
-  locked:    '#64748b',
-  grace:     '#64748b',
-};
-
 export default function PartnerZipPicker({ countyId, vertical, selected, onToggle, max }) {
   const { zips, loading, error } = useTerritoryMap(countyId, vertical);
-  const [mapError, setMapError] = useState(false);
 
   const availableZips = zips.filter((z) => z.status === 'available');
 
   if (loading) return <div className="h-48 flex items-center justify-center"><LoadingSpinner /></div>;
-  if (error || mapError) return <ErrorState message="Could not load available ZIPs." />;
+  if (error) return <ErrorState message="Could not load available ZIPs." />;
 
   return (
     <div className="glass rounded-2xl p-4">

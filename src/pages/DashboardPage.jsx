@@ -24,6 +24,8 @@ import AnnualOfferBanner from '../components/dashboard/AnnualOfferBanner';
 import DataOnlySaveOfferBanner from '../components/dashboard/DataOnlySaveOfferBanner';
 import APProUpsellBanner from '../components/dashboard/APProUpsellBanner';
 import ApLiteUpgradeBanner, { readApLiteDismissed, writeApLiteDismissed } from '../components/dashboard/ApLiteUpgradeBanner';
+import WalletToLockUpgradeBanner, { readW2LDismissed, writeW2LDismissed } from '../components/dashboard/WalletToLockUpgradeBanner';
+import FlashScarcityBanner from '../components/dashboard/FlashScarcityBanner';
 import PauseStatusBanner from '../components/dashboard/PauseStatusBanner';
 import PauseModal from '../components/dashboard/PauseModal';
 import BundleOfferModal from '../components/dashboard/BundleOfferModal';
@@ -85,6 +87,7 @@ export default function DashboardPage() {
   const [annualBannerDismissed, setAnnualBannerDismissed] = useState(false);
   const [apProDismissed, setApProDismissed] = useState(false);
   const [apLiteDismissed, setApLiteDismissed] = useState(() => feedUuid ? readApLiteDismissed(feedUuid) : false);
+  const [w2lDismissed, setW2LDismissed] = useState(() => feedUuid ? readW2LDismissed(feedUuid) : false);
   const [bundleDismissed, setBundleDismissed] = useState(false);
   const [pauseModalOpen, setPauseModalOpen] = useState(false);
   const [saveOfferDismissed, setSaveOfferDismissed] = useState(false);
@@ -357,6 +360,28 @@ export default function DashboardPage() {
                   }}
                 />
               )}
+
+              {/* Stage 6: Wallet-to-Lock upgrade — wallet subscribers who hit the spend threshold */}
+              {subscriber.wallet_to_lock_eligible && !w2lDismissed && !isPaused && (
+                <WalletToLockUpgradeBanner
+                  zipCode={subscriber.lock_candidate_zip}
+                  creditsSpent={subscriber.wallet_credits_30d}
+                  ctaUrl={`/checkout?lock_zip=${subscriber.lock_candidate_zip}`}
+                  onDismiss={() => {
+                    setW2LDismissed(true);
+                    if (feedUuid) writeW2LDismissed(feedUuid);
+                  }}
+                />
+              )}
+
+              {/* Stage 6: Flash scarcity banners — one per active ZIP window */}
+              {!isPaused && (subscriber.flash_scarcity_windows || []).map((w) => (
+                <FlashScarcityBanner
+                  key={`${w.zip_code}:${w.vertical}`}
+                  window={w}
+                  onLockClick={(zip) => { window.location.href = `/checkout?lock_zip=${zip}`; }}
+                />
+              ))}
 
               <StatsBar
                 subscriber={subscriber}

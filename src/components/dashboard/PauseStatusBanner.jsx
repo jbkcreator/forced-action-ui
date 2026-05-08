@@ -17,6 +17,7 @@ export default function PauseStatusBanner({ resumeAt, feedUuid, onResumed }) {
       onResumed?.(res);
     } catch (e) {
       setError(e?.detail?.message || e?.message || 'Resume failed.');
+    } finally {
       setSubmitting(false);
     }
   };

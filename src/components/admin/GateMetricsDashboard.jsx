@@ -208,7 +208,7 @@ export default function GateMetricsDashboard({ token }) {
 
       {/* Top block reasons */}
       {metrics?.top_block_reasons?.length > 0 && (
-        <Section title="Top Block Reasons (7d)">
+        <Section title={`Top Block Reasons (${days}d)`}>
           <div className="space-y-1">
             {metrics.top_block_reasons.slice(0, 10).map((r) => (
               <div key={r.reason} className="flex justify-between items-center py-1.5 border-b border-slate-800/40">

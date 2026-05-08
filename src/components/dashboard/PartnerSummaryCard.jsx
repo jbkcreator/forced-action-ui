@@ -1,4 +1,4 @@
-export default function PartnerSummaryCard({ selected, priceMonthly, onCheckout, submitting }) {
+export default function PartnerSummaryCard({ selected, priceMonthly, onCheckout, submitting, confirming, onCancelConfirm }) {
   return (
     <div className="glass-strong rounded-2xl p-6 mt-4">
       <h3 className="font-bold mb-2 text-white">Your selection</h3>
@@ -18,14 +18,25 @@ export default function PartnerSummaryCard({ selected, priceMonthly, onCheckout,
           <p className="text-2xl font-bold text-white">${priceMonthly}/mo</p>
           <p className="text-slate-500 text-xs">All selected ZIPs included</p>
         </div>
-        <button
-          onClick={onCheckout}
-          disabled={!selected.length || submitting}
-          type="button"
-          className="px-6 py-3 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-900 font-bold rounded-xl text-sm transition-all disabled:opacity-50"
-        >
-          {submitting ? 'Loading…' : 'Continue to Stripe →'}
-        </button>
+        <div className="flex items-center gap-3">
+          {confirming && (
+            <button
+              onClick={onCancelConfirm}
+              type="button"
+              className="text-slate-400 hover:text-white text-sm"
+            >
+              Cancel
+            </button>
+          )}
+          <button
+            onClick={onCheckout}
+            disabled={!selected.length || submitting}
+            type="button"
+            className="px-6 py-3 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-900 font-bold rounded-xl text-sm transition-all disabled:opacity-50"
+          >
+            {submitting ? 'Loading…' : confirming ? 'Confirm $2,000/mo →' : 'Continue to Stripe →'}
+          </button>
+        </div>
       </div>
     </div>
   );
