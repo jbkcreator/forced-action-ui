@@ -182,28 +182,31 @@ export default function ZipCollectorModal({ isOpen, onClose, tier, initialZip, o
         {selected.length > 0 && (
           <div className="mb-3">
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {selected.map((z) => (
-                <span
-                  key={z}
-                  onClick={() => toggleZip(z)}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    background: 'rgba(251,191,36,0.12)',
-                    border: '1px solid rgba(251,191,36,0.3)',
-                    borderRadius: '999px',
-                    padding: '4px 12px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    color: '#fbbf24',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {z}
-                  <span style={{ color: '#94a3b8', fontSize: '10px' }}>x</span>
-                </span>
-              ))}
+              {selected.map((z) => {
+                const code = typeof z === 'object' ? (z.zip || z.zip_code) : z;
+                return (
+                  <span
+                    key={code}
+                    onClick={() => toggleZip(code)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'rgba(251,191,36,0.12)',
+                      border: '1px solid rgba(251,191,36,0.3)',
+                      borderRadius: '999px',
+                      padding: '4px 12px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: '#fbbf24',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {code}
+                    <span style={{ color: '#94a3b8', fontSize: '10px' }}>x</span>
+                  </span>
+                );
+              })}
             </div>
           </div>
         )}

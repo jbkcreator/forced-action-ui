@@ -17,7 +17,7 @@ export default function MapCanvas({ zips, highlightZip, onZipClick }) {
   const mappable = zips.filter((z) => z.lat != null && z.lon != null);
   if (!zips.length) return null;
 
-  const anchor = mappable.length ? [mappable[0].lat, mappable[0].lon] : COUNTY_CENTER;
+  const anchor = COUNTY_CENTER;
 
   return (
     <MapContainer

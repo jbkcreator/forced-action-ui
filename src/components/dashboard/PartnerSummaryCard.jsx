@@ -6,11 +6,14 @@ export default function PartnerSummaryCard({ selected, priceMonthly, onCheckout,
         <p className="text-slate-400 text-sm">Pick at least one ZIP from the map above.</p>
       ) : (
         <ul className="flex flex-wrap gap-2 mb-4" aria-label="Selected ZIPs">
-          {selected.map((z) => (
-            <li key={z} className="px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-300 text-xs font-mono border border-emerald-500/30">
-              {z}
-            </li>
-          ))}
+          {selected.map((z) => {
+            const code = typeof z === 'object' ? (z.zip || z.zip_code) : z;
+            return (
+              <li key={code} className="px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-300 text-xs font-mono border border-emerald-500/30">
+                {code}
+              </li>
+            );
+          })}
         </ul>
       )}
       <div className="flex items-center justify-between border-t border-white/10 pt-4">

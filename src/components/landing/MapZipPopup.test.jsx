@@ -24,4 +24,13 @@ describe('MapZipPopup', () => {
     await userEvent.click(screen.getByRole('button', { name: /^close$/i }));
     expect(onClose).toHaveBeenCalledOnce();
   });
+
+  it('calls onSelect with the full zip object when Lock is clicked (consumer must extract .zip)', async () => {
+    const onSelect = vi.fn();
+    const onClose = vi.fn();
+    render(<MapZipPopup zip={baseZip} onClose={onClose} onSelect={onSelect} />);
+    await userEvent.click(screen.getByRole('button', { name: /lock this zip/i }));
+    expect(onSelect).toHaveBeenCalledWith(baseZip);
+    expect(onClose).toHaveBeenCalledOnce();
+  });
 });

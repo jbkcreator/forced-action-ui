@@ -75,7 +75,10 @@ function LandingContent() {
           <div className="max-w-6xl mx-auto px-6">
             <ZipTerritoryMap
               highlightZip={lastCheckedZip}
-              onZipSelect={(zip) => setZipCollector({ open: true, tier: 'starter' })}
+              onZipSelect={(zipObj) => {
+                setLastCheckedZip(zipObj.zip);
+                setEmailGate({ open: true, tier: 'starter' });
+              }}
             />
           </div>
 
