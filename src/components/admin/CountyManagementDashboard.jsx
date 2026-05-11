@@ -15,6 +15,7 @@ const SIGNAL_TYPES = [
   'court_records', 'tax_delinquency', 'master_data',
 ];
 const OUTPUT_FORMATS = ['csv', 'table', 'excel'];
+const COURT_SCRAPE_MODES = ['csv-dir', 'browser-excel'];
 const FREQUENCIES = ['daily', 'weekly', 'monthly', 'manual'];
 const PARCEL_FORMATS = ['folio', 'strap', 'other'];
 
@@ -148,6 +149,7 @@ function CountyForm({ initial = {}, onSave, onCancel, saving }) {
 // ─── Add / Edit Source Form ───────────────────────────────────────────────────
 function SourceForm({ initial = {}, onSave, onCancel, saving }) {
   const isEdit = Boolean(initial.id);
+  const _initFlags = initial.special_flags || {};
   const [form, setForm] = useState({
     signal_type: initial.signal_type || SIGNAL_TYPES[0],
     source_name: initial.source_name || '',
@@ -157,10 +159,13 @@ function SourceForm({ initial = {}, onSave, onCancel, saving }) {
     output_format: initial.output_format || 'csv',
     date_range_available: initial.date_range_available !== false,
     frequency: initial.frequency || 'daily',
-    special_flags: JSON.stringify(initial.special_flags || {}, null, 2),
+    special_flags: JSON.stringify(_initFlags, null, 2),
     ori_column_map: JSON.stringify(initial.ori_column_map || {}, null, 2),
     ori_book_page_col: initial.ori_book_page_col || '',
     ori_doc_type_map: JSON.stringify(initial.ori_doc_type_map || {}, null, 2),
+    // court_records-specific (extracted from special_flags for convenience)
+    court_style_col: _initFlags.style_col || '',
+    court_scrape_mode: _initFlags.scrape_mode || 'csv-dir',
   });
   function set(k, v) { setForm(p => ({ ...p, [k]: v })); }
 
@@ -168,6 +173,13 @@ function SourceForm({ initial = {}, onSave, onCancel, saving }) {
     e.preventDefault();
     let special_flags = {};
     try { special_flags = JSON.parse(form.special_flags || '{}'); } catch {}
+    // Merge court_records convenience fields into special_flags
+    if (form.signal_type === 'court_records') {
+      if (form.court_style_col.trim()) special_flags.style_col = form.court_style_col.trim();
+      else delete special_flags.style_col;
+      if (form.court_scrape_mode) special_flags.scrape_mode = form.court_scrape_mode;
+      else delete special_flags.scrape_mode;
+    }
     let ori_column_map = null;
     try { const v = JSON.parse(form.ori_column_map || '{}'); if (Object.keys(v).length) ori_column_map = v; } catch {}
     let ori_doc_type_map = null;
@@ -257,7 +269,7 @@ function SourceForm({ initial = {}, onSave, onCancel, saving }) {
         </Field>
       </div>
 
-      <Field label="Special Flags (JSON)" hint="One-off flags only — e.g. prr_only, style_col. Use the fields below for ORI column/doc-type config.">
+      <Field label="Special Flags (JSON)" hint="One-off flags only — e.g. prr_only. court_records scrape mode and style_col are set in the section below.">
         <textarea
           className={inputCls + ' font-mono text-xs resize-y'}
           style={{ ...inputStyle, minHeight: '72px' }}
@@ -268,6 +280,34 @@ function SourceForm({ initial = {}, onSave, onCancel, saving }) {
           placeholder={'{\n  "prr_only": true\n}'}
         />
       </Field>
+
+      {form.signal_type === 'court_records' && (
+        <div className="rounded-lg p-3 space-y-3" style={{ background: 'rgba(96,165,250,0.06)', border: '1px solid rgba(96,165,250,0.18)' }}>
+          <p className="text-xs font-semibold text-blue-400">Court Records / Eviction Config</p>
+          <p className="text-xs text-slate-400">Controls how the evictions engine downloads and parses this county's court records.</p>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Scrape Mode" hint="csv-dir: read from local directory of CSVs (Hillsborough). browser-excel: browser-use downloads Excel from portal (Pinellas).">
+              <select
+                className={inputCls}
+                style={inputStyle}
+                value={form.court_scrape_mode}
+                onChange={e => set('court_scrape_mode', e.target.value)}
+              >
+                {COURT_SCRAPE_MODES.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </Field>
+            <Field label="Style Column" hint='Name of the column containing plaintiff vs. defendant in one cell — e.g. "Style/Description" for Pinellas. Leave blank if case parties are separate columns.'>
+              <input
+                className={inputCls}
+                style={inputStyle}
+                value={form.court_style_col}
+                onChange={e => set('court_style_col', e.target.value)}
+                placeholder="Style/Description"
+              />
+            </Field>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-lg p-3 space-y-3" style={{ background: 'rgba(250,204,21,0.06)', border: '1px solid rgba(250,204,21,0.1)' }}>
         <p className="text-xs font-semibold text-yellow-400">ORI / CSV Structure (liens signal)</p>
