@@ -190,21 +190,68 @@ function PendingCard({ item, token, onResolved }) {
 // ─── Approved: single source mapping card (collapsible) ───────────────────────
 
 function ApprovedSourceCard({ item, token, onUpdated }) {
-  const { id, source_columns, mapping, mapped_by, approved_by, approved_at, source } = item;
+  const {
+    id, source_columns, mapping, mapped_by, approved_by, approved_at, source,
+    post_processors: pp_initial,
+    value_maps:      vm_initial,
+    row_routing:     rr_initial,
+  } = item;
   const [open, setOpen]         = useState(false);
   const [editing, setEditing]   = useState(false);
   const [overrides, setOverrides] = useState({});
   const [busy, setBusy]         = useState(false);
 
-  const changedCount = Object.keys(overrides).filter(k => overrides[k] !== mapping[k]).length;
+  // JSON-text staging buffers for the three transformation fields. Initialized
+  // from the row payload; parsed back to objects on save. Empty / '[]' / '{}' →
+  // null on save (clears the field).
+  const [ppText, setPpText] = useState(JSON.stringify(pp_initial || [], null, 2));
+  const [vmText, setVmText] = useState(JSON.stringify(vm_initial || {}, null, 2));
+  const [rrText, setRrText] = useState(rr_initial ? JSON.stringify(rr_initial, null, 2) : '');
+  const [transformErr, setTransformErr] = useState(null);
 
-  function cancel() { setOverrides({}); setEditing(false); }
+  const changedCount = Object.keys(overrides).filter(k => overrides[k] !== mapping[k]).length;
+  const transformsDirty = (
+    ppText !== JSON.stringify(pp_initial || [], null, 2)
+    || vmText !== JSON.stringify(vm_initial || {}, null, 2)
+    || rrText !== (rr_initial ? JSON.stringify(rr_initial, null, 2) : '')
+  );
+
+  function cancel() {
+    setOverrides({});
+    setPpText(JSON.stringify(pp_initial || [], null, 2));
+    setVmText(JSON.stringify(vm_initial || {}, null, 2));
+    setRrText(rr_initial ? JSON.stringify(rr_initial, null, 2) : '');
+    setTransformErr(null);
+    setEditing(false);
+  }
 
   async function handleSave() {
-    if (changedCount === 0) { setEditing(false); return; }
+    if (changedCount === 0 && !transformsDirty) { setEditing(false); return; }
     setBusy(true);
+    setTransformErr(null);
+
+    const body = {};
+    if (changedCount > 0) body.column_updates = overrides;
+    // Parse transformation JSON only when the admin edited it. Empty list /
+    // empty object / empty string clear that side of the mapping.
     try {
-      const updated = await updateMapping(token, id, overrides);
+      if (ppText !== JSON.stringify(pp_initial || [], null, 2)) {
+        body.post_processors = ppText.trim() ? JSON.parse(ppText) : [];
+      }
+      if (vmText !== JSON.stringify(vm_initial || {}, null, 2)) {
+        body.value_maps = vmText.trim() ? JSON.parse(vmText) : {};
+      }
+      if (rrText !== (rr_initial ? JSON.stringify(rr_initial, null, 2) : '')) {
+        body.row_routing = rrText.trim() ? JSON.parse(rrText) : null;
+      }
+    } catch (e) {
+      setTransformErr(`Invalid JSON: ${e.message}`);
+      setBusy(false);
+      return;
+    }
+
+    try {
+      const updated = await updateMapping(token, id, body);
       onUpdated(updated);
       setOverrides({});
       setEditing(false);
@@ -247,6 +294,74 @@ function ApprovedSourceCard({ item, token, onUpdated }) {
             onOverride={(col, val) => setOverrides(p => ({ ...p, [col]: val }))}
             editable={editing}
           />
+
+          {/* Transformations panel — JSON editors for the three pipeline steps
+              after column rename. Optional per mapping; empty fields clear them. */}
+          <div className="px-5 py-3 space-y-3" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+            <p className="text-xs font-semibold text-slate-300">Transformations</p>
+            <p className="text-xs text-slate-500">
+              Applied in order after the column rename. Use post-processors to split or combine columns,
+              value maps to normalize values (e.g. <code>JUDGEMENT → JUDGMENT</code>), and row routing to
+              fan out one CSV into multiple downstream buckets (e.g. the liens ORI export).
+            </p>
+
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Post-Processors (JSON array)</label>
+              <p className="text-xs text-slate-600 mb-1">
+                Ops applied after rename. Only <code>split_on_separator</code> ships today.
+              </p>
+              <textarea
+                disabled={!editing}
+                className="w-full rounded-lg px-3 py-1.5 font-mono text-xs text-white placeholder-slate-500 disabled:opacity-60 focus:outline-none focus:ring-1 focus:ring-yellow-400/40"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', minHeight: '90px', resize: 'vertical' }}
+                value={ppText}
+                onChange={e => setPpText(e.target.value)}
+                spellCheck={false}
+                rows={4}
+                placeholder={'[\n  {"op":"split_on_separator","from":"BookPage","sep":"/","into":["Book","Page"]}\n]'}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Value Maps (JSON object)</label>
+              <p className="text-xs text-slate-600 mb-1">
+                Per-column value normalization. Keys are column names; values are <code>{'{raw: canonical}'}</code> maps.
+              </p>
+              <textarea
+                disabled={!editing}
+                className="w-full rounded-lg px-3 py-1.5 font-mono text-xs text-white placeholder-slate-500 disabled:opacity-60 focus:outline-none focus:ring-1 focus:ring-yellow-400/40"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', minHeight: '100px', resize: 'vertical' }}
+                value={vmText}
+                onChange={e => setVmText(e.target.value)}
+                spellCheck={false}
+                rows={5}
+                placeholder={'{\n  "DocType": {\n    "JUDGEMENT": "JUDGMENT",\n    "LIEN (IRS)": "TAX LIEN"\n  }\n}'}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-500 mb-1">Row Routing (JSON object — leave blank for single bucket)</label>
+              <p className="text-xs text-slate-600 mb-1">
+                Splits the DataFrame into per-bucket outputs by column value. Used by the liens ORI flow.
+                Rules evaluated in order; first match wins. <code>default: "skip"</code> drops unmatched rows.
+              </p>
+              <textarea
+                disabled={!editing}
+                className="w-full rounded-lg px-3 py-1.5 font-mono text-xs text-white placeholder-slate-500 disabled:opacity-60 focus:outline-none focus:ring-1 focus:ring-yellow-400/40"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', minHeight: '140px', resize: 'vertical' }}
+                value={rrText}
+                onChange={e => setRrText(e.target.value)}
+                spellCheck={false}
+                rows={8}
+                placeholder={'{\n  "column": "DocType",\n  "default": "skip",\n  "rules": [\n    {"match_exact": ["DEED","TAX DEED"], "bucket": "deeds"},\n    {"match_contains": ["LIS PENDENS"], "bucket": "liens"}\n  ]\n}'}
+              />
+            </div>
+
+            {transformErr && (
+              <p className="text-xs" style={{ color: '#fca5a5' }}>{transformErr}</p>
+            )}
+          </div>
+
           <div className="px-5 py-3 flex items-center justify-end gap-2"
             style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
             {editing ? (
@@ -254,7 +369,11 @@ function ApprovedSourceCard({ item, token, onUpdated }) {
                 <button onClick={handleSave} disabled={busy}
                   className="px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-900 disabled:opacity-40"
                   style={{ background: '#facc15' }}>
-                  {busy ? 'Saving…' : changedCount > 0 ? `Save ${changedCount} change${changedCount !== 1 ? 's' : ''}` : 'Done'}
+                  {busy
+                    ? 'Saving…'
+                    : (changedCount > 0 || transformsDirty)
+                      ? 'Save changes'
+                      : 'Done'}
                 </button>
                 <button onClick={cancel}
                   className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 border border-slate-700 hover:border-slate-500 transition-colors">
@@ -264,7 +383,7 @@ function ApprovedSourceCard({ item, token, onUpdated }) {
             ) : (
               <button onClick={() => setEditing(true)}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 border border-slate-700 hover:border-slate-500 transition-colors">
-                Edit columns
+                Edit
               </button>
             )}
           </div>

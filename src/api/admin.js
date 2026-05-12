@@ -200,10 +200,68 @@ export function rejectMapping(token, mappingId, feedback, options = {}) {
   });
 }
 
-export function updateMapping(token, mappingId, columnUpdates, options = {}) {
+export function updateMapping(token, mappingId, body, options = {}) {
+  // body shape:
+  //   {
+  //     column_updates?: {sourceCol: canonicalCol, ...},
+  //     post_processors?: [{op, from, sep, into}, ...],
+  //     value_maps?: {col: {raw: canonical, ...}},
+  //     row_routing?: {column, default, rules}
+  //   }
+  // Any omitted field leaves that side of the mapping untouched.
+  // Back-compat: callers that still pass a plain dict are treated as column_updates.
+  const payload = body && (
+    body.column_updates !== undefined
+    || body.post_processors !== undefined
+    || body.value_maps !== undefined
+    || body.row_routing !== undefined
+  ) ? body : { column_updates: body };
   return adminFetch(token, `/api/admin/mappings/${mappingId}`, {
     method: 'PATCH',
-    body: { column_updates: columnUpdates },
+    body: payload,
     ...options,
   });
+}
+
+// ─── Playwright code lifecycle ────────────────────────────────────────────────
+// All endpoints scoped to /api/admin/counties/{countyId}/sources/{sourceId}.
+
+export function generatePlaywrightCode(token, countyId, sourceId, options = {}) {
+  return adminFetch(
+    token,
+    `/api/admin/counties/${encodeURIComponent(countyId)}/sources/${sourceId}/playwright-code/generate`,
+    { method: 'POST', ...options },
+  );
+}
+
+export function validatePlaywrightCode(token, countyId, sourceId, code, options = {}) {
+  return adminFetch(
+    token,
+    `/api/admin/counties/${encodeURIComponent(countyId)}/sources/${sourceId}/playwright-code/validate`,
+    { method: 'POST', body: { code }, ...options },
+  );
+}
+
+export function savePlaywrightCode(token, countyId, sourceId, code, approved, options = {}) {
+  return adminFetch(
+    token,
+    `/api/admin/counties/${encodeURIComponent(countyId)}/sources/${sourceId}/playwright-code`,
+    { method: 'POST', body: { code, approved }, ...options },
+  );
+}
+
+export function approvePlaywrightCode(token, countyId, sourceId, options = {}) {
+  return adminFetch(
+    token,
+    `/api/admin/counties/${encodeURIComponent(countyId)}/sources/${sourceId}/playwright-code/approve`,
+    { method: 'POST', ...options },
+  );
+}
+
+export function clearPlaywrightCode(token, countyId, sourceId, options = {}) {
+  return adminFetch(
+    token,
+    `/api/admin/counties/${encodeURIComponent(countyId)}/sources/${sourceId}/playwright-code`,
+    { method: 'DELETE', ...options },
+  );
 }

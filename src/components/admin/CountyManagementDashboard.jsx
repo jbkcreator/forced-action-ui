@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   addSource,
+  approvePlaywrightCode,
+  clearPlaywrightCode,
   createCounty,
   deactivateCounty,
   deactivateSource,
   fetchCounties,
   fetchSources,
+  generatePlaywrightCode,
+  savePlaywrightCode,
   updateCounty,
   updateSource,
+  validatePlaywrightCode,
 } from '../../api/admin';
 
 const SIGNAL_TYPES = [
@@ -18,6 +23,11 @@ const OUTPUT_FORMATS = ['csv', 'table', 'excel'];
 const COURT_SCRAPE_MODES = ['csv-dir', 'browser-excel'];
 const FREQUENCIES = ['daily', 'weekly', 'monthly', 'manual'];
 const PARCEL_FORMATS = ['folio', 'strap', 'other'];
+const SCRAPE_MODES = [
+  { value: 'ai_only',            label: 'AI Agent only (browser-use)' },
+  { value: 'playwright_only',    label: 'Playwright code only' },
+  { value: 'playwright_then_ai', label: 'Playwright with AI fallback' },
+];
 
 // ─── Shared style tokens ──────────────────────────────────────────────────────
 const card = { background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(255,255,255,0.08)' };
@@ -147,7 +157,7 @@ function CountyForm({ initial = {}, onSave, onCancel, saving }) {
 }
 
 // ─── Add / Edit Source Form ───────────────────────────────────────────────────
-function SourceForm({ initial = {}, onSave, onCancel, saving }) {
+function SourceForm({ initial = {}, onSave, onCancel, saving, token, countyId }) {
   const isEdit = Boolean(initial.id);
   const _initFlags = initial.special_flags || {};
   const [form, setForm] = useState({
@@ -160,9 +170,7 @@ function SourceForm({ initial = {}, onSave, onCancel, saving }) {
     date_range_available: initial.date_range_available !== false,
     frequency: initial.frequency || 'daily',
     special_flags: JSON.stringify(_initFlags, null, 2),
-    ori_column_map: JSON.stringify(initial.ori_column_map || {}, null, 2),
-    ori_book_page_col: initial.ori_book_page_col || '',
-    ori_doc_type_map: JSON.stringify(initial.ori_doc_type_map || {}, null, 2),
+    scrape_mode: initial.scrape_mode || 'ai_only',
     // court_records-specific (extracted from special_flags for convenience)
     court_style_col: _initFlags.style_col || '',
     court_scrape_mode: _initFlags.scrape_mode || 'csv-dir',
@@ -180,10 +188,6 @@ function SourceForm({ initial = {}, onSave, onCancel, saving }) {
       if (form.court_scrape_mode) special_flags.scrape_mode = form.court_scrape_mode;
       else delete special_flags.scrape_mode;
     }
-    let ori_column_map = null;
-    try { const v = JSON.parse(form.ori_column_map || '{}'); if (Object.keys(v).length) ori_column_map = v; } catch {}
-    let ori_doc_type_map = null;
-    try { const v = JSON.parse(form.ori_doc_type_map || '{}'); if (Object.keys(v).length) ori_doc_type_map = v; } catch {}
     onSave({
       signal_type: form.signal_type,
       source_name: form.source_name.trim() || null,
@@ -194,9 +198,7 @@ function SourceForm({ initial = {}, onSave, onCancel, saving }) {
       date_range_available: form.date_range_available,
       frequency: form.frequency,
       special_flags,
-      ori_column_map,
-      ori_book_page_col: form.ori_book_page_col.trim() || null,
-      ori_doc_type_map,
+      scrape_mode: form.scrape_mode,
     });
   }
 
@@ -269,7 +271,14 @@ function SourceForm({ initial = {}, onSave, onCancel, saving }) {
         </Field>
       </div>
 
-      <Field label="Special Flags (JSON)" hint="One-off flags only — e.g. prr_only. court_records scrape mode and style_col are set in the section below.">
+      <Field label="Scrape Mode" hint="ai_only: browser-use Agent drives the portal. playwright_only: execute saved Playwright code, no fallback. playwright_then_ai: try the code first, fall back to the AI agent on failure.">
+        <select className={inputCls} style={inputStyle} value={form.scrape_mode}
+          onChange={e => set('scrape_mode', e.target.value)}>
+          {SCRAPE_MODES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+        </select>
+      </Field>
+
+      <Field label="Special Flags (JSON)" hint="Advanced. Vendor-specific flags only — e.g. prr_only, cf_bypass_required. Do NOT put scrape_mode or playwright_code here; they have first-class fields.">
         <textarea
           className={inputCls + ' font-mono text-xs resize-y'}
           style={{ ...inputStyle, minHeight: '72px' }}
@@ -309,44 +318,28 @@ function SourceForm({ initial = {}, onSave, onCancel, saving }) {
         </div>
       )}
 
-      <div className="rounded-lg p-3 space-y-3" style={{ background: 'rgba(250,204,21,0.06)', border: '1px solid rgba(250,204,21,0.1)' }}>
-        <p className="text-xs font-semibold text-yellow-400">ORI / CSV Structure (liens signal)</p>
-        <p className="text-xs text-slate-400">Leave blank for counties whose CSV columns already match the canonical names (e.g. Hillsborough).</p>
+      {/* Column renames, value maps, and bucket routing live in the dedicated
+          Column Mappings dashboard now. Source admins land there from this link. */}
+      <p className="text-xs text-slate-500">
+        Column renames, transformations, and routing → configured in the
+        <span className="text-yellow-400"> Column Mappings </span> tab.
+      </p>
 
-        <Field label="Column Map (JSON)" hint='Rename raw CSV columns to canonical names. e.g. {"DirectName":"Grantor","IndirectName":"Grantee","InstrumentNumber":"Instrument","Comments":"Legal","DocTypeDescription":"DocType"}'>
-          <textarea
-            className={inputCls + ' font-mono text-xs resize-y'}
-            style={{ ...inputStyle, minHeight: '80px' }}
-            value={form.ori_column_map}
-            onChange={e => set('ori_column_map', e.target.value)}
-            spellCheck={false}
-            rows={3}
-            placeholder={'{\n  "DirectName": "Grantor",\n  "IndirectName": "Grantee"\n}'}
-          />
-        </Field>
-
-        <Field label="Combined Book/Page Column" hint='Name of the column that holds Book and Page as one value (e.g. "23544/1338"). Leave blank if Book and Page are already separate columns.'>
-          <input
-            className={inputCls}
-            style={inputStyle}
-            value={form.ori_book_page_col}
-            onChange={e => set('ori_book_page_col', e.target.value)}
-            placeholder="BookPage"
-          />
-        </Field>
-
-        <Field label="Doc Type Map (JSON)" hint='Map raw DocType values to canonical labels. Only list values that differ from the canonical. e.g. {"JUDGEMENT LIEN":"JUDGMENT","LIEN (IRS)":"TAX LIEN"}'>
-          <textarea
-            className={inputCls + ' font-mono text-xs resize-y'}
-            style={{ ...inputStyle, minHeight: '80px' }}
-            value={form.ori_doc_type_map}
-            onChange={e => set('ori_doc_type_map', e.target.value)}
-            spellCheck={false}
-            rows={3}
-            placeholder={'{\n  "JUDGEMENT LIEN": "JUDGMENT",\n  "LIEN (IRS)": "TAX LIEN"\n}'}
-          />
-        </Field>
-      </div>
+      {isEdit && form.scrape_mode !== 'ai_only' && token && countyId && (
+        <PlaywrightCodeEditor
+          token={token}
+          countyId={countyId}
+          sourceId={initial.id}
+          initialCode={initial.playwright_code || ''}
+          initialApproved={Boolean(initial.playwright_code_approved)}
+          initialVersion={initial.playwright_code_version || ''}
+        />
+      )}
+      {!isEdit && form.scrape_mode !== 'ai_only' && (
+        <p className="text-xs text-slate-500">
+          Save the source first, then re-open this row to generate or paste Playwright code.
+        </p>
+      )}
 
       <div className="flex gap-2">
         <button type="submit" disabled={saving} className={btnYellow} style={{ background: '#facc15' }}>
@@ -355,6 +348,153 @@ function SourceForm({ initial = {}, onSave, onCancel, saving }) {
         <button type="button" onClick={onCancel} className={btnGhost}>Cancel</button>
       </div>
     </form>
+  );
+}
+
+// ─── Playwright Code Editor ───────────────────────────────────────────────────
+// Shown inside SourceForm when scrape_mode is playwright_only or playwright_then_ai.
+// Provides Generate / Validate / Save / Approve / Clear actions that hit the
+// admin /playwright-code/* endpoints. Server-side AST safety check runs on Save.
+function PlaywrightCodeEditor({ token, countyId, sourceId, initialCode, initialApproved, initialVersion }) {
+  const [code, setCode] = useState(initialCode);
+  const [approved, setApproved] = useState(initialApproved);
+  const [busy, setBusy] = useState(null);     // 'generate' | 'validate' | 'save' | 'approve' | 'clear' | null
+  const [errors, setErrors] = useState([]);
+  const [info, setInfo] = useState(null);
+
+  function flashInfo(text) { setInfo(text); setTimeout(() => setInfo(null), 4000); }
+  function clearErrors() { setErrors([]); }
+
+  async function handleGenerate() {
+    if (!confirm('Call the LLM to generate a Playwright function for this source? May take ~10-30s.')) return;
+    setBusy('generate'); clearErrors();
+    try {
+      const r = await generatePlaywrightCode(token, countyId, sourceId);
+      setCode(r.code || '');
+      setApproved(false);
+      flashInfo('Generated. Validate then save when ready.');
+    } catch (e) {
+      setErrors([e.detail || e.message]);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleValidate() {
+    setBusy('validate'); clearErrors();
+    try {
+      const r = await validatePlaywrightCode(token, countyId, sourceId, code);
+      if (r.valid) flashInfo('AST check passed.');
+      else setErrors(r.errors || ['Invalid code']);
+    } catch (e) {
+      setErrors([e.detail || e.message]);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleSave(asApproved) {
+    setBusy('save'); clearErrors();
+    try {
+      const r = await savePlaywrightCode(token, countyId, sourceId, code, asApproved);
+      setApproved(Boolean(r.is_approved));
+      flashInfo(asApproved ? 'Saved and marked approved.' : 'Saved (awaiting approval).');
+    } catch (e) {
+      setErrors([e.detail || e.message]);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleApprove() {
+    setBusy('approve'); clearErrors();
+    try {
+      await approvePlaywrightCode(token, countyId, sourceId);
+      setApproved(true);
+      flashInfo('Approved.');
+    } catch (e) {
+      setErrors([e.detail || e.message]);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleClear() {
+    if (!confirm('Clear cached Playwright code? Engine will regenerate on next run.')) return;
+    setBusy('clear'); clearErrors();
+    try {
+      await clearPlaywrightCode(token, countyId, sourceId);
+      setCode('');
+      setApproved(false);
+      flashInfo('Cleared.');
+    } catch (e) {
+      setErrors([e.detail || e.message]);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const statusPill = code
+    ? (approved
+        ? <span style={{ color: '#6ee7b7' }}>approved</span>
+        : <span style={{ color: '#fde68a' }}>unapproved</span>)
+    : <span style={{ color: '#94a3b8' }}>no code saved</span>;
+
+  return (
+    <div className="rounded-lg p-3 space-y-2" style={{ background: 'rgba(96,165,250,0.06)', border: '1px solid rgba(96,165,250,0.18)' }}>
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold text-blue-300">Playwright Code (run_scrape)</p>
+        <p className="text-xs">
+          status: {statusPill}
+          {initialVersion && <span className="text-slate-500"> · prompt {initialVersion}</span>}
+        </p>
+      </div>
+
+      <p className="text-xs text-slate-400">
+        Either generate via LLM or paste hand-written code. Saved code is AST-checked server-side
+        (no imports, no exec/eval, no os/subprocess). The function signature must be:
+        <br />
+        <code className="text-xs">async def run_scrape(page, download_dir, start_date, end_date, url, county_id)</code>
+      </p>
+
+      <textarea
+        className={inputCls + ' font-mono text-xs resize-y'}
+        style={{ ...inputStyle, minHeight: '240px' }}
+        value={code}
+        onChange={e => setCode(e.target.value)}
+        spellCheck={false}
+        rows={14}
+        placeholder={'async def run_scrape(page, download_dir, start_date, end_date, url, county_id):\n    ...\n    return pd.DataFrame()'}
+      />
+
+      {errors.length > 0 && (
+        <div className="text-xs" style={{ color: '#fca5a5' }}>
+          {errors.map((e, i) => <p key={i}>• {e}</p>)}
+        </div>
+      )}
+      {info && <p className="text-xs" style={{ color: '#6ee7b7' }}>{info}</p>}
+
+      <div className="flex gap-2 flex-wrap">
+        <button type="button" onClick={handleGenerate} disabled={!!busy} className={btnGhost}>
+          {busy === 'generate' ? 'Generating…' : 'Generate via LLM'}
+        </button>
+        <button type="button" onClick={handleValidate} disabled={!!busy || !code} className={btnGhost}>
+          {busy === 'validate' ? 'Validating…' : 'Validate'}
+        </button>
+        <button type="button" onClick={() => handleSave(true)} disabled={!!busy || !code} className={btnYellow} style={{ background: '#facc15' }}>
+          {busy === 'save' ? 'Saving…' : 'Save (approved)'}
+        </button>
+        <button type="button" onClick={() => handleSave(false)} disabled={!!busy || !code} className={btnGhost}>
+          {busy === 'save' ? 'Saving…' : 'Save (unapproved)'}
+        </button>
+        <button type="button" onClick={handleApprove} disabled={!!busy || !code || approved} className={btnGhost}>
+          {busy === 'approve' ? 'Approving…' : 'Approve'}
+        </button>
+        <button type="button" onClick={handleClear} disabled={!!busy} className={btnGhost} style={{ color: '#fca5a5', borderColor: 'rgba(239,68,68,0.3)' }}>
+          {busy === 'clear' ? 'Clearing…' : 'Clear'}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -422,7 +562,14 @@ function SourceRow({ src, token, countyId, onUpdated }) {
       </div>
       {editing && (
         <div className="px-5 pb-4">
-          <SourceForm initial={src} onSave={handleSave} onCancel={() => setEditing(false)} saving={saving} />
+          <SourceForm
+            initial={src}
+            onSave={handleSave}
+            onCancel={() => setEditing(false)}
+            saving={saving}
+            token={token}
+            countyId={countyId}
+          />
         </div>
       )}
     </div>
@@ -568,6 +715,8 @@ function CountyCard({ county, token, onUpdated }) {
                     onSave={handleAddSource}
                     onCancel={() => setAddingSource(false)}
                     saving={savingSource}
+                    token={token}
+                    countyId={county.county_id}
                   />
                 ) : (
                   <button
