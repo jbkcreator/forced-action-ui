@@ -62,7 +62,13 @@ export function winGraphicUrl(dealOutcomeId, base = '') {
 
 // ─── Referral Team View ─────────────────────────────────────────────────────
 // GET /api/feed/{feedUuid}/team-view
-//   returns { unlocked, team_id?, county_id?, vertical?, shared_zips, density }
+//   returns {
+//     unlocked,          // bool — true when an active team exists
+//     status?,           // 'active' | 'broken' — present when a team record exists
+//     broken_at?,        // ISO timestamp — when the team was broken
+//     broken_reason?,    // 'dispute' | 'refund' | 'churn'
+//     team_id?, county_id?, vertical?, shared_zips, density
+//   }
 export function fetchTeamView(feedUuid) {
   return api.get(`/api/feed/${encodeURIComponent(feedUuid)}/team-view`);
 }

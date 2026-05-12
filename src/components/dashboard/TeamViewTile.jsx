@@ -26,10 +26,43 @@ function VerticalLabel({ vertical }) {
 }
 
 
+const BROKEN_REASON_COPY = {
+  dispute: 'A payment dispute was opened on your account.',
+  refund: 'A purchase on your account was refunded.',
+  churn: 'Your subscription lapsed.',
+};
+
+function TeamBrokenBanner({ brokenAt, brokenReason }) {
+  const copy = BROKEN_REASON_COPY[brokenReason] || 'Your team access has been paused.';
+  const date = brokenAt ? new Date(brokenAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : null;
+  return (
+    <section className="mb-6 rounded-xl border border-red-400/30 bg-gradient-to-br from-red-500/5 to-orange-500/5 p-5">
+      <div className="flex items-start gap-3">
+        <Icon name="warning" size={18} className="text-red-400 mt-0.5 shrink-0" />
+        <div>
+          <h3 className="text-white font-semibold text-base leading-snug">Team access paused</h3>
+          <p className="text-slate-300 text-sm mt-1">{copy}</p>
+          <p className="text-slate-400 text-xs mt-1">
+            Resolve your account status to restore shared ZIP view.
+            {date && <span className="ml-1 text-slate-500">· Paused {date}</span>}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
 export default function TeamViewTile({ feedUuid }) {
   const { data, loading, error } = useApi(() => fetchTeamView(feedUuid), [feedUuid]);
 
-  if (loading || error || !data?.unlocked) return null;
+  if (loading || error) return null;
+
+  if (data?.status === 'broken') {
+    return <TeamBrokenBanner brokenAt={data.broken_at} brokenReason={data.broken_reason} />;
+  }
+
+  if (!data?.unlocked) return null;
 
   const density = data.density || [];
   const totalLeads = density.reduce((acc, d) => acc + (d.leads || 0), 0);
