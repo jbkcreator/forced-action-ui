@@ -10,6 +10,7 @@ import Navbar from '../components/layout/Navbar';
 import StatsBar from '../components/dashboard/StatsBar';
 import LeadCard from '../components/dashboard/LeadCard';
 import ReactivateBanner from '../components/dashboard/ReactivateBanner';
+import DisputeBanner from '../components/dashboard/DisputeBanner';
 import CancelModal from '../components/dashboard/CancelModal';
 import LeadPackSection from '../components/dashboard/LeadPackSection';
 import LeadPackModal from '../components/dashboard/LeadPackModal';
@@ -307,6 +308,10 @@ export default function DashboardPage() {
 
           {!loading && !error && (
             <>
+              {subscriber.status === 'disputed' && (
+                <DisputeBanner disputedAt={subscriber.disputed_at} />
+              )}
+
               {subscriber.status === 'grace' && (
                 <ReactivateBanner onReactivate={handleReactivate} />
               )}
