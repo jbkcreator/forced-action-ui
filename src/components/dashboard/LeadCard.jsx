@@ -3,6 +3,8 @@ import { DISTRESS_TAG_COLORS } from '../../config/constants';
 import { formatRelativeDate } from '../../utils/format';
 import Icon from '../ui/Icon';
 import UrgencyBadge from './UrgencyBadge';
+import LeadHoldBanner from './LeadHoldBanner';
+import useLeadHold from '../../hooks/useLeadHold';
 
 function esc(s) {
   return String(s || '');
@@ -12,9 +14,10 @@ function formatTagLabel(s) {
   return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-function LeadCard({ lead, index, onUnlockHotLead, contacted, onToggleContacted, onOpenPremium, urgencyViewers }) {
+function LeadCard({ lead, index, onUnlockHotLead, contacted, onToggleContacted, onOpenPremium, urgencyViewers, feedUuid }) {
   const [expanded, setExpanded] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const holdStatus = useLeadHold(lead.property_id, feedUuid, lead.property_id != null);
 
   const tier = lead.lead_tier || '';
   const tierColor = tier === 'Ultra Platinum' ? 'text-purple-400' :
@@ -116,6 +119,9 @@ function LeadCard({ lead, index, onUnlockHotLead, contacted, onToggleContacted, 
         )}
       </div>
 
+      {/* Lead-hold countdown — Redis-backed 20-min reservation */}
+      <LeadHoldBanner status={holdStatus} />
+
       {/* Latest incident with relative date */}
       {lead.incidents?.length > 0 && (
         <p className="mt-3 text-xs text-slate-400 flex items-center gap-1.5">
@@ -185,6 +191,7 @@ function areEqual(prev, next) {
     prev.index === next.index &&
     prev.contacted === next.contacted &&
     prev.urgencyViewers === next.urgencyViewers &&
+    prev.feedUuid === next.feedUuid &&
     prev.onToggleContacted === next.onToggleContacted &&
     prev.onOpenPremium === next.onOpenPremium &&
     prev.onUnlockHotLead === next.onUnlockHotLead
