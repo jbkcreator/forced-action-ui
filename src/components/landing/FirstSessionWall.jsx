@@ -19,9 +19,16 @@
  *   onRequestUnlock(lead) — callback invoked when a user taps any Unlock CTA
  */
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanding } from './LandingContext';
-import { fetchProofLeads, createFreeSignup, createPaymentIntent } from '../../api/phase2b';
+import {
+  fetchProofLeads,
+  createFreeSignup,
+  createPaymentIntent,
+  logBusinessEvent,
+} from '../../api/phase2b';
 import PaymentSheetModal from '../common/PaymentSheetModal';
+import LandingAttribution from './LandingAttribution';
 import Icon from '../ui/Icon';
 
 const COUNTDOWN_SECONDS = 15 * 60;          // 15 minutes
@@ -197,7 +204,8 @@ function BlurredLead({ lead, onUnlock }) {
 
 
 export default function FirstSessionWall({ onRequestUnlock }) {
-	const { selectedVertical, countyId } = useLanding();
+	const { selectedVertical, countyId, attribution } = useLanding();
+	const navigate = useNavigate();
 
 	const [payload, setPayload] = useState(null);
 	const [loading, setLoading] = useState(true);
@@ -228,6 +236,8 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 		state: 'idle',
 		lead: null,
 		email: '',
+		phone: '',
+		smsConsent: false,
 		feedUuid: null,
 		clientSecret: null,
 		publishableKey: null,
@@ -245,7 +255,19 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 		setLoading(true);
 		setError(null);
 		fetchProofLeads({ vertical: selectedVertical, countyId, feedUuid: flow.feedUuid || undefined })
-			.then(data => { if (!cancelled) setPayload(data); })
+			.then(data => {
+				if (cancelled) return;
+				setPayload(data);
+				logBusinessEvent('PROOF_MOMENT_VIEWED', {
+					feedUuid: flow.feedUuid || null,
+					payload: {
+						vertical: selectedVertical,
+						county_id: countyId,
+						revealed_count: Array.isArray(data?.revealed) ? data.revealed.length : 0,
+						blurred_count: Array.isArray(data?.blurred) ? data.blurred.length : 0,
+					},
+				});
+			})
 			.catch(err => { if (!cancelled) setError(err?.message || 'Could not load leads'); })
 			.finally(() => { if (!cancelled) setLoading(false); });
 		return () => { cancelled = true; };
@@ -265,6 +287,10 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 
 	// Begin the unlock flow for a specific blurred lead.
 	const handleUnlock = (lead) => {
+		logBusinessEvent('LEAD_UNLOCK_CLICKED', {
+			feedUuid: flow.feedUuid,
+			payload: { property_id: lead?.property_id, lead_tier: lead?.lead_tier },
+		});
 		// If no feed_uuid yet → ask for email first.
 		if (!flow.feedUuid) {
 			setFlow(f => ({ ...f, state: 'email', lead, err: null }));
@@ -276,6 +302,10 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 
 	const runPaymentIntentFlow = async (lead, feedUuid) => {
 		setFlow(f => ({ ...f, state: 'creating_intent', lead, feedUuid, err: null }));
+		logBusinessEvent('PAYMENT_STARTED', {
+			feedUuid,
+			payload: { product: 'lead_unlock', property_id: lead?.property_id },
+		});
 		try {
 			const result = await createPaymentIntent({
 				feedUuid,
@@ -307,9 +337,36 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 			setFlow(f => ({ ...f, err: 'Enter a valid email' }));
 			return;
 		}
+		const rawPhone = (flow.phone || '').trim();
+		// Lightweight client-side validation: must contain 10–15 digits.
+		const phoneDigits = rawPhone.replace(/\D/g, '');
+		if (rawPhone && (phoneDigits.length < 10 || phoneDigits.length > 15)) {
+			setFlow(f => ({ ...f, err: 'Enter a valid phone number (10 digits)' }));
+			return;
+		}
 		setFlow(f => ({ ...f, state: 'signing_up', err: null }));
+		logBusinessEvent('SIGNUP_STARTED', {
+			payload: {
+				channel: 'email',
+				signup_source: attribution?.signupSource || null,
+			},
+		});
 		try {
-			const result = await createFreeSignup({ email, vertical: selectedVertical, countyId });
+			const result = await createFreeSignup({
+				email,
+				vertical: selectedVertical,
+				countyId,
+				phone: rawPhone || null,
+				smsConsent: !!(rawPhone && flow.smsConsent),
+				// fa017 — attribution captured at landing
+				signupSource: attribution?.signupSource || null,
+				utmSource: attribution?.utmSource || null,
+				utmMedium: attribution?.utmMedium || null,
+				utmCampaign: attribution?.utmCampaign || null,
+				campaignId: attribution?.campaignId || null,
+				referralCode: attribution?.referralCode || null,
+				attributionToken: attribution?.attributionToken || null,
+			});
 			const feedUuid = result.feed_uuid;
 			await runPaymentIntentFlow(flow.lead, feedUuid);
 		} catch (e) {
@@ -321,12 +378,17 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 		if (flow.lead?.property_id != null) {
 			setRevealedIds(prev => new Set(prev).add(flow.lead.property_id));
 		}
-		// Refetch proof-leads with feed_uuid so the just-purchased lead comes
-		// back with real contact data and unlocked=true. Without this, the
-		// blurred lead object stays empty and the UI shows the FREE-preview
-		// badge on a paid card. Stripe webhook writes the SentLead row in the
-		// background; brief delay gives it time to land before we requery.
 		const feedUuid = flow.feedUuid;
+		logBusinessEvent('PAYMENT_SUCCEEDED', {
+			feedUuid,
+			payload: {
+				product: 'lead_unlock',
+				property_id: flow.lead?.property_id,
+				signup_source: attribution?.signupSource || null,
+			},
+		});
+		// Brief inline reveal of the just-purchased lead so the user sees
+		// the contact data appear on the landing page before we navigate.
 		if (feedUuid) {
 			setTimeout(() => {
 				fetchProofLeads({ vertical: selectedVertical, countyId, feedUuid })
@@ -334,13 +396,18 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 					.catch(() => {});
 			}, 1200);
 		}
-		// Briefly keep the success state visible then close.
+		// fa017: after the inline reveal animation finishes, route them into
+		// the authenticated dashboard so they discover credits / banners /
+		// settings. Matches the pricing-checkout flow's success behaviour.
 		setTimeout(() => {
 			setFlow({
 				state: 'idle', lead: null, email: flow.email,
 				feedUuid, clientSecret: null, publishableKey: null, err: null,
 			});
-		}, 1500);
+			if (feedUuid) {
+				navigate(`/dashboard/${feedUuid}`);
+			}
+		}, 1800);
 	};
 
 	const handlePaymentClose = () => {
@@ -354,6 +421,10 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 
 	return (
 		<section id="first-session-wall" className="max-w-3xl mx-auto px-6 py-12">
+			{/* fa017: source-attribution badge (only renders for known channels) */}
+			<div className="mb-3 flex justify-center md:justify-start">
+				<LandingAttribution />
+			</div>
 			{/* ROI frame + countdown header */}
 			<div className={`rounded-xl border p-5 mb-5 ${
 				windowExpired
@@ -459,6 +530,29 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 							disabled={flow.state !== 'email'}
 							className="mt-4 w-full rounded-md bg-white/5 border border-white/10 px-3 py-2 text-white placeholder:text-slate-500 focus:border-yellow-400/60 focus:outline-none"
 						/>
+						<input
+							type="tel"
+							inputMode="tel"
+							autoComplete="tel"
+							placeholder="Phone (optional, for lead alerts)"
+							value={flow.phone}
+							onChange={e => setFlow(f => ({ ...f, phone: e.target.value, err: null }))}
+							disabled={flow.state !== 'email'}
+							className="mt-3 w-full rounded-md bg-white/5 border border-white/10 px-3 py-2 text-white placeholder:text-slate-500 focus:border-yellow-400/60 focus:outline-none"
+						/>
+						<label className="mt-3 flex items-start gap-2 cursor-pointer">
+							<input
+								type="checkbox"
+								checked={flow.smsConsent}
+								onChange={e => setFlow(f => ({ ...f, smsConsent: e.target.checked }))}
+								disabled={flow.state !== 'email' || !flow.phone}
+								className="mt-0.5 h-3.5 w-3.5 rounded border-white/20 bg-white/5 accent-yellow-400 disabled:opacity-40"
+							/>
+							<span className="text-slate-400 text-[11px] leading-snug">
+								Text me lead alerts &amp; offers. Reply STOP to opt out anytime.
+								Msg &amp; data rates may apply.
+							</span>
+						</label>
 						{flow.err && <p className="mt-2 text-red-400 text-xs">{flow.err}</p>}
 						<p className="mt-3 text-slate-500 text-[11px]">
 							Card saved on unlock. <span className="text-emerald-400">+2 bonus credits</span> if saved within 10 min.

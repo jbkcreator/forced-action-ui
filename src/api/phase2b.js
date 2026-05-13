@@ -9,14 +9,50 @@ import { api } from './client';
 // ─── Free Signup ────────────────────────────────────────────────────────────
 // POST /api/free-signup — creates (or reuses) a free-tier subscriber by email.
 // Returns { subscriber_id, feed_uuid, tier, status, email, vertical, county_id }
-export function createFreeSignup({ email, vertical = 'roofing', countyId = 'hillsborough', name = null, referralCode = null }) {
+export function createFreeSignup({
+  email,
+  vertical = 'roofing',
+  countyId = 'hillsborough',
+  name = null,
+  referralCode = null,
+  phone = null,
+  smsConsent = false,
+  // fa017 signup-source attribution
+  signupSource = null,
+  utmSource = null,
+  utmMedium = null,
+  utmCampaign = null,
+  campaignId = null,
+  attributionToken = null,
+}) {
   return api.post('/api/free-signup', {
     email,
     vertical,
     county_id: countyId,
     name,
     referral_code: referralCode,
+    phone,
+    sms_consent: smsConsent,
+    signup_source: signupSource,
+    utm_source: utmSource,
+    utm_medium: utmMedium,
+    utm_campaign: utmCampaign,
+    campaign_id: campaignId,
+    attribution_token: attributionToken,
   });
+}
+
+// fa017 — fire-and-forget audit endpoint for frontend-only events
+// (LANDING_PAGE_VIEWED, SIGNUP_STARTED, LEAD_UNLOCK_CLICKED, etc.).
+// Backend returns 204 always; we swallow any error so this never blocks UX.
+export function logBusinessEvent(eventType, { feedUuid = null, payload = null } = {}) {
+  return api
+    .post('/api/business-event', {
+      event_type: eventType,
+      feed_uuid: feedUuid,
+      payload,
+    })
+    .catch(() => {});
 }
 
 // ─── Proof Moment ───────────────────────────────────────────────────────────

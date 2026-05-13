@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import useApi from '../hooks/useApi';
 import useFeedFilters from '../hooks/useFeedFilters';
@@ -26,6 +26,9 @@ import DataOnlySaveOfferBanner from '../components/dashboard/DataOnlySaveOfferBa
 import APProUpsellBanner from '../components/dashboard/APProUpsellBanner';
 import ApLiteUpgradeBanner, { readApLiteDismissed, writeApLiteDismissed } from '../components/dashboard/ApLiteUpgradeBanner';
 import WalletToLockUpgradeBanner, { readW2LDismissed, writeW2LDismissed } from '../components/dashboard/WalletToLockUpgradeBanner';
+import AcceleratedWalletOfferBanner, { readAwDismissed } from '../components/dashboard/AcceleratedWalletOfferBanner';
+import AcceleratedWalletOfferModal from '../components/dashboard/AcceleratedWalletOfferModal';
+import { declineAcceleratedWalletOffer } from '../api/wallet';
 import FlashScarcityBanner from '../components/dashboard/FlashScarcityBanner';
 import PauseStatusBanner from '../components/dashboard/PauseStatusBanner';
 import PauseModal from '../components/dashboard/PauseModal';
@@ -89,6 +92,8 @@ export default function DashboardPage() {
   const [apProDismissed, setApProDismissed] = useState(false);
   const [apLiteDismissed, setApLiteDismissed] = useState(() => feedUuid ? readApLiteDismissed(feedUuid) : false);
   const [w2lDismissed, setW2LDismissed] = useState(() => feedUuid ? readW2LDismissed(feedUuid) : false);
+  const [awDismissed, setAwDismissed] = useState(() => feedUuid ? readAwDismissed(feedUuid) : false);
+  const [awModalOpen, setAwModalOpen] = useState(false);
   const [bundleDismissed, setBundleDismissed] = useState(false);
   const [pauseModalOpen, setPauseModalOpen] = useState(false);
   const [saveOfferDismissed, setSaveOfferDismissed] = useState(false);
@@ -131,6 +136,16 @@ export default function DashboardPage() {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
+  // fa016 — accelerated wallet push deep link (?wallet_offer=accept). Auto-opens
+  // the modal so SMS link landings go straight to one-tap activation.
+  const urlWalletOffer = searchParams.get('wallet_offer') === 'accept';
+  const closeWalletOffer = useCallback(() => {
+    setAwModalOpen(false);
+    const next = new URLSearchParams(searchParams);
+    if (next.get('wallet_offer')) next.delete('wallet_offer');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   // Stage 5 — bundle deep link from SMS dispatcher
   const bundleParam = searchParams.get('bundle');
   const variantParam = searchParams.get('variant') || 'a';
@@ -166,6 +181,39 @@ export default function DashboardPage() {
   const leads = data?.leads || [];
   const totalPages = data?.pages || 1;
   const isPaused = subscriber.status === 'paused';
+
+  // fa016 — auto-open the modal when ?wallet_offer=accept is present AND the
+  // feed actually has an active offer. We only auto-open once per dashboard
+  // visit; if the user closes it (or activates the wallet), `awAutoOpened` is
+  // set so a stale ?wallet_offer=accept URL doesn't pop it back open.
+  const [awAutoOpened, setAwAutoOpened] = useState(false);
+  useEffect(() => {
+    if (
+      urlWalletOffer
+      && subscriber?.accelerated_wallet_offer_active
+      && !awModalOpen
+      && !awAutoOpened
+    ) {
+      setAwModalOpen(true);
+      setAwAutoOpened(true);
+    }
+  }, [urlWalletOffer, subscriber?.accelerated_wallet_offer_active, awModalOpen, awAutoOpened]);
+
+  const handleDeclineAwOffer = useCallback((offerId) => {
+    setAwDismissed(true);
+    if (!feedUuid || !offerId) return;
+    declineAcceleratedWalletOffer(feedUuid, offerId).catch(() => {});
+  }, [feedUuid]);
+
+  const handleAwSuccess = useCallback(() => {
+    // Refetch feed in ~2s so credits_balance + offer state update post-webhook,
+    // and again at ~5s to catch slower webhook delivery.
+    setTimeout(refetch, 2000);
+    setTimeout(refetch, 5000);
+    // Lock the auto-opener so a stale ?wallet_offer=accept doesn't pop the
+    // modal back open while we're waiting on the webhook.
+    setAwAutoOpened(true);
+  }, [refetch]);
 
   // Always-on Annual offer: monthly subscribers ≥ 14 days who haven't dismissed in the last 7 days.
   // URL deep-link continues to win over any local dismissal.
@@ -366,6 +414,20 @@ export default function DashboardPage() {
                 />
               )}
 
+              {/* fa016: Accelerated Wallet Push — saved-card subscribers with first paid intent */}
+              {subscriber.accelerated_wallet_offer_active && !awDismissed && !isPaused && (
+                <AcceleratedWalletOfferBanner
+                  feedUuid={feedUuid}
+                  offerId={subscriber.accelerated_wallet_offer_id}
+                  creditsOffered={subscriber.accelerated_wallet_offer_credits || 20}
+                  priceCents={subscriber.accelerated_wallet_offer_price_cents || 4900}
+                  missedLeads={subscriber.missed_lead_count || 0}
+                  savedCardLast4={subscriber.saved_card_last4}
+                  onActivate={() => setAwModalOpen(true)}
+                  onDecline={handleDeclineAwOffer}
+                />
+              )}
+
               {/* Stage 6: Wallet-to-Lock upgrade — wallet subscribers who hit the spend threshold */}
               {subscriber.wallet_to_lock_eligible && !w2lDismissed && !isPaused && (
                 <WalletToLockUpgradeBanner
@@ -542,6 +604,19 @@ export default function DashboardPage() {
           feedUuid={feedUuid}
           onClose={closeTopup}
           onSuccess={handleTopupSuccess}
+        />
+
+        {/* fa016 — Accelerated Wallet Push modal (opens via ?wallet_offer=accept
+            deep link or the banner CTA). */}
+        <AcceleratedWalletOfferModal
+          isOpen={awModalOpen}
+          feedUuid={feedUuid}
+          offerId={subscriber.accelerated_wallet_offer_id}
+          creditsOffered={subscriber.accelerated_wallet_offer_credits || 20}
+          priceCents={subscriber.accelerated_wallet_offer_price_cents || 4900}
+          savedCardLast4={subscriber.saved_card_last4}
+          onClose={closeWalletOffer}
+          onSuccess={handleAwSuccess}
         />
 
         {/* Stage 5: Premium credits modal */}

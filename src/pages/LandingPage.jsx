@@ -20,7 +20,7 @@ import useStripeCheckout from '../hooks/useStripeCheckout';
 import { TIER_ZIP_LIMITS } from '../config/pricing';
 
 function LandingContent() {
-  const { selectedVertical, countyId } = useLanding();
+  const { selectedVertical, countyId, attribution } = useLanding();
   const [emailGate, setEmailGate] = useState({ open: false, tier: null });
   const [userEmail, setUserEmail] = useState('');
   const [zipCollector, setZipCollector] = useState({ open: false, tier: null });
@@ -40,11 +40,19 @@ function LandingContent() {
     setZipCollector({ open: true, tier: emailGate.tier });
   }, [emailGate.tier]);
 
-  // Step 3: ZIPs collected → launch Stripe checkout with email
+  // Step 3: ZIPs collected → launch Stripe checkout. fa017: pass attribution
+  // so the pre-checkout free-signup persists signup_source/utm_* on the row.
   const handleZipCollectorProceed = useCallback((zips) => {
     setZipCollector({ open: false, tier: null });
-    openCheckout({ tier: zipCollector.tier, vertical: selectedVertical, countyId, zipCodes: zips, email: userEmail });
-  }, [zipCollector.tier, selectedVertical, countyId, openCheckout, userEmail]);
+    openCheckout({
+      tier: zipCollector.tier,
+      vertical: selectedVertical,
+      countyId,
+      zipCodes: zips,
+      email: userEmail,
+      attribution,
+    });
+  }, [zipCollector.tier, selectedVertical, countyId, openCheckout, userEmail, attribution]);
 
   return (
     <div className="gradient-bg min-h-screen text-white" style={{ scrollBehavior: 'smooth' }}>
