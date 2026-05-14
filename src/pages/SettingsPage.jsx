@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import useApi from '../hooks/useApi';
-import { fetchFeed } from '../api/dashboard';
+import { fetchFeed, fetchReferralStatus } from '../api/dashboard';
 import { acceptAnnual, upgradeTier, openBillingPortal } from '../api/account';
 import Navbar from '../components/layout/Navbar';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -82,6 +82,37 @@ export default function SettingsPage() {
 
   const subscriber = data?.subscriber || {};
   const tierLabel = TIER_LABEL[subscriber.tier] || subscriber.tier || '—';
+
+  const { data: referralData } = useApi(
+    (signal) => fetchReferralStatus(feedUuid, { signal }).catch(() => null),
+    [feedUuid],
+  );
+
+  const referralLink = (() => {
+    if (!referralData) return null;
+    // Backend returns share_url like "{base_url}/share/REFXXXX"; if base_url
+    // isn't configured server-side it falls back to "/share/REFXXXX" with no
+    // origin — compose from window.location.origin for the user-facing copy.
+    const raw = referralData.share_url;
+    if (raw && raw.startsWith('http')) return raw;
+    // Extract the code from a partial path, or derive from `?ref=` query usage.
+    const codeMatch = raw && raw.match(/\/share\/([^/?#]+)/);
+    const code = codeMatch ? codeMatch[1] : null;
+    if (!code) return null;
+    return `${window.location.origin}/?ref=${code}`;
+  })();
+
+  const [copied, setCopied] = useState(false);
+  const handleCopyReferral = useCallback(async () => {
+    if (!referralLink) return;
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (e) {
+      // navigator.clipboard not available — fall through silently
+    }
+  }, [referralLink]);
 
   const [annualState, setAnnualState] = useState({ submitting: false, error: null, done: false });
   const [proState, setProState] = useState({ submitting: false, error: null, done: false });
@@ -267,6 +298,61 @@ export default function SettingsPage() {
                   </div>
                 )}
               </Tile>
+
+              {referralLink && (
+                <Tile
+                  title="Your Referral Link"
+                  subtitle="Share this — every confirmed paid checkout credits your account. 3 referrals in the same county + vertical unlocks a team."
+                  action={
+                    referralData?.confirmed_count != null && (
+                      <span className="text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 px-3 py-1 rounded-full">
+                        {referralData.confirmed_count} confirmed
+                      </span>
+                    )
+                  }
+                >
+                  <div className="rounded-xl bg-slate-950/60 border border-white/10 p-3 flex items-center gap-3 flex-wrap">
+                    <code className="flex-1 min-w-0 text-xs sm:text-sm text-yellow-300 break-all">{referralLink}</code>
+                    <button
+                      type="button"
+                      onClick={handleCopyReferral}
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-900"
+                      style={{ background: copied ? '#34d399' : '#facc15' }}
+                    >
+                      {copied ? 'Copied ✓' : 'Copy'}
+                    </button>
+                  </div>
+
+                  {referralData?.next_milestone && (
+                    <p className="text-xs text-slate-400 mt-3">
+                      Next milestone:{' '}
+                      <span className="text-yellow-300 font-semibold">
+                        {referralData.next_milestone.milestone.replace(/_/g, ' ')}
+                      </span>{' '}
+                      — {referralData.next_milestone.remaining} more confirmed referral{referralData.next_milestone.remaining === 1 ? '' : 's'}.
+                    </p>
+                  )}
+
+                  {Array.isArray(referralData?.milestones_awarded) && referralData.milestones_awarded.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {referralData.milestones_awarded.map((m) => (
+                        <span
+                          key={m.milestone}
+                          className="text-[11px] font-semibold bg-yellow-400/10 border border-yellow-400/30 text-yellow-300 px-2.5 py-1 rounded-full"
+                        >
+                          ✓ {m.milestone.replace(/_/g, ' ')}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {referralData?.bonus_zip_slots > 0 && (
+                    <p className="text-xs text-emerald-300 mt-3">
+                      You have {referralData.bonus_zip_slots} bonus ZIP slot{referralData.bonus_zip_slots === 1 ? '' : 's'} available — redeem via support.
+                    </p>
+                  )}
+                </Tile>
+              )}
 
               <Tile title="Billing" subtitle="Stripe billing portal — update card, view invoices, or cancel.">
                 <StatRow

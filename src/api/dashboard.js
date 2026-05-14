@@ -58,3 +58,7 @@ export function unlockLead({ feedUuid, propertyId, leadTier, zip }) {
 export function acceptSaveOffer(feedUuid) {
   return api.post('/api/upgrade', { feed_uuid: feedUuid, tier: 'data_only' });
 }
+
+export function fetchReferralStatus(feedUuid, { signal } = {}) {
+  return api.get(`/api/referral/status/${feedUuid}`, undefined, { signal });
+}
