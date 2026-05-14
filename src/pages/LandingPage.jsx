@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { LandingProvider, useLanding } from '../components/landing/LandingContext';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
@@ -18,27 +19,69 @@ import ZipTerritoryMap from '../components/landing/ZipTerritoryMap';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
 import useStripeCheckout from '../hooks/useStripeCheckout';
 import { TIER_ZIP_LIMITS } from '../config/pricing';
+import { createFreeSignup, logBusinessEvent } from '../api/phase2b';
 
 function LandingContent() {
+  const navigate = useNavigate();
   const { selectedVertical, countyId, attribution } = useLanding();
-  const [emailGate, setEmailGate] = useState({ open: false, tier: null });
+  // emailGate.flow: 'paid' (goes to ZIP collector → Stripe) or 'free' (goes to /api/free-signup → dashboard)
+  const [emailGate, setEmailGate] = useState({ open: false, tier: null, flow: 'paid' });
   const [userEmail, setUserEmail] = useState('');
   const [zipCollector, setZipCollector] = useState({ open: false, tier: null });
   const [lastCheckedZip, setLastCheckedZip] = useState('');
+  const [freeSigningUp, setFreeSigningUp] = useState(false);
   const { isOpen, loading, checkoutError, openCheckout, closeCheckout, embeddedRef } = useStripeCheckout();
   const pricingRef = useRef(null);
 
-  // Step 1: User clicks a plan → open email gate first
+  // Step 1: User clicks a paid plan → open email gate first
   const handleCheckout = useCallback((tier) => {
-    setEmailGate({ open: true, tier });
+    setEmailGate({ open: true, tier, flow: 'paid' });
   }, []);
 
-  // Step 2: Email collected → always open ZIP collector grid (all tiers)
-  const handleEmailProceed = useCallback((email) => {
+  // Free-tier entry: Start Free button → open email gate in 'free' flow
+  const handleStartFree = useCallback(() => {
+    logBusinessEvent('SIGNUP_STARTED', { payload: { source: 'free_cta' } });
+    setEmailGate({ open: true, tier: null, flow: 'free' });
+  }, []);
+
+  // Step 2: Email collected
+  //   - paid flow → ZIP collector grid → Stripe
+  //   - free flow → /api/free-signup (no intent, welcome email fires) → /dashboard/{uuid}
+  const handleEmailProceed = useCallback(async (email) => {
     setUserEmail(email);
-    setEmailGate({ open: false, tier: null });
+
+    if (emailGate.flow === 'free') {
+      setFreeSigningUp(true);
+      try {
+        const resp = await createFreeSignup({
+          email,
+          vertical: selectedVertical,
+          countyId,
+          signupSource: attribution?.signupSource || 'landing_page',
+          utmSource: attribution?.utmSource || null,
+          utmMedium: attribution?.utmMedium || null,
+          utmCampaign: attribution?.utmCampaign || null,
+          campaignId: attribution?.campaignId || null,
+          referralCode: attribution?.referralCode || null,
+          attributionToken: attribution?.attributionToken || null,
+          // intent omitted → welcome email fires from /api/free-signup
+        });
+        setEmailGate({ open: false, tier: null, flow: 'paid' });
+        if (resp?.feed_uuid) {
+          navigate(`/dashboard/${resp.feed_uuid}`);
+        } else {
+          alert('Signup succeeded but feed link missing. Check your email.');
+        }
+      } catch (err) {
+        setFreeSigningUp(false);
+        alert(err?.detail?.message || err?.message || 'Free signup failed. Try again.');
+      }
+      return;
+    }
+
+    setEmailGate({ open: false, tier: null, flow: 'paid' });
     setZipCollector({ open: true, tier: emailGate.tier });
-  }, [emailGate.tier]);
+  }, [emailGate.flow, emailGate.tier, selectedVertical, countyId, attribution, navigate]);
 
   // Step 3: ZIPs collected → launch Stripe checkout. fa017: pass attribution
   // so the pre-checkout free-signup persists signup_source/utm_* on the row.
@@ -61,7 +104,7 @@ function LandingContent() {
         <StickyHeaderCTA targetRef={pricingRef} />
 
         <div id="main-content">
-          <HeroBanner />
+          <HeroBanner onStartFree={handleStartFree} />
           <div className="max-w-6xl mx-auto px-6 text-center">
             <TrustBar />
             <VerticalSelector />
@@ -91,7 +134,7 @@ function LandingContent() {
           </div>
 
           <div id="pricing" ref={pricingRef}>
-            <PricingSection onCheckout={handleCheckout} />
+            <PricingSection onCheckout={handleCheckout} onStartFree={handleStartFree} />
           </div>
 
           {/* Stage 5: anonymized social proof wall — recent contractor wins */}
@@ -104,8 +147,14 @@ function LandingContent() {
 
         <EmailGateModal
           isOpen={emailGate.open}
-          onClose={() => setEmailGate({ open: false, tier: null })}
+          onClose={() => setEmailGate({ open: false, tier: null, flow: 'paid' })}
           onProceed={handleEmailProceed}
+          submitting={freeSigningUp && emailGate.flow === 'free'}
+          submitLabel={emailGate.flow === 'free' ? 'Start Free' : 'Continue'}
+          title={emailGate.flow === 'free' ? 'Get your free dashboard access' : 'Enter your email to continue'}
+          description={emailGate.flow === 'free'
+            ? "We'll set up your free dashboard with blurred leads in your county. Unlock the ones you want for $4 each."
+            : "We'll use this to set up your account and send your lead feed access."}
         />
 
         <ZipCollectorModal

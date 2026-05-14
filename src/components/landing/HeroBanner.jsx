@@ -1,4 +1,4 @@
-export default function HeroBanner() {
+export default function HeroBanner({ onStartFree }) {
   return (
     <section className="max-w-6xl mx-auto px-6 pt-24 pb-8 text-center">
       <div className="animate-fade-in-up">
@@ -14,8 +14,29 @@ export default function HeroBanner() {
         <span className="gradient-text">Sees Them</span>
       </h1>
 
-      <p className="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto mb-8 leading-relaxed animate-fade-in-up delay-200">
+      <p className="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto mb-6 leading-relaxed animate-fade-in-up delay-200">
         Every storm, permit, eviction, and insurance claim in Hillsborough County — scored, ranked, and delivered to your exclusive territory before anyone else gets them.
+      </p>
+
+      {onStartFree && (
+        <div className="animate-fade-in-up delay-300 flex flex-col sm:flex-row items-center justify-center gap-3 mb-2">
+          <button
+            type="button"
+            onClick={onStartFree}
+            className="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-7 py-3 rounded-xl transition shadow-lg shadow-yellow-400/20"
+          >
+            Start Free — Claim Lead Preview
+          </button>
+          <a
+            href="#pricing"
+            className="text-sm text-slate-400 hover:text-white transition underline-offset-4 hover:underline"
+          >
+            or browse plans →
+          </a>
+        </div>
+      )}
+      <p className="text-xs text-slate-500 mt-3">
+        No card required. See blurred leads in your county and unlock individual leads for $4.
       </p>
     </section>
   );

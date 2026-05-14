@@ -366,6 +366,9 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 				campaignId: attribution?.campaignId || null,
 				referralCode: attribution?.referralCode || null,
 				attributionToken: attribution?.attributionToken || null,
+				// User is about to pay $4 to unlock — defer welcome email until
+				// payment_intent.succeeded fires.
+				intent: 'unlock',
 			});
 			const feedUuid = result.feed_uuid;
 			await runPaymentIntentFlow(flow.lead, feedUuid);

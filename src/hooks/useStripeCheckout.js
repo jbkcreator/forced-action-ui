@@ -39,6 +39,10 @@ export default function useStripeCheckout() {
         campaignId: attribution?.campaignId || null,
         referralCode: attribution?.referralCode || null,
         attributionToken: attribution?.attributionToken || null,
+        // User is about to pay for a tier — defer welcome email until
+        // checkout webhook fires. Avoids "Welcome!" landing in their inbox
+        // before they've actually paid.
+        intent: 'upgrade',
       });
       feedUuid = signup?.feed_uuid || null;
       checkoutCtxRef.current.feedUuid = feedUuid;

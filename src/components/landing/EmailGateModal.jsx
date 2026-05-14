@@ -1,7 +1,15 @@
 import { useState } from 'react';
 import Modal, { ModalClose } from '../ui/Modal';
 
-export default function EmailGateModal({ isOpen, onClose, onProceed }) {
+export default function EmailGateModal({
+  isOpen,
+  onClose,
+  onProceed,
+  title = 'Enter your email to continue',
+  description = "We'll use this to set up your account and send your lead feed access.",
+  submitLabel = 'Continue',
+  submitting = false,
+}) {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
 
@@ -13,6 +21,7 @@ export default function EmailGateModal({ isOpen, onClose, onProceed }) {
   }
 
   function handleSubmit() {
+    if (submitting) return;
     const err = validate(email);
     if (err) { setError(err); return; }
     setError('');
@@ -41,9 +50,9 @@ export default function EmailGateModal({ isOpen, onClose, onProceed }) {
       >
         <ModalClose onClick={handleClose} />
 
-        <h2 className="text-xl font-bold mb-1">Enter your email to continue</h2>
+        <h2 className="text-xl font-bold mb-1">{title}</h2>
         <p className="text-slate-400 text-sm mb-6">
-          We'll use this to set up your account and send your lead feed access.
+          {description}
         </p>
 
         <input
@@ -53,7 +62,8 @@ export default function EmailGateModal({ isOpen, onClose, onProceed }) {
           onChange={(e) => { setEmail(e.target.value); setError(''); }}
           onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
           autoFocus
-          className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400/40 text-sm mb-2"
+          disabled={submitting}
+          className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400/40 text-sm mb-2 disabled:opacity-60"
         />
 
         {error && (
@@ -64,9 +74,10 @@ export default function EmailGateModal({ isOpen, onClose, onProceed }) {
 
         <button
           onClick={handleSubmit}
-          className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 rounded-xl transition"
+          disabled={submitting}
+          className="w-full bg-yellow-400 hover:bg-yellow-300 disabled:bg-yellow-400/60 text-black font-bold py-3 rounded-xl transition"
         >
-          Continue
+          {submitting ? 'Setting up your dashboard…' : submitLabel}
         </button>
 
         <p className="text-slate-500 text-xs text-center mt-4">

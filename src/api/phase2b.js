@@ -24,6 +24,10 @@ export function createFreeSignup({
   utmCampaign = null,
   campaignId = null,
   attributionToken = null,
+  // Phase 2B: tells the backend the user is mid-purchase so the welcome
+  // email is deferred. Accepted values: 'upgrade' (paid plan), 'unlock'
+  // ($4 lead unlock), or null (true free signup → send welcome now).
+  intent = null,
 }) {
   return api.post('/api/free-signup', {
     email,
@@ -39,6 +43,7 @@ export function createFreeSignup({
     utm_campaign: utmCampaign,
     campaign_id: campaignId,
     attribution_token: attributionToken,
+    intent,
   });
 }
 

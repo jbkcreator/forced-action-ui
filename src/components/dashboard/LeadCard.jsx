@@ -180,7 +180,20 @@ function LeadCard({ lead, index, onUnlockHotLead, contacted, onToggleContacted, 
         </div>
       </div>
 
-      {/* Hot lead unlock — hidden until skip tracing is wired up */}
+      {!lead.unlocked && feedUuid && onUnlockHotLead && (
+        <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between gap-3">
+          <div className="text-xs text-slate-400">
+            <span className="text-slate-300 font-medium">Owner contact hidden.</span> Unlock to reveal phone, email, and owner name.
+          </div>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onUnlockHotLead(lead); }}
+            className="shrink-0 text-sm font-semibold px-4 py-2 rounded-lg bg-yellow-400 text-slate-900 hover:bg-yellow-300 transition"
+          >
+            Unlock $4
+          </button>
+        </div>
+      )}
     </div>
   );
 }

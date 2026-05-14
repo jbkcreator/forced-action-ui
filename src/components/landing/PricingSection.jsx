@@ -1,7 +1,7 @@
 import PricingCard from './PricingCard';
 import Icon from '../ui/Icon';
 
-export default function PricingSection({ onCheckout }) {
+export default function PricingSection({ onCheckout, onStartFree }) {
   return (
     <section className="max-w-6xl mx-auto px-6 py-20">
       <div className="text-center mb-14">
@@ -17,8 +17,27 @@ export default function PricingSection({ onCheckout }) {
         <PricingCard tier="dominator" onCheckout={onCheckout} />
       </div>
 
+      {/* Free signup option */}
+      {onStartFree && (
+        <div className="mt-10 max-w-2xl mx-auto">
+          <div className="glass-card rounded-2xl p-6 text-center border border-yellow-400/20">
+            <h3 className="text-base font-bold text-white mb-1">Not ready to commit?</h3>
+            <p className="text-slate-400 text-sm mb-4">
+              Start free — see blurred leads in your county and unlock the ones you want for $4 each. No card needed.
+            </p>
+            <button
+              type="button"
+              onClick={onStartFree}
+              className="bg-white/[0.06] hover:bg-white/[0.12] text-yellow-300 font-semibold px-6 py-2.5 rounded-lg border border-yellow-400/40 transition"
+            >
+              Start Free →
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 30-Day Guarantee */}
-      <div className="mt-14 max-w-lg mx-auto">
+      <div className="mt-10 max-w-lg mx-auto">
         <div className="glass-card rounded-2xl p-6 sm:p-8 text-center">
           <div className="flex items-center justify-center gap-3 mb-3">
             <Icon name="shield-check" size={32} className="text-yellow-400" />

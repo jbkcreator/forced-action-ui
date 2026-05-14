@@ -45,6 +45,16 @@ export function unlockHotLead(feedUuid, leadId) {
   });
 }
 
+export function unlockLead({ feedUuid, propertyId, leadTier, zip }) {
+  return api.post('/api/payment-intent', {
+    feed_uuid: feedUuid,
+    amount_cents: 400,
+    description: `Unlock ${leadTier || 'Gold'} lead in ${zip || 'your area'}`,
+    save_card: true,
+    metadata: { product: 'lead_unlock', property_id: String(propertyId) },
+  });
+}
+
 export function acceptSaveOffer(feedUuid) {
   return api.post('/api/upgrade', { feed_uuid: feedUuid, tier: 'data_only' });
 }

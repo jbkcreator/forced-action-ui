@@ -5,7 +5,9 @@ import useFeedFilters from '../hooks/useFeedFilters';
 import useContacted from '../hooks/useContacted';
 import useStripePayment from '../hooks/useStripePayment';
 import useZipActivityMap from '../hooks/useZipActivityMap';
-import { fetchFeed, createPortalSession, logEvent, unlockHotLead, createLeadPackCheckout } from '../api/dashboard';
+import { fetchFeed, createPortalSession, logEvent, unlockHotLead, unlockLead, createLeadPackCheckout } from '../api/dashboard';
+import { logBusinessEvent } from '../api/phase2b';
+import PaymentSheetModal from '../components/common/PaymentSheetModal';
 import Navbar from '../components/layout/Navbar';
 import StatsBar from '../components/dashboard/StatsBar';
 import LeadCard from '../components/dashboard/LeadCard';
@@ -15,6 +17,8 @@ import CancelModal from '../components/dashboard/CancelModal';
 import LeadPackSection from '../components/dashboard/LeadPackSection';
 import LeadPackModal from '../components/dashboard/LeadPackModal';
 import LeadPackHistory from '../components/dashboard/LeadPackHistory';
+import BlurredStackSection from '../components/dashboard/BlurredStackSection';
+import FreeTierUpgradeCard from '../components/dashboard/FreeTierUpgradeCard';
 import DashboardHeroBanner from '../components/dashboard/DashboardHeroBanner';
 import OnboardingChecklist from '../components/dashboard/OnboardingChecklist';
 import MonetizationWall from '../components/dashboard/MonetizationWall';
@@ -88,6 +92,12 @@ export default function DashboardPage() {
   const [lpOpen, setLpOpen] = useState(false);
   const [dealCaptureOpen, setDealCaptureOpen] = useState(false);
   const [premiumLead, setPremiumLead] = useState(null);   // lead obj for premium modal
+  const [unlockState, setUnlockState] = useState({
+    open: false,
+    lead: null,
+    clientSecret: null,
+    publishableKey: null,
+  });
   const [annualBannerDismissed, setAnnualBannerDismissed] = useState(false);
   const [apProDismissed, setApProDismissed] = useState(false);
   const [apLiteDismissed, setApLiteDismissed] = useState(() => feedUuid ? readApLiteDismissed(feedUuid) : false);
@@ -182,26 +192,57 @@ export default function DashboardPage() {
   const totalPages = data?.pages || 1;
   const isPaused = subscriber.status === 'paused';
 
-  // fa016 — auto-open the modal when ?wallet_offer=accept is present AND the
-  // feed actually has an active offer. We only auto-open once per dashboard
-  // visit; if the user closes it (or activates the wallet), `awAutoOpened` is
-  // set so a stale ?wallet_offer=accept URL doesn't pop it back open.
+  // fa016 — auto-open the wallet-offer modal in two cases:
+  //   (a) `?wallet_offer=accept` URL param (SMS deep-link) → force-open every visit
+  //   (b) eligible & not seen this session → auto-open once per browser session
+  // The session flag lets users dismiss the modal and only re-encounter it via
+  // the banner (or a fresh tab), not on every navigation.
   const [awAutoOpened, setAwAutoOpened] = useState(false);
   useEffect(() => {
     if (
-      urlWalletOffer
-      && subscriber?.accelerated_wallet_offer_active
-      && !awModalOpen
-      && !awAutoOpened
-    ) {
+      !subscriber?.accelerated_wallet_offer_active
+      || awModalOpen
+      || awAutoOpened
+    ) return;
+
+    const offerId = subscriber.accelerated_wallet_offer_id;
+    const seenKey = `fa.wallet_offer_seen.${subscriber.id}.${offerId || 'na'}`;
+    let seenThisSession = false;
+    try {
+      seenThisSession = sessionStorage.getItem(seenKey) === '1';
+    } catch (e) {
+      // private mode / blocked storage — treat as not seen
+    }
+
+    if (urlWalletOffer || !seenThisSession) {
       setAwModalOpen(true);
       setAwAutoOpened(true);
+      try { sessionStorage.setItem(seenKey, '1'); } catch (e) { /* ignore */ }
+      logBusinessEvent('WALLET_OFFER_SHOWN_IN_APP', {
+        feedUuid,
+        payload: {
+          trigger: urlWalletOffer ? 'url' : 'auto',
+          offer_id: offerId || null,
+        },
+      });
     }
-  }, [urlWalletOffer, subscriber?.accelerated_wallet_offer_active, awModalOpen, awAutoOpened]);
+  }, [
+    urlWalletOffer,
+    subscriber?.id,
+    subscriber?.accelerated_wallet_offer_active,
+    subscriber?.accelerated_wallet_offer_id,
+    awModalOpen,
+    awAutoOpened,
+    feedUuid,
+  ]);
 
   const handleDeclineAwOffer = useCallback((offerId) => {
     setAwDismissed(true);
     if (!feedUuid || !offerId) return;
+    logBusinessEvent('WALLET_DECLINED', {
+      feedUuid,
+      payload: { offer_id: offerId, source: 'dashboard' },
+    });
     declineAcceleratedWalletOffer(feedUuid, offerId).catch(() => {});
   }, [feedUuid]);
 
@@ -244,14 +285,53 @@ export default function DashboardPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setPage]);
 
-  const handleUnlockHotLead = useCallback(async (propertyId) => {
+  const handleUnlockHotLead = useCallback(async (lead) => {
+    if (!lead?.property_id) return;
+    logBusinessEvent('LEAD_UNLOCK_CLICKED', {
+      feedUuid,
+      payload: { property_id: lead.property_id, source: 'dashboard' },
+    });
     try {
-      const { checkout_url } = await unlockHotLead(feedUuid, propertyId);
-      window.open(checkout_url, '_blank');
+      const resp = await unlockLead({
+        feedUuid,
+        propertyId: lead.property_id,
+        leadTier: lead.lead_tier,
+        zip: lead.zip,
+      });
+      logBusinessEvent('PAYMENT_STARTED', {
+        feedUuid,
+        payload: { product: 'lead_unlock', property_id: lead.property_id },
+      });
+      setUnlockState({
+        open: true,
+        lead,
+        clientSecret: resp.client_secret,
+        publishableKey: resp.publishable_key,
+      });
     } catch (err) {
-      alert(err.detail || 'Unable to create checkout. Please try again.');
+      const detail = err?.detail;
+      if (detail?.error === 'lead_held_by_other') {
+        alert('Another subscriber is currently purchasing this lead. Try again in a few minutes.');
+      } else {
+        alert(detail?.message || 'Unable to start unlock. Please try again.');
+      }
     }
   }, [feedUuid]);
+
+  const handleUnlockSuccess = useCallback(() => {
+    logBusinessEvent('PAYMENT_SUCCEEDED', {
+      feedUuid,
+      payload: { product: 'lead_unlock', property_id: unlockState.lead?.property_id },
+    });
+    setUnlockState((s) => ({ ...s, open: false }));
+    // Match FirstSessionWall timing: webhook needs ~1s to stamp SentLead.
+    setTimeout(refetch, 1200);
+    setTimeout(refetch, 4000);
+  }, [feedUuid, unlockState.lead, refetch]);
+
+  const handleUnlockClose = useCallback(() => {
+    setUnlockState((s) => ({ ...s, open: false }));
+  }, []);
 
   const handleCancelConfirm = useCallback(async () => {
     await logEvent('cancel_confirm', feedUuid);
@@ -309,8 +389,19 @@ export default function DashboardPage() {
     await stripePayment.confirmPayment();
     if (stripePayment.step === 'success') {
       logEvent('lead_pack_purchased', feedUuid);
+      logBusinessEvent('LEAD_PACK_PURCHASED', {
+        feedUuid,
+        payload: { zip: lpZip, vertical: subscriber.vertical },
+      });
+      logBusinessEvent('PAYMENT_SUCCEEDED', {
+        feedUuid,
+        payload: { product: 'lead_pack', zip: lpZip },
+      });
+      // Webhook stamps SentLead rows ~1-2s after charge.succeeded; refetch twice.
+      setTimeout(refetch, 1500);
+      setTimeout(refetch, 4500);
     }
-  }, [stripePayment, feedUuid]);
+  }, [stripePayment, feedUuid, lpZip, subscriber.vertical, refetch]);
 
   const handleCloseLpModal = useCallback(() => {
     setLpOpen(false);
@@ -469,6 +560,28 @@ export default function DashboardPage() {
                 />
               )}
 
+              {/* Persistent free-tier upgrade card (replaces dead-end empty state after 48h) */}
+              {subscriber.id && subscriber.tier === 'free' && !isPaused && (
+                <FreeTierUpgradeCard
+                  onScrollToLeads={() => {
+                    const el = document.querySelector('main');
+                    if (el) el.scrollBy({ top: 400, behavior: 'smooth' });
+                  }}
+                  onBuyLeadPack={() => {
+                    const z = (subscriber.locked_zips && subscriber.locked_zips[0]) || '';
+                    if (z) {
+                      handleOpenLpModal(z);
+                    } else {
+                      const zip = window.prompt('Enter the 5-digit ZIP code you want leads from:');
+                      if (zip) handleOpenLpModal(zip);
+                    }
+                  }}
+                  onUpgrade={handleUpgrade}
+                  walletEligible={!!subscriber.accelerated_wallet_offer_active}
+                  onActivateWallet={() => setAwModalOpen(true)}
+                />
+              )}
+
               <OnboardingChecklist totalLeads={data?.total} />
               <DashboardHeroBanner
                 total={data?.total}
@@ -519,9 +632,7 @@ export default function DashboardPage() {
                 </span>
               </div>
 
-              {leads.length === 0 ? (
-                <EmptyState />
-              ) : (
+              {leads.length > 0 && (
                 <>
                   <div className="space-y-3">
                     {leads.map((lead, i) => (
@@ -534,6 +645,7 @@ export default function DashboardPage() {
                         onToggleContacted={toggleContacted}
                         onOpenPremium={setPremiumLead}
                         urgencyViewers={zipActivity[lead.zip]?.active_viewers}
+                        feedUuid={feedUuid}
                       />
                     ))}
                   </div>
@@ -552,6 +664,17 @@ export default function DashboardPage() {
                     onPageChange={handlePageChange}
                   />
                 </>
+              )}
+
+              {data?.blurred_stack?.length > 0 && (
+                <BlurredStackSection
+                  blurred={data.blurred_stack}
+                  onUnlockBlurred={handleUnlockHotLead}
+                />
+              )}
+
+              {leads.length === 0 && !data?.blurred_stack?.length && (
+                <EmptyState />
               )}
 
               <LeadPackHistory feedUuid={feedUuid} />
@@ -628,6 +751,20 @@ export default function DashboardPage() {
           walletBalance={subscriber.wallet_balance || 0}
           onClose={() => setPremiumLead(null)}
           onSuccess={() => setTimeout(() => setPremiumLead(null), 1500)}
+        />
+
+        {/* Phase 2B: $4 lead unlock payment sheet (dashboard) */}
+        <PaymentSheetModal
+          isOpen={unlockState.open}
+          clientSecret={unlockState.clientSecret}
+          publishableKey={unlockState.publishableKey}
+          amountLabel="$4.00"
+          description={unlockState.lead?.address
+            ? `Unlock ${unlockState.lead.address}`
+            : 'Unlock this lead'}
+          saveCardDefault={true}
+          onSuccess={handleUnlockSuccess}
+          onClose={handleUnlockClose}
         />
 
         {/* Phase 2B: Deal-Size Capture modal */}
