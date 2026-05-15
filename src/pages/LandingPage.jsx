@@ -18,7 +18,6 @@ import ZipCollectorModal from '../components/landing/ZipCollectorModal';
 import ZipTerritoryMap from '../components/landing/ZipTerritoryMap';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
 import useStripeCheckout from '../hooks/useStripeCheckout';
-import { TIER_ZIP_LIMITS } from '../config/pricing';
 import { createFreeSignup, logBusinessEvent } from '../api/phase2b';
 
 function LandingContent() {

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { DEFAULT_VERTICAL, DEFAULT_COUNTY_ID } from '../../config/constants';
 import { api } from '../../api/client';
+import { fetchPricing } from '../../api/landing';
 
 const LandingContext = createContext();
 
@@ -59,6 +60,27 @@ export function LandingProvider({ children }) {
 
   const [attribution, setAttribution] = useState(() => readStoredAttribution() || null);
   const [tokenResolving, setTokenResolving] = useState(false);
+
+  // Pricing config (per-tier amounts + display copy) — fetched once from
+  // GET /pricing so the backend is the single source of truth.
+  const [pricing, setPricing] = useState(null);
+  const [pricingLoading, setPricingLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setPricingLoading(true);
+    fetchPricing()
+      .then((res) => {
+        if (!cancelled) setPricing(res?.pricing || null);
+      })
+      .catch(() => {
+        if (!cancelled) setPricing(null);
+      })
+      .finally(() => {
+        if (!cancelled) setPricingLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     // First-touch wins: if we already persisted attribution for this session,
@@ -133,8 +155,10 @@ export function LandingProvider({ children }) {
         attributionToken: null,
       },
       tokenResolving,
+      pricing,
+      pricingLoading,
     }),
-    [selectedVertical, countyId, attribution, tokenResolving],
+    [selectedVertical, countyId, attribution, tokenResolving, pricing, pricingLoading],
   );
 
   return <LandingContext.Provider value={value}>{children}</LandingContext.Provider>;

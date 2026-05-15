@@ -1,5 +1,9 @@
 import { api } from './client';
 
+export function fetchPricing() {
+  return api.get('/api/pricing');
+}
+
 export function fetchFoundingSummary(vertical, countyId) {
   return api.get('/api/founding-summary', { vertical, county_id: countyId });
 }

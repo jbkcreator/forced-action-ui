@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { TIER_ZIP_LIMITS } from '../../config/pricing';
 import Modal, { ModalClose } from '../ui/Modal';
 import { useLanding } from './LandingContext';
 import { fetchZipAvailability } from '../../api/landing';
 
 export default function ZipCollectorModal({ isOpen, onClose, tier, initialZip, onProceed }) {
-  const { selectedVertical, countyId } = useLanding();
-  const limit = TIER_ZIP_LIMITS[tier] || 3;
+  const { selectedVertical, countyId, pricing } = useLanding();
+  const limit = pricing?.[tier]?.zip_limit || 3;
   const [selected, setSelected] = useState(initialZip ? [initialZip] : []);
   const [allZips, setAllZips] = useState([]);
   const [loading, setLoading] = useState(false);
