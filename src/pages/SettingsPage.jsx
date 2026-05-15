@@ -1,7 +1,13 @@
-import { useCallback, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { loadStripe } from '@stripe/stripe-js';
 import useApi from '../hooks/useApi';
-import { fetchFeed, fetchReferralStatus } from '../api/dashboard';
+import {
+  fetchFeed,
+  fetchReferralStatus,
+  createAutoModeCheckout,
+  setAutoMode,
+} from '../api/dashboard';
 import { acceptAnnual, upgradeTier, openBillingPortal } from '../api/account';
 import Navbar from '../components/layout/Navbar';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -9,6 +15,9 @@ import ErrorState from '../components/ui/ErrorState';
 import Icon from '../components/ui/Icon';
 import PauseModal from '../components/dashboard/PauseModal';
 import PauseStatusBanner from '../components/dashboard/PauseStatusBanner';
+import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
+
+const _stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 const TIER_LABEL = {
   free: 'Free',
@@ -120,6 +129,81 @@ export default function SettingsPage() {
   const [confirmAnnual, setConfirmAnnual] = useState(false);
   const [confirmPro, setConfirmPro] = useState(false);
   const [pauseModalOpen, setPauseModalOpen] = useState(false);
+  const [autoModeState, setAutoModeState] = useState({ submitting: false, error: null });
+  // Embedded Stripe Checkout for the Auto Mode add-on.
+  const [autoModeCheckoutOpen, setAutoModeCheckoutOpen] = useState(false);
+  const autoModeEmbeddedRef = useRef(null);
+
+  // Refetch after returning from Stripe Checkout (embedded `return_url` lands here).
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get('auto_mode') === 'success') {
+      refetch();
+      searchParams.delete('auto_mode');
+      searchParams.delete('session_id');
+      setSearchParams(searchParams, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const closeAutoModeCheckout = useCallback(() => {
+    setAutoModeCheckoutOpen(false);
+    if (autoModeEmbeddedRef.current) {
+      try { autoModeEmbeddedRef.current.destroy(); } catch { /* noop */ }
+      autoModeEmbeddedRef.current = null;
+    }
+  }, []);
+
+  const onAutoModeCheckout = useCallback(async () => {
+    if (autoModeState.submitting) return;
+    setAutoModeState({ submitting: true, error: null });
+    setAutoModeCheckoutOpen(true);
+    try {
+      const res = await createAutoModeCheckout({ feedUuid });
+      if (!res?.client_secret) {
+        setAutoModeCheckoutOpen(false);
+        setAutoModeState({ submitting: false, error: 'Could not start checkout.' });
+        return;
+      }
+      const stripe = await _stripePromise;
+      autoModeEmbeddedRef.current = await stripe.initEmbeddedCheckout({
+        clientSecret: res.client_secret,
+        onComplete() {
+          closeAutoModeCheckout();
+          // The Stripe webhook flips auto_mode_enabled — refetch to pick it up.
+          refetch();
+        },
+      });
+      setAutoModeState({ submitting: false, error: null });
+    } catch (err) {
+      setAutoModeCheckoutOpen(false);
+      setAutoModeState({
+        submitting: false,
+        error: err?.detail?.message || err?.message || 'Could not start checkout.',
+      });
+    }
+  }, [feedUuid, autoModeState.submitting, refetch, closeAutoModeCheckout]);
+
+  const onAutoModeToggle = useCallback(async (enabled) => {
+    if (autoModeState.submitting) return;
+    setAutoModeState({ submitting: true, error: null });
+    try {
+      await setAutoMode({ feedUuid, enabled });
+      setAutoModeState({ submitting: false, error: null });
+      refetch();
+    } catch (err) {
+      // 402 from backend → user is not entitled; route to checkout flow.
+      const status = err?.status;
+      const errorCode = err?.detail?.error;
+      if (status === 402 || errorCode === 'requires_addon') {
+        setAutoModeState({ submitting: false, error: null });
+        onAutoModeCheckout();
+        return;
+      }
+      const message = err?.detail?.message || err?.message || 'Could not update Auto Mode.';
+      setAutoModeState({ submitting: false, error: message });
+    }
+  }, [feedUuid, autoModeState.submitting, refetch, onAutoModeCheckout]);
 
   const onAnnual = useCallback(async () => {
     if (annualState.submitting) return;
@@ -188,6 +272,14 @@ export default function SettingsPage() {
             onClose={() => setPauseModalOpen(false)}
             feedUuid={feedUuid}
             onPaused={() => { setPauseModalOpen(false); refetch(); }}
+          />
+
+          <StripeCheckoutModal
+            isOpen={autoModeCheckoutOpen}
+            onClose={closeAutoModeCheckout}
+            loading={autoModeState.submitting}
+            error={autoModeState.error}
+            embeddedRef={autoModeEmbeddedRef}
           />
 
           {!loading && !error && subscriber.id && (
@@ -394,27 +486,78 @@ export default function SettingsPage() {
                 </Tile>
               )}
 
-              <Tile
-                title="Auto Mode"
-                subtitle="Cora handles skip-trace + first SMS + 24h voicemail on every new lead."
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border ${
-                      subscriber.auto_mode_enabled
-                        ? 'bg-emerald-400/10 text-emerald-300 border-emerald-400/30'
-                        : 'bg-white/5 text-slate-400 border-white/10'
-                    }`}
+              {(() => {
+                // Auto Mode tier-aware tile.
+                // Source of truth for "can flip toggle for free" is the backend-
+                // computed `auto_mode_entitled` field (Growth/Power → true;
+                // Starter with active add-on subscription → true; else false).
+                // We do NOT use auto_mode_enabled as the entitlement check,
+                // because a paid Starter who disabled the toggle must still be
+                // able to re-enable without re-paying.
+                const canToggle = !!subscriber.auto_mode_entitled;
+                const enabled = !!subscriber.auto_mode_enabled;
+                return (
+                  <Tile
+                    title="Auto Mode"
+                    subtitle="Cora handles skip-trace + first SMS + 24h voicemail on every new lead."
                   >
-                    <Icon name={subscriber.auto_mode_enabled ? 'check' : 'circle'} size={12} />
-                    {subscriber.auto_mode_enabled ? 'Enabled' : 'Disabled'}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400 mt-4">
-                  Toggle by texting <code className="px-1.5 py-0.5 rounded bg-white/5 text-slate-200">AUTO ON</code> or{' '}
-                  <code className="px-1.5 py-0.5 rounded bg-white/5 text-slate-200">AUTO OFF</code> to your Forced Action number.
-                </p>
-              </Tile>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span
+                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border ${
+                          enabled
+                            ? 'bg-emerald-400/10 text-emerald-300 border-emerald-400/30'
+                            : 'bg-white/5 text-slate-400 border-white/10'
+                        }`}
+                      >
+                        <Icon name={enabled ? 'check' : 'circle'} size={12} />
+                        {enabled ? 'Enabled' : 'Disabled'}
+                      </span>
+
+                      {canToggle ? (
+                        <button
+                          type="button"
+                          onClick={() => onAutoModeToggle(!enabled)}
+                          disabled={autoModeState.submitting}
+                          className="px-4 py-1.5 rounded-lg text-xs font-semibold border border-white/10 bg-white/5 text-slate-100 hover:bg-white/10 disabled:opacity-50"
+                        >
+                          {autoModeState.submitting
+                            ? 'Saving…'
+                            : enabled
+                              ? 'Disable Auto Mode'
+                              : 'Enable Auto Mode'}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={onAutoModeCheckout}
+                          disabled={autoModeState.submitting}
+                          className="px-4 py-1.5 rounded-lg text-xs font-semibold border border-yellow-400/40 bg-yellow-400/10 text-yellow-200 hover:bg-yellow-400/20 disabled:opacity-50"
+                        >
+                          {autoModeState.submitting ? 'Loading…' : 'Get Auto Mode — $79/mo'}
+                        </button>
+                      )}
+                    </div>
+
+                    {autoModeState.error && (
+                      <p className="text-red-300 text-xs mt-3">{autoModeState.error}</p>
+                    )}
+
+                    {canToggle ? (
+                      <p className="text-xs text-slate-400 mt-4">
+                        Or toggle by texting{' '}
+                        <code className="px-1.5 py-0.5 rounded bg-white/5 text-slate-200">AUTO ON</code> or{' '}
+                        <code className="px-1.5 py-0.5 rounded bg-white/5 text-slate-200">AUTO OFF</code>{' '}
+                        to your Forced Action number.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-slate-400 mt-4">
+                        Auto Mode is included on Wallet Growth and Wallet Power tiers.
+                        Starter members can add it for $79/mo.
+                      </p>
+                    )}
+                  </Tile>
+                );
+              })()}
 
               <Tile
                 title="SMS commands"
