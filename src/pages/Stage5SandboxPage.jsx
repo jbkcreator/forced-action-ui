@@ -267,16 +267,16 @@ export default function Stage5SandboxPage() {
         >
           <div className="flex flex-wrap gap-2 mb-3">
             <Btn variant="primary" onClick={() => setBundleOpen({ type: 'weekend', variant: 'a' })} disabled={need}>
-              Weekend / A ($19)
+              Weekend Bundle / A ($19)
             </Btn>
             <Btn onClick={() => setBundleOpen({ type: 'weekend', variant: 'b' })} disabled={need}>
-              Weekend / B ($22)
+              Weekend Bundle / B ($22)
             </Btn>
             <Btn variant="primary" onClick={() => setBundleOpen({ type: 'storm', variant: 'a' })} disabled={need}>
-              Storm / A ($39)
+              Storm Bundle / A ($39)
             </Btn>
             <Btn onClick={() => setBundleOpen({ type: 'storm', variant: 'b' })} disabled={need}>
-              Storm / B ($45)
+              Storm Bundle / B ($45)
             </Btn>
             <Btn variant="primary" onClick={() => setBundleOpen({ type: 'zip_booster', variant: 'a' })} disabled={need}>
               ZIP Booster / A ($29)
@@ -395,6 +395,7 @@ export default function Stage5SandboxPage() {
           feedUuid={feedUuid}
           bundleType={bundleOpen?.type}
           variant={bundleOpen?.variant}
+          lockedZips={['33602', '33647']}
           countyId="hillsborough"
           vertical="roofing"
           onClose={() => setBundleOpen(null)}

@@ -64,6 +64,9 @@ const ICONS = {
   'x-mark': {
     paths: ['M6 18L18 6M6 6l12 12'],
   },
+  x: {
+    paths: ['M6 18L18 6M6 6l12 12'],
+  },
   'chevron-down': {
     paths: ['M19.5 8.25l-7.5 7.5-7.5-7.5'],
   },
@@ -81,6 +84,12 @@ const ICONS = {
   },
   clock: {
     paths: ['M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z'],
+  },
+  'check-circle': {
+    paths: [
+      'M9 12.75l2.25 2.25L15 9.75',
+      'M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+    ],
   },
 };
 

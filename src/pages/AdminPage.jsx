@@ -10,6 +10,7 @@ import SandboxDispatchPanel from '../components/admin/SandboxDispatchPanel';
 import SandboxOutboxPanel from '../components/admin/SandboxOutboxPanel';
 import SkuMarginDashboard from '../components/admin/SkuMarginDashboard';
 import GateMetricsDashboard from '../components/admin/GateMetricsDashboard';
+import StormPacksTable from '../components/admin/StormPacksTable';
 import { fetchSynthflowConfig } from '../api/admin';
 
 const TOKEN_KEY = 'admin_token';
@@ -24,6 +25,7 @@ const NAV = [
   { id: 'dispatch',  label: 'Dispatch',        Component: SandboxDispatchPanel },
   { id: 'outbox',    label: 'Outbox',          Component: SandboxOutboxPanel },
   { id: 'gates',     label: 'Gate Monitoring', Component: GateMetricsDashboard },
+  { id: 'storm',     label: 'Storm Packs',     Component: StormPacksTable },
 ];
 
 function AuthenticatedShell({ token, onLogout }) {

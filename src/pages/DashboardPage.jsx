@@ -36,7 +36,10 @@ import { declineAcceleratedWalletOffer } from '../api/wallet';
 import FlashScarcityBanner from '../components/dashboard/FlashScarcityBanner';
 import PauseStatusBanner from '../components/dashboard/PauseStatusBanner';
 import PauseModal from '../components/dashboard/PauseModal';
+import BundleCTAs from '../components/dashboard/BundleCTAs';
 import BundleOfferModal from '../components/dashboard/BundleOfferModal';
+import StormPackBanner from '../components/dashboard/StormPackBanner';
+import BundleLeadSection from '../components/dashboard/BundleLeadSection';
 import TeamViewTile from '../components/dashboard/TeamViewTile';
 import LeaderboardWidget from '../components/dashboard/LeaderboardWidget';
 import SearchBar from '../components/dashboard/SearchBar';
@@ -48,7 +51,8 @@ import LeadCardSkeletonList from '../components/dashboard/LeadCardSkeleton';
 import Pagination from '../components/ui/Pagination';
 import ErrorState from '../components/ui/ErrorState';
 import EmptyState from '../components/ui/EmptyState';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import useStormStatus from '../hooks/useStormStatus';
 
 function isWithinFirst48h(createdAtIso) {
   if (!createdAtIso) return false;
@@ -191,6 +195,11 @@ export default function DashboardPage() {
   const leads = data?.leads || [];
   const totalPages = data?.pages || 1;
   const isPaused = subscriber.status === 'paused';
+  const lockedZips = subscriber.locked_zips || [];
+  const deepLinkBundleZip = lockedZips.length === 1 ? lockedZips[0] : '';
+
+  const bundleLeadSectionRef = useRef(null);
+  const { hasStormLeads, stormLeads, hoursRemaining: stormHoursRemaining } = useStormStatus(data);
 
   // fa016 — auto-open the wallet-offer modal in two cases:
   //   (a) `?wallet_offer=accept` URL param (SMS deep-link) → force-open every visit
@@ -417,6 +426,24 @@ export default function DashboardPage() {
     }
   }, [feedUuid]);
 
+  const handleBundlePurchaseSuccess = useCallback(({ bundleType, zipCode }) => {
+    logBusinessEvent('PAYMENT_SUCCEEDED', {
+      feedUuid,
+      payload: {
+        product: 'bundle',
+        bundle_type: bundleType,
+        zip_code: zipCode || null,
+      },
+    });
+    setTimeout(refetch, 1500);
+    setTimeout(refetch, 4500);
+    if (bundleType !== 'monthly_reload') {
+      setTimeout(() => {
+        bundleLeadSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 2800);
+    }
+  }, [feedUuid, refetch]);
+
   return (
     <div className="gradient-bg-dashboard min-h-screen text-white">
       <div className="relative z-[1]">
@@ -540,6 +567,15 @@ export default function DashboardPage() {
                   onLockClick={(zip) => { window.location.href = `/checkout?lock_zip=${zip}`; }}
                 />
               ))}
+
+              {/* Storm Pack banner — shown when subscriber has active storm bundle leads */}
+              {hasStormLeads && !isPaused && (
+                <StormPackBanner
+                  stormLeadCount={stormLeads.length}
+                  hoursRemaining={stormHoursRemaining}
+                  onViewLeads={() => bundleLeadSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                />
+              )}
 
               <StatsBar
                 subscriber={subscriber}
@@ -677,7 +713,28 @@ export default function DashboardPage() {
                 <EmptyState />
               )}
 
+              {/* Bundle leads — exclusively unlocked leads from active bundle purchases */}
+              {(data?.bundle_leads?.length > 0) && (
+                <BundleLeadSection
+                  bundleLeads={data.bundle_leads}
+                  sectionRef={bundleLeadSectionRef}
+                  isContacted={isContacted}
+                  onToggleContacted={toggleContacted}
+                  feedUuid={feedUuid}
+                />
+              )}
+
               <LeadPackHistory feedUuid={feedUuid} />
+              {!isPaused && (
+                <BundleCTAs
+                  feedUuid={feedUuid}
+                  vertical={subscriber.vertical}
+                  countyId={subscriber.county_id || 'hillsborough'}
+                  lockedZips={lockedZips}
+                  stormStatus={hasStormLeads ? 'active' : 'unknown'}
+                  onPurchase={handleBundlePurchaseSuccess}
+                />
+              )}
               {!isPaused && <LeadPackSection onOpenModal={handleOpenLpModal} />}
             </>
           )}
@@ -714,11 +771,15 @@ export default function DashboardPage() {
           feedUuid={feedUuid}
           bundleType={bundleParam}
           variant={variantParam}
-          zipCode={subscriber?.locked_zips?.[0]}
+          zipCode={deepLinkBundleZip}
+          lockedZips={lockedZips}
           vertical={subscriber?.vertical}
           countyId={subscriber?.county_id || 'hillsborough'}
           onClose={dismissBundle}
-          onSuccess={dismissBundle}
+          onSuccess={(result) => {
+            dismissBundle();
+            handleBundlePurchaseSuccess(result);
+          }}
         />
 
         {/* Stage 5+ — Wallet topup modal (opens via ?wallet=topup deep link) */}
