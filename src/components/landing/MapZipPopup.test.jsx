@@ -33,4 +33,29 @@ describe('MapZipPopup', () => {
     expect(onSelect).toHaveBeenCalledWith(baseZip);
     expect(onClose).toHaveBeenCalledOnce();
   });
+
+  it('renders waitlist count for grace ZIP when backend supplies waitlist_count', () => {
+    const graceZip = {
+      zip: '33614',
+      status: 'grace',
+      lead_count: 12,
+      active_viewers: 0,
+      waitlist_count: 3,
+      grace_expires_at: '2026-06-01T00:00:00Z',
+    };
+    render(<MapZipPopup zip={graceZip} onClose={vi.fn()} />);
+    expect(screen.getByText(/3 on waitlist/i)).toBeInTheDocument();
+  });
+
+  it('omits waitlist line when waitlist_count is 0 or missing', () => {
+    const graceZip = {
+      zip: '33614',
+      status: 'grace',
+      lead_count: 12,
+      active_viewers: 0,
+      waitlist_count: 0,
+    };
+    render(<MapZipPopup zip={graceZip} onClose={vi.fn()} />);
+    expect(screen.queryByText(/on waitlist/i)).not.toBeInTheDocument();
+  });
 });
