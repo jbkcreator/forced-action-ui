@@ -29,6 +29,9 @@ import AnnualOfferBanner from '../components/dashboard/AnnualOfferBanner';
 import DataOnlySaveOfferBanner from '../components/dashboard/DataOnlySaveOfferBanner';
 import APProUpsellBanner from '../components/dashboard/APProUpsellBanner';
 import ApLiteUpgradeBanner, { readApLiteDismissed, writeApLiteDismissed } from '../components/dashboard/ApLiteUpgradeBanner';
+import ApLiteStatusBanner from '../components/dashboard/ApLiteStatusBanner';
+import PaymentFailedBanner from '../components/dashboard/PaymentFailedBanner';
+import WhatYouMissedBanner from '../components/dashboard/WhatYouMissedBanner';
 import WalletToLockUpgradeBanner, { readW2LDismissed, writeW2LDismissed } from '../components/dashboard/WalletToLockUpgradeBanner';
 import AcceleratedWalletOfferBanner, { readAwDismissed } from '../components/dashboard/AcceleratedWalletOfferBanner';
 import AcceleratedWalletOfferModal from '../components/dashboard/AcceleratedWalletOfferModal';
@@ -491,6 +494,27 @@ export default function DashboardPage() {
                 />
               )}
 
+              {/* Stripe failed-payment recovery — Day 1 (soft) / Day 3 (urgency).
+                  Day 5 / downgrade-to-Data-Only is owned by DataOnlySaveOfferBanner
+                  below, so suppress this when save_offer_active is true. */}
+              {subscriber.payment_failed_at && !subscriber.save_offer_active && !isPaused && (
+                <PaymentFailedBanner
+                  feedUuid={feedUuid}
+                  paymentFailedAt={subscriber.payment_failed_at}
+                  recoveryDay3Sent={subscriber.recovery_day3_sent}
+                  missedLeadCount={subscriber.missed_lead_count || 0}
+                />
+              )}
+
+              {/* "What you missed" — only surfaces for recovery-targeted subscribers
+                  (save_offer_active / payment_failed / grace), block emitted by feed. */}
+              {subscriber.what_you_missed && !isPaused && (
+                <WhatYouMissedBanner
+                  whatYouMissed={subscriber.what_you_missed}
+                  onView={() => window.scrollTo({ top: document.getElementById('lead-feed')?.offsetTop || 0, behavior: 'smooth' })}
+                />
+              )}
+
               {/* Data-Only save offer — surfaces from proactive-save email deep link or backend flag */}
               {showSaveOffer && !isPaused && (
                 <DataOnlySaveOfferBanner
@@ -530,6 +554,14 @@ export default function DashboardPage() {
                     setApLiteDismissed(true);
                     if (feedUuid) writeApLiteDismissed(feedUuid);
                   }}
+                />
+              )}
+
+              {/* AP Lite post-upgrade status — informational surface for autopilot_lite subscribers */}
+              {subscriber.tier === 'autopilot_lite' && !isPaused && (
+                <ApLiteStatusBanner
+                  autoModeEnabled={subscriber.auto_mode_enabled}
+                  manualActionsThisWeek={subscriber.manual_actions_this_week}
                 />
               )}
 
