@@ -27,6 +27,8 @@ const SCRAPE_MODES = [
   { value: 'ai_only',            label: 'AI Agent only (browser-use)' },
   { value: 'playwright_only',    label: 'Playwright code only' },
   { value: 'playwright_then_ai', label: 'Playwright with AI fallback' },
+  { value: 'static_download',    label: 'Static download (direct URL pattern)' },
+  { value: 'api',                label: 'API (direct HTTP / public API)' },
 ];
 
 // ─── Shared style tokens ──────────────────────────────────────────────────────
@@ -179,28 +181,36 @@ function SourceForm({ initial = {}, onSave, onCancel, saving, token, countyId })
 
   function handleSubmit(e) {
     e.preventDefault();
+    const isDownloadMode = form.scrape_mode === 'static_download';
+    const isApiMode      = form.scrape_mode === 'api';
+    const isSimpleMode   = isDownloadMode || isApiMode;
     let special_flags = {};
-    try { special_flags = JSON.parse(form.special_flags || '{}'); } catch {}
-    // Merge court_records convenience fields into special_flags
-    if (form.signal_type === 'court_records') {
-      if (form.court_style_col.trim()) special_flags.style_col = form.court_style_col.trim();
-      else delete special_flags.style_col;
-      if (form.court_scrape_mode) special_flags.scrape_mode = form.court_scrape_mode;
-      else delete special_flags.scrape_mode;
+    if (!isSimpleMode) {
+      try { special_flags = JSON.parse(form.special_flags || '{}'); } catch {}
+      if (form.signal_type === 'court_records') {
+        if (form.court_style_col.trim()) special_flags.style_col = form.court_style_col.trim();
+        else delete special_flags.style_col;
+        if (form.court_scrape_mode) special_flags.scrape_mode = form.court_scrape_mode;
+        else delete special_flags.scrape_mode;
+      }
     }
     onSave({
       signal_type: form.signal_type,
       source_name: form.source_name.trim() || null,
-      url: form.url.trim(),
-      description: form.description.trim() || null,
-      navigation_hint: form.navigation_hint.trim() || null,
-      output_format: form.output_format || null,
-      date_range_available: form.date_range_available,
+      url: form.url.trim() || null,
+      description: isSimpleMode ? null : (form.description.trim() || null),
+      navigation_hint: isSimpleMode ? null : (form.navigation_hint.trim() || null),
+      output_format: isSimpleMode ? null : (form.output_format || null),
+      date_range_available: isSimpleMode ? false : form.date_range_available,
       frequency: form.frequency,
       special_flags,
       scrape_mode: form.scrape_mode,
     });
   }
+
+  const isDownload = form.scrape_mode === 'static_download';
+  const isApi      = form.scrape_mode === 'api';
+  const isSimple   = isDownload || isApi;
 
   return (
     <form onSubmit={handleSubmit} className="rounded-xl p-4 mt-2 space-y-3"
@@ -221,76 +231,88 @@ function SourceForm({ initial = {}, onSave, onCancel, saving, token, countyId })
         </Field>
       </div>
 
-      <Field label="URL">
+      <Field label="URL" hint={isDownload ? 'Must contain {date} placeholder — replaced with YYYYMMDD at runtime. E.g. https://example.com/files/Filing_{date}.csv' : isApi ? 'API base URL or endpoint (optional — leave blank if the engine uses a hardcoded public API).' : undefined}>
         <input className={inputCls} style={inputStyle} value={form.url}
-          onChange={e => set('url', e.target.value)} placeholder="https://…" required />
+          onChange={e => set('url', e.target.value)}
+          placeholder={isDownload ? 'https://example.com/files/Filing_{date}.csv' : isApi ? 'https://api.example.gov/v1/... (optional)' : 'https://…'}
+          required={!isApi} />
       </Field>
 
-      <Field label="Description (browser-use prompt context)">
-        <textarea
-          className={inputCls + ' resize-y text-xs'}
-          style={{ ...inputStyle, minHeight: '96px' }}
-          value={form.description}
-          onChange={e => set('description', e.target.value)}
-          placeholder="Plain English description of what this portal contains and what we extract. The browser-use agent uses this to understand the data source."
-          rows={4}
-        />
-      </Field>
-
-      <Field label="Navigation Hint (how to get the data)">
-        <textarea
-          className={inputCls + ' resize-y text-xs'}
-          style={{ ...inputStyle, minHeight: '96px' }}
-          value={form.navigation_hint}
-          onChange={e => set('navigation_hint', e.target.value)}
-          placeholder="Step-by-step instructions: Navigate to Building module → search by date range → select CSV export → click Download."
-          rows={4}
-        />
-      </Field>
-
-      <div className="grid grid-cols-3 gap-3">
-        <Field label="Output Format">
-          <select className={inputCls} style={inputStyle} value={form.output_format}
-            onChange={e => set('output_format', e.target.value)}>
-            {OUTPUT_FORMATS.map(f => <option key={f} value={f}>{f}</option>)}
-          </select>
+      {!isSimple && (
+        <Field label="Description (browser-use prompt context)">
+          <textarea
+            className={inputCls + ' resize-y text-xs'}
+            style={{ ...inputStyle, minHeight: '96px' }}
+            value={form.description}
+            onChange={e => set('description', e.target.value)}
+            placeholder="Plain English description of what this portal contains and what we extract. The browser-use agent uses this to understand the data source."
+            rows={4}
+          />
         </Field>
+      )}
+
+      {!isSimple && (
+        <Field label="Navigation Hint (how to get the data)">
+          <textarea
+            className={inputCls + ' resize-y text-xs'}
+            style={{ ...inputStyle, minHeight: '96px' }}
+            value={form.navigation_hint}
+            onChange={e => set('navigation_hint', e.target.value)}
+            placeholder="Step-by-step instructions: Navigate to Building module → search by date range → select CSV export → click Download."
+            rows={4}
+          />
+        </Field>
+      )}
+
+      <div className={`grid gap-3 ${isSimple ? 'grid-cols-1' : 'grid-cols-3'}`}>
+        {!isSimple && (
+          <Field label="Output Format">
+            <select className={inputCls} style={inputStyle} value={form.output_format}
+              onChange={e => set('output_format', e.target.value)}>
+              {OUTPUT_FORMATS.map(f => <option key={f} value={f}>{f}</option>)}
+            </select>
+          </Field>
+        )}
         <Field label="Frequency">
           <select className={inputCls} style={inputStyle} value={form.frequency}
             onChange={e => set('frequency', e.target.value)}>
             {FREQUENCIES.map(f => <option key={f} value={f}>{f}</option>)}
           </select>
         </Field>
-        <Field label="Date Range Available">
-          <select className={inputCls} style={inputStyle}
-            value={form.date_range_available ? 'yes' : 'no'}
-            onChange={e => set('date_range_available', e.target.value === 'yes')}>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-          </select>
-        </Field>
+        {!isSimple && (
+          <Field label="Date Range Available">
+            <select className={inputCls} style={inputStyle}
+              value={form.date_range_available ? 'yes' : 'no'}
+              onChange={e => set('date_range_available', e.target.value === 'yes')}>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </Field>
+        )}
       </div>
 
-      <Field label="Scrape Mode" hint="ai_only: browser-use Agent drives the portal. playwright_only: execute saved Playwright code, no fallback. playwright_then_ai: try the code first, fall back to the AI agent on failure.">
+      <Field label="Scrape Mode" hint={isDownload ? 'Direct HTTP download — only the URL above is used.' : 'ai_only: browser-use Agent drives the portal. playwright_only: execute saved Playwright code, no fallback. playwright_then_ai: try the code first, fall back to the AI agent on failure.'}>
         <select className={inputCls} style={inputStyle} value={form.scrape_mode}
           onChange={e => set('scrape_mode', e.target.value)}>
           {SCRAPE_MODES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
         </select>
       </Field>
 
-      <Field label="Special Flags (JSON)" hint="Advanced. Vendor-specific flags only — e.g. prr_only, cf_bypass_required. Do NOT put scrape_mode or playwright_code here; they have first-class fields.">
-        <textarea
-          className={inputCls + ' font-mono text-xs resize-y'}
-          style={{ ...inputStyle, minHeight: '72px' }}
-          value={form.special_flags}
-          onChange={e => set('special_flags', e.target.value)}
-          spellCheck={false}
-          rows={3}
-          placeholder={'{\n  "prr_only": true\n}'}
-        />
-      </Field>
+      {!isSimple && (
+        <Field label="Special Flags (JSON)" hint="Advanced. Vendor-specific flags only — e.g. prr_only, cf_bypass_required. Do NOT put scrape_mode or playwright_code here; they have first-class fields.">
+          <textarea
+            className={inputCls + ' font-mono text-xs resize-y'}
+            style={{ ...inputStyle, minHeight: '72px' }}
+            value={form.special_flags}
+            onChange={e => set('special_flags', e.target.value)}
+            spellCheck={false}
+            rows={3}
+            placeholder={'{\n  "prr_only": true\n}'}
+          />
+        </Field>
+      )}
 
-      {form.signal_type === 'court_records' && (
+      {!isSimple && form.signal_type === 'court_records' && (
         <div className="rounded-lg p-3 space-y-3" style={{ background: 'rgba(96,165,250,0.06)', border: '1px solid rgba(96,165,250,0.18)' }}>
           <p className="text-xs font-semibold text-blue-400">Court Records / Eviction Config</p>
           <p className="text-xs text-slate-400">Controls how the evictions engine downloads and parses this county's court records.</p>
@@ -325,7 +347,7 @@ function SourceForm({ initial = {}, onSave, onCancel, saving, token, countyId })
         <span className="text-yellow-400"> Column Mappings </span> tab.
       </p>
 
-      {isEdit && form.scrape_mode !== 'ai_only' && token && countyId && (
+      {isEdit && !isSimple && form.scrape_mode !== 'ai_only' && token && countyId && (
         <PlaywrightCodeEditor
           token={token}
           countyId={countyId}
@@ -335,7 +357,7 @@ function SourceForm({ initial = {}, onSave, onCancel, saving, token, countyId })
           initialVersion={initial.playwright_code_version || ''}
         />
       )}
-      {!isEdit && form.scrape_mode !== 'ai_only' && (
+      {!isEdit && !isSimple && form.scrape_mode !== 'ai_only' && (
         <p className="text-xs text-slate-500">
           Save the source first, then re-open this row to generate or paste Playwright code.
         </p>
