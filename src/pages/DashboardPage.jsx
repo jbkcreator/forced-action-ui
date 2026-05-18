@@ -34,6 +34,7 @@ import AcceleratedWalletOfferBanner, { readAwDismissed } from '../components/das
 import AcceleratedWalletOfferModal from '../components/dashboard/AcceleratedWalletOfferModal';
 import { declineAcceleratedWalletOffer } from '../api/wallet';
 import FlashScarcityBanner from '../components/dashboard/FlashScarcityBanner';
+import FOMOIndicators from '../components/dashboard/FOMOIndicators';
 import PauseStatusBanner from '../components/dashboard/PauseStatusBanner';
 import PauseModal from '../components/dashboard/PauseModal';
 import BundleCTAs from '../components/dashboard/BundleCTAs';
@@ -565,6 +566,16 @@ export default function DashboardPage() {
                   key={`${w.zip_code}:${w.vertical}`}
                   window={w}
                   onLockClick={(zip) => { window.location.href = `/checkout?lock_zip=${zip}`; }}
+                />
+              ))}
+
+              {/* Stage 6: FOMO indicators — competitor-viewer pill per locked ZIP. Renders silently when activity is below threshold. */}
+              {!isPaused && lockedZips.map((zip) => (
+                <FOMOIndicators
+                  key={`fomo:${zip}`}
+                  zipCode={zip}
+                  vertical={subscriber.vertical}
+                  className="px-1"
                 />
               ))}
 
