@@ -62,3 +62,20 @@ export function acceptSaveOffer(feedUuid) {
 export function fetchReferralStatus(feedUuid, { signal } = {}) {
   return api.get(`/api/referral/status/${feedUuid}`, undefined, { signal });
 }
+
+/**
+ * Helper: extract bundle_leads from a feed response, optionally filtered by type.
+ * Returns [] when the feed hasn't loaded yet or has no bundle leads.
+ */
+export function getBundleLeads(feedData, bundleType = null) {
+  const all = feedData?.bundle_leads || [];
+  if (!bundleType) return all;
+  return all.filter((l) => l.bundle_type === bundleType);
+}
+
+/**
+ * Helper: check if any storm leads are present in the feed response.
+ */
+export function hasActiveStormBundle(feedData) {
+  return (feedData?.bundle_leads || []).some((l) => l.bundle_type === 'storm');
+}
