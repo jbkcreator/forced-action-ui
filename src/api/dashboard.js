@@ -75,6 +75,8 @@ export function createAutoModeCheckout({ feedUuid }) {
 // them to the checkout flow above instead.
 export function setAutoMode({ feedUuid, enabled }) {
   return api.post('/api/auto-mode/toggle', { feed_uuid: feedUuid, enabled });
+}
+
 /**
  * Helper: extract bundle_leads from a feed response, optionally filtered by type.
  * Returns [] when the feed hasn't loaded yet or has no bundle leads.
