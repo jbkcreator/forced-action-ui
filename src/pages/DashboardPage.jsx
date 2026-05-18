@@ -747,6 +747,32 @@ export default function DashboardPage() {
                 />
               )}
               {!isPaused && <LeadPackSection onOpenModal={handleOpenLpModal} />}
+
+              {/* Stage 6: Save / Pause CTA — dashboard entry into the 60-day pause flow.
+                  Modal already mounted below; this is the missing trigger after the refactor. */}
+              {!isPaused && (
+                <section
+                  data-testid="dashboard-pause-cta"
+                  aria-label="Manage subscription"
+                  className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                >
+                  <div>
+                    <h3 className="text-base font-semibold text-white">
+                      Need a break? Pause for 60 days
+                    </h3>
+                    <p className="text-sm text-slate-400 mt-1">
+                      Billing stops immediately. Your ZIP territory stays reserved. Auto-resumes after 60 days.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPauseModalOpen(true)}
+                    className="self-start sm:self-auto inline-flex items-center justify-center rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold px-5 py-2.5 transition-colors"
+                  >
+                    Pause subscription
+                  </button>
+                </section>
+              )}
             </>
           )}
         </main>
