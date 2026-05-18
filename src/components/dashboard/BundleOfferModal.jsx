@@ -1,54 +1,21 @@
-/**
- * BundleOfferModal — Stage 5
- *
- * Surfaces when the dashboard is opened with `?bundle=<type>&variant=<a|b>`
- * (the SMS deep link the bundle dispatcher sends). Renders the offer with
- * the variant's pricing baked in, then completes through the existing
- * Payment Sheet flow.
- *
- * The variant value is forwarded to the backend via the PaymentIntent
- * metadata so the A/B framework attributes the conversion correctly.
- */
-import { useEffect, useState } from 'react';
-import { createPaymentIntent } from '../../api/phase2b';
+import { useEffect, useMemo, useState } from 'react';
+import { bundleCheckout } from '../../api/bundles';
+import { logBusinessEvent } from '../../api/phase2b';
+import {
+  formatBundlePrice,
+  getBundleActionLabel,
+  getBundleBillingCopy,
+  getBundleMeta,
+} from '../../config/bundles';
 import PaymentSheetModal from '../common/PaymentSheetModal';
 import Icon from '../ui/Icon';
 
-
-// Mirror of backend BUNDLES (config/revenue_ladder.py). Variant B is illustrative;
-// the backend is the source of truth for the actual price the user is charged.
-const BUNDLES = {
-  weekend: {
-    label: 'Weekend Pack',
-    blurb: '5 bonus leads in your ZIP — Friday through Sunday only.',
-    variantA: 1900,   // base
-    variantB: 2200,   // sample +25% test variant
-  },
-  storm: {
-    label: 'Storm Pack',
-    blurb: '10 storm-affected property leads in your ZIP, valid 72h post-alert.',
-    variantA: 3900,
-    variantB: 4500,
-  },
-  zip_booster: {
-    label: 'ZIP Booster',
-    blurb: '10 extra leads in your existing ZIP for the next 48 hours.',
-    variantA: 2900,
-    variantB: 3400,
-  },
-  monthly_reload: {
-    label: 'Monthly Reload',
-    blurb: '30 credits — auto-recurring alternative to the wallet.',
-    variantA: 8900,
-    variantB: 7900,   // sample -11% downward variant
-  },
-};
-
-
-function formatCents(cents) {
-  return `$${(cents / 100).toFixed(0)}`;
+function getInitialZip(bundleMeta, lockedZips, preferredZip) {
+  if (!bundleMeta?.zipScoped) return '';
+  if (preferredZip && lockedZips.includes(preferredZip)) return preferredZip;
+  if (lockedZips.length === 1) return lockedZips[0];
+  return '';
 }
-
 
 export default function BundleOfferModal({
   isOpen,
@@ -56,6 +23,7 @@ export default function BundleOfferModal({
   bundleType,
   variant = 'a',
   zipCode,
+  lockedZips = [],
   vertical,
   countyId = 'hillsborough',
   onClose,
@@ -64,46 +32,72 @@ export default function BundleOfferModal({
   const [stripe, setStripe] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const cfg = getBundleMeta(bundleType);
+
+  const [selectedZip, setSelectedZip] = useState(() => getInitialZip(cfg, lockedZips, zipCode));
 
   useEffect(() => {
-    if (isOpen) {
-      setStripe(null);
-      setError(null);
-      setSubmitting(false);
-    }
-  }, [isOpen, bundleType]);
+    if (!isOpen || !cfg) return;
+    setStripe(null);
+    setError(null);
+    setSubmitting(false);
+    setSelectedZip(getInitialZip(cfg, lockedZips, zipCode));
+  }, [isOpen, cfg, lockedZips, zipCode]);
 
-  if (!isOpen || !bundleType) return null;
-  const cfg = BUNDLES[bundleType];
-  if (!cfg) return null;
+  const needsZip = cfg?.zipScoped === true;
+  const zipMissing = needsZip && !selectedZip;
+  const priceLabel = formatBundlePrice(bundleType, variant);
+  const targetZipLabel = useMemo(() => {
+    if (!needsZip) return null;
+    if (selectedZip) return `Target ZIP ${selectedZip}`;
+    if (lockedZips.length > 1) return 'Choose a locked ZIP before checkout.';
+    return 'A locked ZIP is required for this bundle.';
+  }, [lockedZips.length, needsZip, selectedZip]);
 
-  const priceCents = variant === 'b' ? cfg.variantB : cfg.variantA;
+  if (!isOpen || !cfg) return null;
 
   const handleStartPayment = async () => {
-    if (submitting) return;
+    if (submitting || zipMissing) return;
     setSubmitting(true);
     setError(null);
+    logBusinessEvent('bundle_checkout_started', {
+      feedUuid,
+      payload: {
+        bundle_type: bundleType,
+        variant,
+        zip_code: selectedZip || null,
+        county_id: countyId,
+      },
+    });
+
     try {
-      const res = await createPaymentIntent({
+      const res = await bundleCheckout({
         feedUuid,
-        amountCents: priceCents,
-        description: `${cfg.label} — ${formatCents(priceCents)}`,
-        saveCard: true,
-        metadata: {
-          product: 'bundle',
-          bundle_type: bundleType,
-          ab_variant: variant,
-          zip_code: zipCode || '',
-          vertical: vertical || '',
-          county_id: countyId,
-        },
+        bundleType,
+        zipCode: selectedZip || '',
+        vertical: vertical || '',
+        abVariant: variant,
       });
       setStripe({
         clientSecret: res.client_secret,
         publishableKey: res.publishable_key,
       });
     } catch (err) {
-      setError(err?.detail || err?.message || 'Could not open payment.');
+      const detail = err?.detail;
+      if (detail?.error === 'bundle_unavailable') {
+        const message = detail.message || 'This bundle is not available right now.';
+        setError(message);
+        logBusinessEvent('bundle_checkout_blocked', {
+          feedUuid,
+          payload: {
+            bundle_type: bundleType,
+            zip_code: selectedZip || null,
+            reason: message,
+          },
+        });
+      } else {
+        setError(detail?.message || err?.message || 'Could not open payment.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -115,14 +109,26 @@ export default function BundleOfferModal({
         isOpen
         clientSecret={stripe.clientSecret}
         publishableKey={stripe.publishableKey}
-        amountLabel={formatCents(priceCents)}
+        amountLabel={priceLabel}
         description={cfg.label}
         saveCardDefault
         onSuccess={(pi) => {
-          onSuccess?.({ bundleType, variant, paymentIntent: pi });
+          logBusinessEvent('bundle_checkout_succeeded', {
+            feedUuid,
+            payload: {
+              bundle_type: bundleType,
+              variant,
+              zip_code: selectedZip || null,
+              payment_intent_id: pi?.id || null,
+            },
+          });
+          onSuccess?.({ bundleType, variant, paymentIntent: pi, zipCode: selectedZip || null });
           onClose?.();
         }}
-        onClose={() => { setStripe(null); onClose?.(); }}
+        onClose={() => {
+          setStripe(null);
+          onClose?.();
+        }}
       />
     );
   }
@@ -138,7 +144,7 @@ export default function BundleOfferModal({
         <div className="flex items-start justify-between mb-4">
           <div>
             <h3 className="text-white font-semibold text-lg">{cfg.label}</h3>
-            <p className="text-slate-400 text-xs mt-1">{cfg.blurb}</p>
+            <p className="text-slate-400 text-xs mt-1">{cfg.modalBlurb}</p>
           </div>
           <button
             onClick={onClose}
@@ -151,9 +157,33 @@ export default function BundleOfferModal({
         </div>
 
         <div className="rounded-lg border border-yellow-400/30 bg-yellow-400/5 p-4 text-center">
-          <p className="text-3xl font-extrabold text-yellow-300">{formatCents(priceCents)}</p>
-          <p className="text-xs text-slate-400 mt-1">One-time, charged to your saved card.</p>
+          <p className="text-3xl font-extrabold text-yellow-300">{priceLabel}</p>
+          <p className="text-xs text-slate-400 mt-1">{getBundleBillingCopy(bundleType)}</p>
         </div>
+
+        {needsZip && (
+          <div className="mt-4">
+            <label htmlFor="bundle-zip-select" className="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">
+              Target ZIP
+            </label>
+            <select
+              id="bundle-zip-select"
+              value={selectedZip}
+              onChange={(e) => setSelectedZip(e.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:outline-none focus:border-yellow-400/50"
+            >
+              <option value="" disabled>
+                {lockedZips.length > 1 ? 'Choose a locked ZIP' : 'No locked ZIP available'}
+              </option>
+              {lockedZips.map((zip) => (
+                <option key={zip} value={zip} className="text-slate-900">
+                  {zip}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-slate-400 mt-2">{targetZipLabel}</p>
+          </div>
+        )}
 
         {error && <p className="mt-3 text-red-400 text-xs text-center">{error}</p>}
 
@@ -168,11 +198,11 @@ export default function BundleOfferModal({
           </button>
           <button
             onClick={handleStartPayment}
-            disabled={submitting}
+            disabled={submitting || zipMissing}
             type="button"
-            className="cta-primary text-sm px-6 py-2 disabled:opacity-50"
+            className="cta-primary text-sm px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {submitting ? 'Opening…' : `Buy for ${formatCents(priceCents)}`}
+            {submitting ? 'Opening…' : getBundleActionLabel(bundleType, variant)}
           </button>
         </div>
       </div>
