@@ -63,6 +63,18 @@ export function fetchReferralStatus(feedUuid, { signal } = {}) {
   return api.get(`/api/referral/status/${feedUuid}`, undefined, { signal });
 }
 
+// Auto Mode — Phase 2B v9 add-on
+// Returns { url, session_id }. Frontend should redirect to `url` for hosted
+// Stripe Checkout. Webhook activates auto_mode_enabled=True on success.
+export function createAutoModeCheckout({ feedUuid }) {
+  return api.post('/api/checkout/auto-mode', { feed_uuid: feedUuid });
+}
+
+// REST counterpart of SMS AUTO ON/OFF. Backend enforces tier gating —
+// non-entitled Starter callers get a 402 response so the UI can route
+// them to the checkout flow above instead.
+export function setAutoMode({ feedUuid, enabled }) {
+  return api.post('/api/auto-mode/toggle', { feed_uuid: feedUuid, enabled });
 /**
  * Helper: extract bundle_leads from a feed response, optionally filtered by type.
  * Returns [] when the feed hasn't loaded yet or has no bundle leads.
