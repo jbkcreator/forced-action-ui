@@ -58,6 +58,7 @@ All requests go through `src/api/client.js` (`apiRequest`, `api.get`, `api.post`
 - `landing.js` — Founding summary, ZIP check, checkout, waitlist.
 - `dashboard.js` — Lead feed, stats, lead packs, hot lead unlock.
 - `phase2b.js` — Phase 2B (Cora agent) endpoints.
+- `chat.js` — Concierge Chat (M5a): `createSession`, `sendMessage`, `streamTurn` (EventSource), `linkSession`, `escalateSession`.
 
 ### Stripe Integration
 
@@ -66,6 +67,7 @@ All requests go through `src/api/client.js` (`apiRequest`, `api.get`, `api.post`
 
 ### Component Layout (`src/components/`)
 - `common/` — shared cross-page primitives
+- `concierge/` — Concierge Chat widget: `ConciergeChat`, `ChatBubble`, `ChatDrawer`, `ChatFullScreen`, `ChatBody`, `MessageBubble`. Mounted on `LandingPage` (pre_signup mode) and `DashboardPage` (post_signup mode). Hook: `useConciergeChat` in `src/hooks/`.
 - `dashboard/` — lead feed, filters, lead cards
 - `landing/` — hero, pricing, ZIP check, founding counter
 - `layout/` — page chrome (header/footer/nav)

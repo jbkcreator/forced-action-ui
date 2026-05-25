@@ -19,6 +19,7 @@ import ZipTerritoryMap from '../components/landing/ZipTerritoryMap';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
 import useStripeCheckout from '../hooks/useStripeCheckout';
 import { createFreeSignup, logBusinessEvent } from '../api/phase2b';
+import ConciergeChat from '../components/concierge/ConciergeChat';
 
 function LandingContent() {
   const navigate = useNavigate();
@@ -170,6 +171,17 @@ function LandingContent() {
           loading={loading}
           error={checkoutError}
           embeddedRef={embeddedRef}
+        />
+
+        {/* M5a: Concierge Chat — pre-signup conversion widget */}
+        <ConciergeChat
+          mode="pre_signup"
+          mountPoint="landing"
+          onPaymentSheet={(evt) => {
+            // Chat emits a buy intent → open the ZIP collector → Stripe flow.
+            // We route to EmailGate first since we need email before checkout.
+            setEmailGate({ open: true, tier: 'starter', flow: 'paid' });
+          }}
         />
       </div>
     </div>
