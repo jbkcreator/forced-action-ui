@@ -42,6 +42,7 @@ import PauseStatusBanner from '../components/dashboard/PauseStatusBanner';
 import PauseModal from '../components/dashboard/PauseModal';
 import BundleCTAs from '../components/dashboard/BundleCTAs';
 import BundleOfferModal from '../components/dashboard/BundleOfferModal';
+import ConciergeChat from '../components/concierge/ConciergeChat';
 import StormPackBanner from '../components/dashboard/StormPackBanner';
 import BundleLeadSection from '../components/dashboard/BundleLeadSection';
 import TeamViewTile from '../components/dashboard/TeamViewTile';
@@ -115,6 +116,8 @@ export default function DashboardPage() {
   const [bundleDismissed, setBundleDismissed] = useState(false);
   const [pauseModalOpen, setPauseModalOpen] = useState(false);
   const [saveOfferDismissed, setSaveOfferDismissed] = useState(false);
+  // Chat-triggered bundle/lock offers
+  const [chatBundle, setChatBundle] = useState({ type: null, zip: null });
 
   // Stage 5 — URL-driven offer surfaces
   const urlAnnualOffer = searchParams.get('annual') === 'accept';
@@ -447,6 +450,17 @@ export default function DashboardPage() {
       }, 2800);
     }
   }, [feedUuid, refetch]);
+
+  const handleChatPaymentSheet = useCallback((evt) => {
+    const { sku, zip } = evt;
+    if (sku === 'territory_lock') {
+      // Redirect to checkout with ZIP prefilled
+      window.location.href = `/checkout?lock_zip=${zip || ''}`;
+    } else {
+      // Bundle SKU (storm_bundle, weekend_bundle, monthly_reload, zip_booster)
+      setChatBundle({ type: sku, zip: zip || lockedZips[0] || '' });
+    }
+  }, [lockedZips]);
 
   return (
     <div className="gradient-bg-dashboard min-h-screen text-white">
@@ -825,6 +839,23 @@ export default function DashboardPage() {
           }}
         />
 
+        {/* M5b: Chat-triggered bundle offer (from Concierge Chat payment_event) */}
+        <BundleOfferModal
+          isOpen={!!chatBundle.type}
+          feedUuid={feedUuid}
+          bundleType={chatBundle.type}
+          variant="a"
+          zipCode={chatBundle.zip}
+          lockedZips={lockedZips}
+          vertical={subscriber?.vertical}
+          countyId={subscriber?.county_id || 'hillsborough'}
+          onClose={() => setChatBundle({ type: null, zip: null })}
+          onSuccess={(result) => {
+            setChatBundle({ type: null, zip: null });
+            handleBundlePurchaseSuccess(result);
+          }}
+        />
+
         {/* Stage 5+ — Wallet topup modal (opens via ?wallet=topup deep link) */}
         <WalletTopupModal
           isOpen={topupOpen}
@@ -889,6 +920,14 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* M5b: Post-signup Concierge Chat — floating bubble, post_signup mode */}
+      <ConciergeChat
+        mode="post_signup"
+        mountPoint="dashboard"
+        feedUuid={feedUuid}
+        onPaymentSheet={handleChatPaymentSheet}
+      />
     </div>
   );
 }
