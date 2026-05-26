@@ -1,170 +1,166 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createSession, sendMessage, streamTurn } from '../api/chat';
+import { sendMessage } from '../api/chat';
 import { CHAT_STRINGS } from '../data/chatStrings';
 
 const SESSION_KEY = 'fa_chat_session_id';
+const MESSAGES_KEY = 'fa_chat_messages';
+
+const STARTER_FOLLOWUPS = [
+  'Do you cover my ZIP code',
+  'How does Forced Action help me find distressed property leads?',
+];
+
+const WELCOME_MESSAGE = {
+  id: 'welcome-v2',
+  role: 'assistant',
+  text: CHAT_STRINGS.welcomeMessage,
+  followups: STARTER_FOLLOWUPS,
+  animate: true,
+};
+
+function loadInitialMessages() {
+  try {
+    const raw = sessionStorage.getItem(MESSAGES_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Bust stale sessions from before welcome-v2
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.id === WELCOME_MESSAGE.id) {
+        return parsed;
+      }
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return [WELCOME_MESSAGE];
+}
 
 /**
- * Primary hook for Concierge Chat.
+ * Concierge Chat hook.
  *
  * Returns:
- *   messages          — array of { id, role, text, streaming }
- *   isOpen            — bool
- *   isLoading         — bool (while waiting for turn_id)
- *   error             — string | null
- *   paymentEvent      — { type, sku, zip, source, deeplink_after } | null — consume and clear
- *   waitlistZip       — string | null — ZIP to offer waitlist for
- *   send(text)        — send a user message
- *   open()            — open the chat bubble
- *   close()           — close the chat drawer
- *   clearPaymentEvent — call after consuming paymentEvent
- *   clearWaitlistZip  — call after consuming waitlistZip
+ *   messages, isOpen, isLoading, error,
+ *   unreadCount      — count of assistant replies received while closed
+ *   send(text)       — send a user message
+ *   retryLast()      — re-send last failed user message
+ *   reset()          — start a fresh session (new id, welcome only)
+ *   open(), close()
  */
-export default function useConciergeChat({ mode = 'pre_signup', feedUuid = null } = {}) {
+export default function useConciergeChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [sessionId, setSessionId] = useState(null);
-  const [paymentEvent, setPaymentEvent] = useState(null);
-  const [waitlistZip, setWaitlistZip] = useState(null);
+  const [messages, setMessages] = useState(loadInitialMessages);
+  const [sessionId, setSessionId] = useState(() => {
+    try { return localStorage.getItem(SESSION_KEY); } catch { return null; }
+  });
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const streamCleanupRef = useRef(null);
+  const lastUserTextRef = useRef(null);
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
 
-  // ── Session initialisation ──────────────────────────────────────────────────
+  // Persist messages to sessionStorage on every change
   useEffect(() => {
-    const stored = localStorage.getItem(SESSION_KEY);
-    if (stored) {
-      setSessionId(stored);
+    try {
+      sessionStorage.setItem(MESSAGES_KEY, JSON.stringify(messages));
+    } catch {
+      // quota or disabled — ignore
     }
-    // Insert welcome message
-    setMessages([
-      { id: 'welcome', role: 'assistant', text: CHAT_STRINGS.welcomeMessage, streaming: false },
-    ]);
-  }, []);
+  }, [messages]);
 
-  // ── Send a message ──────────────────────────────────────────────────────────
-  const send = useCallback(async (text) => {
-    if (!text?.trim()) return;
+  const _sendInternal = useCallback(async (text, { replaceErrorId = null } = {}) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
     setError(null);
     setIsLoading(true);
+    lastUserTextRef.current = trimmed;
 
-    // Optimistically append user message
-    const userMsgId = `user-${Date.now()}`;
-    setMessages((prev) => [
-      ...prev,
-      { id: userMsgId, role: 'user', text: text.trim(), streaming: false },
-    ]);
-
-    // Placeholder streaming assistant message
-    const assistantMsgId = `assistant-${Date.now()}`;
-    setMessages((prev) => [
-      ...prev,
-      { id: assistantMsgId, role: 'assistant', text: '', streaming: true },
-    ]);
-
-    let currentSessionId = sessionId;
+    // If retrying, remove the failed assistant bubble first
+    if (replaceErrorId) {
+      setMessages((prev) => prev.filter((m) => m.id !== replaceErrorId));
+    } else {
+      // Fresh send — append user message
+      setMessages((prev) => [
+        ...prev,
+        { id: `user-${Date.now()}`, role: 'user', text: trimmed },
+      ]);
+    }
 
     try {
       const result = await sendMessage({
-        sessionId: currentSessionId,
-        content: text.trim(),
-        mode,
-        feedUuid,
+        sessionId,
+        content: trimmed,
       });
 
-      // Persist session
-      if (result.session_id && result.session_id !== currentSessionId) {
-        currentSessionId = result.session_id;
-        setSessionId(currentSessionId);
-        localStorage.setItem(SESSION_KEY, currentSessionId);
+      if (result.session_id && result.session_id !== sessionId) {
+        setSessionId(result.session_id);
+        try { localStorage.setItem(SESSION_KEY, result.session_id); } catch {}
       }
 
-      // Surface payment event
-      if (result.payment_event) {
-        setPaymentEvent(result.payment_event);
-      }
-      if (result.waitlist_zip) {
-        setWaitlistZip(result.waitlist_zip);
-      }
-
-      setIsLoading(false);
-
-      // Stream the assistant response via SSE for a typewriter UX
-      if (result.turn_id) {
-        streamCleanupRef.current?.();
-
-        const cleanup = streamTurn({
-          sessionId: currentSessionId,
-          turnId: result.turn_id,
-          onChunk: (chunk) => {
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantMsgId ? { ...m, text: m.text + chunk } : m,
-              ),
-            );
-          },
-          onDone: () => {
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantMsgId ? { ...m, streaming: false } : m,
-              ),
-            );
-          },
-          onError: () => {
-            // SSE failed — fall back to the content already in the POST response
-            const fallback = result.content || CHAT_STRINGS.errorRetry;
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantMsgId
-                  ? { ...m, text: fallback, streaming: false }
-                  : m,
-              ),
-            );
-          },
-        });
-        streamCleanupRef.current = cleanup;
-      } else if (result.content) {
-        // No turn_id — show content directly (should not happen in normal flow)
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantMsgId
-              ? { ...m, text: result.content, streaming: false }
-              : m,
-          ),
-        );
-      }
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-${Date.now()}`,
+          role: 'assistant',
+          text: result.reply || CHAT_STRINGS.errorRetry,
+          followups: Array.isArray(result.followups) ? result.followups.slice(0, 2) : [],
+        },
+      ]);
+      if (!isOpenRef.current) setUnreadCount((n) => n + 1);
     } catch (err) {
-      setIsLoading(false);
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantMsgId
-            ? { ...m, text: CHAT_STRINGS.errorRetry, streaming: false }
-            : m,
-        ),
-      );
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `assistant-error-${Date.now()}`,
+          role: 'assistant',
+          text: CHAT_STRINGS.errorRetry,
+          error: true,
+        },
+      ]);
       setError(err?.message || CHAT_STRINGS.errorConnect);
+    } finally {
+      setIsLoading(false);
     }
-  }, [sessionId, mode, feedUuid]);
+  }, [sessionId]);
 
-  // ── Cleanup stream on unmount ───────────────────────────────────────────────
-  useEffect(() => {
-    return () => {
-      streamCleanupRef.current?.();
-    };
+  const send = useCallback((text) => _sendInternal(text), [_sendInternal]);
+
+  const retryLast = useCallback((errorMessageId) => {
+    const text = lastUserTextRef.current;
+    if (!text) return;
+    _sendInternal(text, { replaceErrorId: errorMessageId });
+  }, [_sendInternal]);
+
+  const reset = useCallback(() => {
+    setMessages([WELCOME_MESSAGE]);
+    setSessionId(null);
+    setError(null);
+    setUnreadCount(0);
+    lastUserTextRef.current = null;
+    try {
+      localStorage.removeItem(SESSION_KEY);
+      sessionStorage.removeItem(MESSAGES_KEY);
+    } catch {}
   }, []);
+
+  const open = useCallback(() => {
+    setIsOpen(true);
+    setUnreadCount(0);
+  }, []);
+
+  const close = useCallback(() => setIsOpen(false), []);
 
   return {
     messages,
     isOpen,
     isLoading,
     error,
-    paymentEvent,
-    waitlistZip,
+    unreadCount,
     send,
-    open: () => setIsOpen(true),
-    close: () => setIsOpen(false),
-    clearPaymentEvent: () => setPaymentEvent(null),
-    clearWaitlistZip: () => setWaitlistZip(null),
+    retryLast,
+    reset,
+    open,
+    close,
   };
 }

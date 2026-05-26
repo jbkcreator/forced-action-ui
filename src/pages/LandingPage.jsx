@@ -173,16 +173,8 @@ function LandingContent() {
           embeddedRef={embeddedRef}
         />
 
-        {/* M5a: Concierge Chat — pre-signup conversion widget */}
-        <ConciergeChat
-          mode="pre_signup"
-          mountPoint="landing"
-          onPaymentSheet={(evt) => {
-            // Chat emits a buy intent → open the ZIP collector → Stripe flow.
-            // We route to EmailGate first since we need email before checkout.
-            setEmailGate({ open: true, tier: 'starter', flow: 'paid' });
-          }}
-        />
+        {/* Concierge Chat — PDF/Markdown-grounded info widget */}
+        <ConciergeChat />
       </div>
     </div>
   );

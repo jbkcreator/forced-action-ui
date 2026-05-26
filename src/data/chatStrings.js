@@ -7,7 +7,6 @@ export const CHAT_STRINGS = {
   waitlistCta: 'Join Waitlist',
   closedLabel: 'Close chat',
   headerTitle: 'Forced Action Concierge',
-  headerSubtitle: 'AI-powered — usually instant',
   welcomeMessage:
     "Hi! I can answer questions about pricing, coverage, how Forced Action works, or check if a ZIP is available. What would you like to know?",
 };

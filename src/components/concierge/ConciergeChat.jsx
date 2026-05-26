@@ -1,80 +1,36 @@
 /**
- * ConciergeChat — top-level Concierge Chat widget.
+ * ConciergeChat — Markdown-grounded chat widget (always mounted).
  *
- * Props:
- *   mode       — 'pre_signup' | 'post_signup'
- *   mountPoint — 'landing' | 'dashboard' | 'lead_feed'
- *   feedUuid   — subscriber feed UUID (post_signup only)
- *   onPaymentSheet — optional callback({ sku, zip, source, deeplink_after })
- *                    called when Claude emits a buy intent. If not provided,
- *                    the event is logged and the user sees a CTA in chat.
+ * Mount once. Renders either the floating bubble (closed) or the chat
+ * panel (open). State is held in useConciergeChat so messages and
+ * unread count persist across open/close within the tab.
  */
-import { useEffect } from 'react';
 import useConciergeChat from '../../hooks/useConciergeChat';
 import ChatBubble from './ChatBubble';
 import ChatDrawer from './ChatDrawer';
 import ChatFullScreen from './ChatFullScreen';
-import { escalateSession } from '../../api/chat';
 
-const IS_MOBILE = () => window.innerWidth < 768;
+const isMobile = () => window.innerWidth < 768;
 
-export default function ConciergeChat({
-  mode = 'pre_signup',
-  mountPoint = 'landing',
-  feedUuid = null,
-  onPaymentSheet = null,
-}) {
+export default function ConciergeChat() {
   const {
     messages,
     isOpen,
     isLoading,
     error,
-    paymentEvent,
-    waitlistZip,
+    unreadCount,
     send,
+    retryLast,
+    reset,
     open,
     close,
-    clearPaymentEvent,
-    clearWaitlistZip,
-  } = useConciergeChat({ mode, feedUuid });
-
-  // ── Payment Sheet trigger ─────────────────────────────────────────────────
-  useEffect(() => {
-    if (!paymentEvent) return;
-    if (typeof onPaymentSheet === 'function') {
-      onPaymentSheet(paymentEvent);
-    } else {
-      // No handler — inject a CTA message so the user still sees the action
-      console.info('[ConciergeChat] payment_event received but no handler:', paymentEvent);
-    }
-    clearPaymentEvent();
-  }, [paymentEvent, onPaymentSheet, clearPaymentEvent]);
-
-  // ── Waitlist CTA ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!waitlistZip) return;
-    // Parent can wire a waitlist handler; default is a logged no-op.
-    clearWaitlistZip();
-  }, [waitlistZip, clearWaitlistZip]);
-
-  const handleEscalate = async () => {
-    // Best-effort — don't block UX
-    try {
-      const stored = localStorage.getItem('fa_chat_session_id');
-      if (stored) await escalateSession(stored);
-    } catch {
-      // ignore
-    }
-    // Deep-link to support
-    window.open('mailto:support@forcedaction.ai?subject=Chat%20Escalation', '_blank');
-  };
+  } = useConciergeChat();
 
   if (!isOpen) {
-    return <ChatBubble onClick={open} />;
+    return <ChatBubble onClick={open} unreadCount={unreadCount} />;
   }
 
-  const mobile = IS_MOBILE();
-  const ChatPanel = mobile ? ChatFullScreen : ChatDrawer;
+  const ChatPanel = isMobile() ? ChatFullScreen : ChatDrawer;
 
   return (
     <ChatPanel
@@ -82,7 +38,8 @@ export default function ConciergeChat({
       isLoading={isLoading}
       error={error}
       onSend={send}
-      onEscalate={handleEscalate}
+      onRetry={retryLast}
+      onReset={reset}
       onClose={close}
     />
   );

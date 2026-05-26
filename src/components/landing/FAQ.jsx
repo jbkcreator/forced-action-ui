@@ -23,7 +23,7 @@ const FAQS = [
   },
   {
     q: 'What verticals do you support?',
-    a: 'Roofing, Restoration, Public Adjusters, Wholesalers, Fix & Flip, and Attorneys. Each vertical gets its own scoring model optimized for that industry\'s lead signals.',
+    a: "Roofing, Restoration, Public Adjusters, Wholesalers, Fix & Flip, and Attorneys. Each vertical gets its own scoring model optimized for that industry's lead signals.",
   },
 ];
 
@@ -36,12 +36,12 @@ export default function FAQ() {
         <span className="text-xs font-semibold uppercase tracking-[0.2em] text-yellow-400/70 mb-3 block">FAQ</span>
         <h2 className="text-3xl sm:text-4xl font-bold">Common Questions</h2>
       </div>
-      <div className="space-y-3">
+      <div className="divide-y divide-white/10">
         {FAQS.map((faq, i) => (
-          <div key={i} className="glass-card rounded-xl overflow-hidden">
+          <div key={i}>
             <button
               onClick={() => setOpenIndex(openIndex === i ? null : i)}
-              className="w-full flex items-center justify-between px-6 py-4 text-left"
+              className="w-full flex items-center justify-between py-5 text-left"
             >
               <span className="font-semibold text-white text-sm sm:text-base pr-4">{faq.q}</span>
               <svg
@@ -56,7 +56,7 @@ export default function FAQ() {
               style={{ gridTemplateRows: openIndex === i ? '1fr' : '0fr' }}
             >
               <div className="overflow-hidden">
-                <p className="px-6 pb-5 text-slate-400 text-sm leading-relaxed">{faq.a}</p>
+                <p className="pb-5 text-slate-400 text-sm leading-relaxed">{faq.a}</p>
               </div>
             </div>
           </div>

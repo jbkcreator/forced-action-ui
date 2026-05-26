@@ -1,6 +1,6 @@
 import { CHAT_STRINGS } from '../../data/chatStrings';
 
-export default function ChatBubble({ onClick }) {
+export default function ChatBubble({ onClick, unreadCount = 0 }) {
   return (
     <button
       type="button"
@@ -13,6 +13,15 @@ export default function ChatBubble({ onClick }) {
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
       </svg>
       {CHAT_STRINGS.bubbleLabel}
+
+      {unreadCount > 0 && (
+        <span
+          aria-label={`${unreadCount} new message${unreadCount === 1 ? '' : 's'}`}
+          className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold ring-2 ring-slate-900"
+        >
+          {unreadCount > 9 ? '9+' : unreadCount}
+        </span>
+      )}
     </button>
   );
 }
