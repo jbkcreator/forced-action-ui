@@ -3,7 +3,7 @@
  * Requires an admin JWT token (passed as prop).
  */
 import { useCallback, useEffect, useState } from 'react';
-import { fetchAdminStormPacks } from '../../api/bundles';
+import { fetchAdminStormPacks } from '../../api/admin';
 
 function Badge({ active }) {
   return active
@@ -28,7 +28,7 @@ export default function StormPacksTable({ token }) {
   const load = useCallback((signal) => {
     setLoading(true);
     setError('');
-    return fetchAdminStormPacks({ limit: 50 })
+    return fetchAdminStormPacks(token, { limit: 50 }, { signal })
       .then(setData)
       .catch((e) => {
         if (e.name !== 'AbortError') setError(e.message || e.detail || 'Failed to load storm packs');

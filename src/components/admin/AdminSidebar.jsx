@@ -1,0 +1,98 @@
+import { NavLink } from 'react-router-dom';
+
+const SECTIONS = [
+  {
+    id: 'data',
+    label: 'Data & Setup',
+    path: '/admin/data',
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <ellipse cx="12" cy="6" rx="8" ry="3" />
+        <path d="M4 6v4c0 1.657 3.582 3 8 3s8-1.343 8-3V6" />
+        <path d="M4 10v4c0 1.657 3.582 3 8 3s8-1.343 8-3v-4" />
+        <path d="M4 14v4c0 1.657 3.582 3 8 3s8-1.343 8-3v-4" />
+      </svg>
+    ),
+  },
+  {
+    id: 'revenue',
+    label: 'Revenue',
+    path: '/admin/revenue',
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v-1m0 9v1" />
+      </svg>
+    ),
+  },
+  {
+    id: 'messaging',
+    label: 'Messaging',
+    path: '/admin/messaging',
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path d="M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        <path d="M8 12h.01M12 12h.01M16 12h.01" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    id: 'ops',
+    label: 'Operations',
+    path: '/admin/ops',
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+      </svg>
+    ),
+  },
+  {
+    id: 'cora',
+    label: 'Cora Intel',
+    path: '/admin/cora',
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+];
+
+export default function AdminSidebar() {
+  return (
+    <aside
+      className="w-48 shrink-0 flex flex-col py-3"
+      style={{
+        borderRight: '1px solid rgba(255,255,255,0.07)',
+        background: 'rgba(8,13,26,0.5)',
+      }}
+    >
+      {SECTIONS.map(s => (
+        <NavLink
+          key={s.id}
+          to={s.path}
+          className="flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all"
+          style={({ isActive }) => ({
+            color: isActive ? '#facc15' : '#94a3b8',
+            borderLeft: isActive ? '2px solid #facc15' : '2px solid transparent',
+            background: isActive ? 'rgba(250,204,21,0.06)' : 'transparent',
+            paddingLeft: isActive ? '14px' : '14px',
+          })}
+          onMouseEnter={e => {
+            if (!e.currentTarget.style.borderLeft.includes('#facc15')) {
+              e.currentTarget.style.color = '#cbd5e1';
+            }
+          }}
+          onMouseLeave={e => {
+            if (!e.currentTarget.style.borderLeft.includes('#facc15')) {
+              e.currentTarget.style.color = '#94a3b8';
+            }
+          }}
+        >
+          <span className="shrink-0">{s.icon}</span>
+          <span>{s.label}</span>
+        </NavLink>
+      ))}
+    </aside>
+  );
+}

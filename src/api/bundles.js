@@ -22,11 +22,3 @@ export function bundleCheckout({ feedUuid, bundleType, zipCode, vertical, abVari
 export function fetchBundlePurchase(purchaseId, feedUuid) {
   return api.get(`/api/bundle/${purchaseId}`, { feed_uuid: feedUuid });
 }
-
-/**
- * GET /api/admin/storm-packs
- * Admin: list NWS alerts and bundle purchases.
- */
-export function fetchAdminStormPacks({ limit = 50, offset = 0 } = {}) {
-  return api.get('/api/admin/storm-packs', { limit, offset });
-}

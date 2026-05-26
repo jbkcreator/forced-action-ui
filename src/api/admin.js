@@ -72,29 +72,12 @@ export function uploadTaxDelinquency(token, file, countyId, taxYear) {
   return adminFetch(token, '/api/admin/upload/tax-delinquency', { method: 'POST', body: form });
 }
 
-// ─── New tabs (DLQ, Sandbox) ────────────────────────────────────────────────
+// ─── DLQ ─────────────────────────────────────────────────────────────────────
 export function fetchDlq(token, { limit = 100, offset = 0, reason, q } = {}, options = {}) {
   const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
   if (reason) params.set('reason', reason);
   if (q) params.set('q', q);
   return adminFetch(token, `/admin/dlq?${params.toString()}`, options);
-}
-
-export function dispatchSandboxEvent(token, body, options = {}) {
-  return adminFetch(token, '/api/admin/sandbox/dispatch-event', {
-    method: 'POST',
-    body,
-    ...options,
-  });
-}
-
-export function fetchSandboxOutbox(token, filters = {}, options = {}) {
-  const params = new URLSearchParams();
-  Object.entries(filters).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== '') params.set(k, String(v));
-  });
-  const qs = params.toString();
-  return adminFetch(token, `/api/admin/sandbox/outbox${qs ? `?${qs}` : ''}`, options);
 }
 
 // Per-SKU margin / refund / dispute summary
@@ -264,4 +247,34 @@ export function clearPlaywrightCode(token, countyId, sourceId, options = {}) {
     `/api/admin/counties/${encodeURIComponent(countyId)}/sources/${sourceId}/playwright-code`,
     { method: 'DELETE', ...options },
   );
+}
+
+export function fetchAdminStormPacks(token, { limit = 50, offset = 0 } = {}, options = {}) {
+  return adminFetch(token, `/api/admin/storm-packs?limit=${limit}&offset=${offset}`, options);
+}
+
+// ─── Cora Intelligence (fa036 + fa037) ───────────────────────────────────────
+
+export function fetchRevenueSignal(token, subscriberId, historyLimit = 20, options = {}) {
+  return adminFetch(token, `/api/admin/subscribers/${subscriberId}/revenue-signal?history_limit=${historyLimit}`, options);
+}
+
+export function fetchCoraAutonomy(token, weeks = 8, options = {}) {
+  return adminFetch(token, `/api/admin/cora-autonomy?weeks=${weeks}`, options);
+}
+
+export function fetchCoraPlaybooks(token, status = 'recommended', options = {}) {
+  return adminFetch(token, `/api/admin/cora-playbooks?status=${status}`, options);
+}
+
+export function adoptPlaybook(token, id, actor, options = {}) {
+  return adminFetch(token, `/api/admin/cora-playbook/${id}/adopt`, { method: 'POST', body: { actor }, ...options });
+}
+
+export function rejectPlaybook(token, id, actor, reason = '', options = {}) {
+  return adminFetch(token, `/api/admin/cora-playbook/${id}/reject`, { method: 'POST', body: { actor, reason }, ...options });
+}
+
+export function retirePlaybook(token, id, actor, options = {}) {
+  return adminFetch(token, `/api/admin/cora-playbook/${id}/retire`, { method: 'POST', body: { actor }, ...options });
 }
