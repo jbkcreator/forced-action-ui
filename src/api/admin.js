@@ -278,3 +278,82 @@ export function rejectPlaybook(token, id, actor, reason = '', options = {}) {
 export function retirePlaybook(token, id, actor, options = {}) {
   return adminFetch(token, `/api/admin/cora-playbook/${id}/retire`, { method: 'POST', body: { actor }, ...options });
 }
+
+// ─── Attribution (Stage 8) ────────────────────────────────────────────────────
+
+export function fetchAttributionStats(token, { groupBy = 'conversion_type', dateFrom, dateTo } = {}, options = {}) {
+  const params = new URLSearchParams({ group_by: groupBy });
+  if (dateFrom) params.set('date_from', dateFrom);
+  if (dateTo) params.set('date_to', dateTo);
+  return adminFetch(token, `/api/admin/attribution/stats?${params.toString()}`, options);
+}
+
+export function fetchAttributionConversions(token, filters = {}, options = {}) {
+  const params = new URLSearchParams();
+  const keys = [
+    'page', 'per_page', 'conversion_type', 'zip_code', 'trade',
+    'wallet_tier', 'lock_status', 'autopilot_tier', 'bundle_type',
+    'deal_size_bucket', 'subscriber_id', 'date_from', 'date_to',
+  ];
+  keys.forEach(k => { if (filters[k] != null && filters[k] !== '') params.set(k, String(filters[k])); });
+  return adminFetch(token, `/api/admin/attribution/conversions?${params.toString()}`, options);
+}
+
+export function fetchAttributionSubscriber(token, subscriberId, options = {}) {
+  return adminFetch(token, `/api/admin/attribution/subscriber/${encodeURIComponent(subscriberId)}`, options);
+}
+
+export function fetchAttributionTrace(token, eventId, options = {}) {
+  return adminFetch(token, `/api/admin/attribution/trace/${encodeURIComponent(eventId)}`, options);
+}
+
+// ─── Cora Incidents (fa034) ───────────────────────────────────────────────────
+
+export function fetchCoraIncidents(token, filters = {}, options = {}) {
+  const params = new URLSearchParams();
+  const keys = ['severity', 'metric_name', 'feature_name', 'action_taken', 'date_from', 'date_to', 'limit', 'offset'];
+  keys.forEach(k => { if (filters[k] != null && filters[k] !== '') params.set(k, String(filters[k])); });
+  if (filters.open_only) params.set('open_only', 'true');
+  return adminFetch(token, `/api/admin/cora-incidents?${params.toString()}`, options);
+}
+
+export function fetchCoraIncidentDetail(token, incidentId, options = {}) {
+  return adminFetch(token, `/api/admin/cora-incidents/${incidentId}`, options);
+}
+
+export function acknowledgeCoraIncident(token, incidentId, body = {}, options = {}) {
+  return adminFetch(token, `/api/admin/cora-incidents/${incidentId}/acknowledge`, {
+    method: 'POST', body, ...options,
+  });
+}
+
+export function resolveCoraIncident(token, incidentId, body = {}, options = {}) {
+  return adminFetch(token, `/api/admin/cora-incidents/${incidentId}/resolve`, {
+    method: 'POST', body, ...options,
+  });
+}
+
+// ─── SMS Analytics (fa038) ───────────────────────────────────────────────────
+
+export function fetchMessageOutcomes(token, filters = {}, options = {}) {
+  const params = new URLSearchParams();
+  const keys = [
+    'trade_vertical', 'county_id', 'behavioral_segment', 'revenue_signal_score_band',
+    'last_action_recency_band', 'prompt_version', 'conversion_type',
+    'template_id', 'variant_id', 'channel', 'message_type',
+    'subscriber_id', 'date_from', 'date_to', 'page', 'per_page',
+  ];
+  keys.forEach(k => { if (filters[k] != null && filters[k] !== '') params.set(k, String(filters[k])); });
+  return adminFetch(token, `/api/admin/message-outcomes?${params.toString()}`, options);
+}
+
+export function fetchMessageOutcomeDetail(token, messageId, options = {}) {
+  return adminFetch(token, `/api/admin/message-outcomes/${messageId}`, options);
+}
+
+export function fetchSmsVariantPerformance(token, { groupBy = 'prompt_version', dateFrom, dateTo } = {}, options = {}) {
+  const params = new URLSearchParams({ group_by: groupBy });
+  if (dateFrom) params.set('date_from', dateFrom);
+  if (dateTo) params.set('date_to', dateTo);
+  return adminFetch(token, `/api/admin/sms-variant-performance?${params.toString()}`, options);
+}

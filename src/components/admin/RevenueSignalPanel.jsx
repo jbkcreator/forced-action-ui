@@ -61,7 +61,7 @@ export default function RevenueSignalPanel({ token }) {
         else { setStatus('error'); setErrMsg(e.message || e.detail || 'Request failed'); }
       })
       .finally(() => setLoading(false));
-  }, [tok, inputId]);
+  }, [token, inputId]);
 
   const handleKey = (e) => { if (e.key === 'Enter') lookup(); };
 
