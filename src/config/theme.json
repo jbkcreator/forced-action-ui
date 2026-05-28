@@ -19,7 +19,9 @@
       "surface": "#0f172a",
       "surfaceLight": "#1e293b",
       "card": "rgba(255,255,255,0.04)",
-      "cardHover": "rgba(255,255,255,0.06)"
+      "cardHover": "rgba(255,255,255,0.06)",
+      "chat": "#0c1322",
+      "chatComposer": "#10182d"
     },
     "border": {
       "subtle": "rgba(255,255,255,0.06)",

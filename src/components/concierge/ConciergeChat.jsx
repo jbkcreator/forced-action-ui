@@ -12,7 +12,7 @@ import ChatFullScreen from './ChatFullScreen';
 
 const isMobile = () => window.innerWidth < 768;
 
-export default function ConciergeChat() {
+export default function ConciergeChat({ mode = 'pre_signup', feedUuid = null }) {
   const {
     messages,
     isOpen,
@@ -24,6 +24,7 @@ export default function ConciergeChat() {
     reset,
     open,
     close,
+    injectAssistantMessage,
   } = useConciergeChat();
 
   if (!isOpen) {
@@ -41,6 +42,9 @@ export default function ConciergeChat() {
       onRetry={retryLast}
       onReset={reset}
       onClose={close}
+      mode={mode}
+      feedUuid={feedUuid}
+      onInjectAssistantMessage={injectAssistantMessage}
     />
   );
 }

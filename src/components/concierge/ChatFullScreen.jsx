@@ -1,7 +1,7 @@
 import ChatBody from './ChatBody';
 import { CHAT_STRINGS } from '../../data/chatStrings';
 
-export default function ChatFullScreen({ messages, isLoading, error, onSend, onRetry, onReset, onClose }) {
+export default function ChatFullScreen({ messages, isLoading, error, onSend, onRetry, onReset, onClose, mode, feedUuid, onInjectAssistantMessage }) {
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900"
@@ -47,6 +47,9 @@ export default function ChatFullScreen({ messages, isLoading, error, onSend, onR
           error={error}
           onSend={onSend}
           onRetry={onRetry}
+          onInjectAssistantMessage={onInjectAssistantMessage}
+          mode={mode}
+          feedUuid={feedUuid}
         />
       </div>
     </div>

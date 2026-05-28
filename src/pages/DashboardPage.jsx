@@ -919,7 +919,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Concierge Chat — PDF/Markdown-grounded info widget */}
-      <ConciergeChat />
+      <ConciergeChat mode="post_signup" feedUuid={feedUuid} />
     </div>
   );
 }
