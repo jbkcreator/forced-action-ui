@@ -16,6 +16,7 @@ const Stage5SandboxPage = lazy(() => import('./pages/Stage5SandboxPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ProofWallPage = lazy(() => import('./pages/ProofWallPage'));
 const PartnerUpgradePage = lazy(() => import('./pages/PartnerUpgradePage'));
+const CountyLanding = lazy(() => import('./pages/CountyLanding'));
 
 // Admin section pages
 const DataSection      = lazy(() => import('./components/admin/sections/DataSection'));
@@ -51,6 +52,7 @@ export default function App() {
           </Route>
           <Route path="/dev" element={withBoundary(<DevPage />)} />
           <Route path="/stage5-sandbox" element={withBoundary(<Stage5SandboxPage />)} />
+          <Route path="/landing/:countyId" element={withBoundary(<CountyLanding />)} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>

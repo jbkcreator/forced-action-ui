@@ -24,13 +24,20 @@ export function fetchSampleLeads(zipCode, vertical, countyId) {
   return api.get('/api/sample-leads', { zip_code: zipCode, vertical, county_id: countyId });
 }
 
-export function submitWaitlist({ zipCode, vertical, countyId, name, email }) {
+export function getCountyLanding(countyId) {
+  return api.get(`/api/counties/${countyId}/landing`);
+}
+
+export function submitWaitlist({ zipCode, vertical, countyId, name, email, phone, sms_opt_in, waitlist_type }) {
   return api.post('/api/waitlist', {
     zip_code: zipCode,
     vertical,
     county_id: countyId,
     name,
     email,
+    phone,
+    sms_opt_in,
+    waitlist_type,
   });
 }
 
