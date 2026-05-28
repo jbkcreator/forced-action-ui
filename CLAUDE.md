@@ -33,7 +33,8 @@ Copy `.env.example` to `.env` and set:
 | `/dashboard/:feedUuid` | `DashboardPage` | Auth via UUID in URL; lead feed with filters |
 | `/success` | `SuccessPage` | Post-checkout; reads `?tier=&zips=` query params |
 | `/email-previews` | `EmailPreviewsPage` | Dev tool — preview transactional email templates |
-| `/admin` | `AdminPage` | Admin upload / ops surface |
+| `/admin` | `AdminPage` | Admin upload / ops surface; sub-sections via `?tab=` |
+| `/admin/cora?tab=timeline&subscriber=<id>` | CoraSection → CoraTimelineDashboard | Per-subscriber Cora touch timeline |
 | `*` | `NotFoundPage` | |
 
 `SkipLink` (`src/components/ui/SkipLink.jsx`) renders above routes for a11y.
@@ -58,6 +59,7 @@ All requests go through `src/api/client.js` (`apiRequest`, `api.get`, `api.post`
 - `landing.js` — Founding summary, ZIP check, checkout, waitlist.
 - `dashboard.js` — Lead feed, stats, lead packs, hot lead unlock.
 - `phase2b.js` — Phase 2B (Cora agent) endpoints.
+- `admin.js` — Admin endpoints incl. `fetchCoraTimeline(token, subscriberId, opts)` → per-subscriber Cora touch timeline.
 - `chat.js` — Concierge Chat (M5a): `createSession`, `sendMessage`, `streamTurn` (EventSource), `linkSession`, `escalateSession`.
 
 ### Stripe Integration
