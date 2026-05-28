@@ -19,6 +19,7 @@ import ZipTerritoryMap from '../components/landing/ZipTerritoryMap';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
 import useStripeCheckout from '../hooks/useStripeCheckout';
 import { createFreeSignup, logBusinessEvent } from '../api/phase2b';
+import ConciergeChat from '../components/concierge/ConciergeChat';
 
 function LandingContent() {
   const navigate = useNavigate();
@@ -171,6 +172,9 @@ function LandingContent() {
           error={checkoutError}
           embeddedRef={embeddedRef}
         />
+
+        {/* Concierge Chat — PDF/Markdown-grounded info widget */}
+        <ConciergeChat />
       </div>
     </div>
   );

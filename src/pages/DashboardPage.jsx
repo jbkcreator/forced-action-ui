@@ -42,6 +42,7 @@ import PauseStatusBanner from '../components/dashboard/PauseStatusBanner';
 import PauseModal from '../components/dashboard/PauseModal';
 import BundleCTAs from '../components/dashboard/BundleCTAs';
 import BundleOfferModal from '../components/dashboard/BundleOfferModal';
+import ConciergeChat from '../components/concierge/ConciergeChat';
 import StormPackBanner from '../components/dashboard/StormPackBanner';
 import BundleLeadSection from '../components/dashboard/BundleLeadSection';
 import TeamViewTile from '../components/dashboard/TeamViewTile';
@@ -115,6 +116,7 @@ export default function DashboardPage() {
   const [bundleDismissed, setBundleDismissed] = useState(false);
   const [pauseModalOpen, setPauseModalOpen] = useState(false);
   const [saveOfferDismissed, setSaveOfferDismissed] = useState(false);
+  // Chat-triggered bundle/lock offers
 
   // Stage 5 — URL-driven offer surfaces
   const urlAnnualOffer = searchParams.get('annual') === 'accept';
@@ -915,6 +917,9 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Concierge Chat — PDF/Markdown-grounded info widget */}
+      <ConciergeChat />
     </div>
   );
 }
