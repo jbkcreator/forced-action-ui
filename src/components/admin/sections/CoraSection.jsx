@@ -1,0 +1,18 @@
+import CoraAutonomyDashboard from '../CoraAutonomyDashboard';
+import CoraIncidentsDashboard from '../CoraIncidentsDashboard';
+import CoraPlaybookDashboard from '../CoraPlaybookDashboard';
+import SmsOutcomesDashboard from '../SmsOutcomesDashboard';
+import SmsVariantPerformanceDashboard from '../SmsVariantPerformanceDashboard';
+import SectionLayout from './SectionLayout';
+
+const TABS = [
+  { id: 'autonomy',    label: 'Autonomy Scorecard',       Component: CoraAutonomyDashboard },
+  { id: 'playbooks',  label: 'Playbook Recommendations',  Component: CoraPlaybookDashboard },
+  { id: 'incidents',  label: 'Incidents',                 Component: CoraIncidentsDashboard },
+  { id: 'sms-outcomes',    label: 'SMS Outcomes',         Component: SmsOutcomesDashboard },
+  { id: 'sms-variants',    label: 'SMS Performance',      Component: SmsVariantPerformanceDashboard },
+];
+
+export default function CoraSection() {
+  return <SectionLayout tabs={TABS} />;
+}

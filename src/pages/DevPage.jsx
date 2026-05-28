@@ -5,8 +5,6 @@ import SynthflowDashboard from '../components/admin/SynthflowDashboard';
 import RefundsDashboard from '../components/admin/RefundsDashboard';
 import ContactCoverageDashboard from '../components/admin/ContactCoverageDashboard';
 import DlqDashboard from '../components/admin/DlqDashboard';
-import SandboxDispatchPanel from '../components/admin/SandboxDispatchPanel';
-import SandboxOutboxPanel from '../components/admin/SandboxOutboxPanel';
 import SkuMarginDashboard from '../components/admin/SkuMarginDashboard';
 
 const TOKEN_KEY = 'admin_token';
@@ -18,8 +16,6 @@ const NAV = [
   { id: 'coverage',  label: 'Contact Coverage', Component: ContactCoverageDashboard },
   { id: 'sku',       label: 'SKU Margin',       Component: SkuMarginDashboard },
   { id: 'dlq',       label: 'DLQ',              Component: DlqDashboard },
-  { id: 'dispatch',  label: 'Dispatch',         Component: SandboxDispatchPanel },
-  { id: 'outbox',    label: 'Outbox',           Component: SandboxOutboxPanel },
 ];
 
 async function checkDevAccess(token) {

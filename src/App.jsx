@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import ThemeProvider from './theme/ThemeProvider';
 import LandingPage from './pages/LandingPage';
 import DashboardPage from './pages/DashboardPage';
@@ -16,6 +16,13 @@ const Stage5SandboxPage = lazy(() => import('./pages/Stage5SandboxPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ProofWallPage = lazy(() => import('./pages/ProofWallPage'));
 const PartnerUpgradePage = lazy(() => import('./pages/PartnerUpgradePage'));
+
+// Admin section pages
+const DataSection      = lazy(() => import('./components/admin/sections/DataSection'));
+const RevenueSection   = lazy(() => import('./components/admin/sections/RevenueSection'));
+const MessagingSection = lazy(() => import('./components/admin/sections/MessagingSection'));
+const OpsSection       = lazy(() => import('./components/admin/sections/OpsSection'));
+const CoraSection      = lazy(() => import('./components/admin/sections/CoraSection'));
 
 function withBoundary(element) {
   return <ErrorBoundary>{element}</ErrorBoundary>;
@@ -34,7 +41,14 @@ export default function App() {
           <Route path="/dashboard/:feedUuid/partner" element={withBoundary(<PartnerUpgradePage />)} />
           <Route path="/wins" element={withBoundary(<ProofWallPage />)} />
           <Route path="/email-previews" element={withBoundary(<EmailPreviewsPage />)} />
-          <Route path="/admin" element={withBoundary(<AdminPage />)} />
+          <Route path="/admin" element={withBoundary(<AdminPage />)}>
+            <Route index element={<Navigate to="data" replace />} />
+            <Route path="data"      element={withBoundary(<DataSection />)} />
+            <Route path="revenue"   element={withBoundary(<RevenueSection />)} />
+            <Route path="messaging" element={withBoundary(<MessagingSection />)} />
+            <Route path="ops"       element={withBoundary(<OpsSection />)} />
+            <Route path="cora"      element={withBoundary(<CoraSection />)} />
+          </Route>
           <Route path="/dev" element={withBoundary(<DevPage />)} />
           <Route path="/stage5-sandbox" element={withBoundary(<Stage5SandboxPage />)} />
           <Route path="*" element={<NotFoundPage />} />
