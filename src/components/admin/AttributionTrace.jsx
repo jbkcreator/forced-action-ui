@@ -124,6 +124,7 @@ export default function AttributionTrace({ token, initialEventId = null }) {
               </div>
               {/* Right column */}
               <div className="space-y-3">
+                <Field label="Lead ID"        value={ae.lead_id}          mono />
                 <Field label="ZIP Code"       value={ae.zip_code}         mono />
                 <Field label="Trade"          value={ae.trade} />
                 <Field label="Wallet Tier"    value={ae.wallet_tier} />
