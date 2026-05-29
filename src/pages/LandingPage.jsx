@@ -174,7 +174,7 @@ function LandingContent() {
         />
 
         {/* Concierge Chat — PDF/Markdown-grounded info widget */}
-        <ConciergeChat />
+        <ConciergeChat mode="pre_signup" />
       </div>
     </div>
   );

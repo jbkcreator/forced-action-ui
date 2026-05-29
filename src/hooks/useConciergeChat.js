@@ -59,6 +59,14 @@ export default function useConciergeChat() {
   const isOpenRef = useRef(isOpen);
   useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
 
+  const injectAssistantMessage = useCallback((text) => {
+    setMessages((prev) => [
+      ...prev,
+      { id: `assistant-injected-${Date.now()}`, role: 'assistant', text, followups: [] },
+    ]);
+    if (!isOpenRef.current) setUnreadCount((n) => n + 1);
+  }, []);
+
   // Persist messages to sessionStorage on every change
   useEffect(() => {
     try {
@@ -83,7 +91,7 @@ export default function useConciergeChat() {
       // Fresh send — append user message
       setMessages((prev) => [
         ...prev,
-        { id: `user-${Date.now()}`, role: 'user', text: trimmed },
+        { id: `user-${Date.now()}`, role: 'user', text: trimmed, timestamp: Date.now() },
       ]);
     }
 
@@ -162,5 +170,6 @@ export default function useConciergeChat() {
     reset,
     open,
     close,
+    injectAssistantMessage,
   };
 }

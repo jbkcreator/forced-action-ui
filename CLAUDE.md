@@ -36,6 +36,7 @@ Copy `.env.example` to `.env` and set:
 | `/admin` | `AdminPage` | Admin upload / ops surface; sub-sections via `?tab=` |
 | `/admin/subscribers` | SubscribersSection | Queue + All tabs (fa045 — operator CRM). Hot Subscriber Queue = at-risk (RSS≥60 ∧ cool>7d). |
 | `/admin/subscribers/:id` | SubscriberDetailPage | 4 tabs: Revenue Signal, Conversation, Deals, Notes & Tags |
+| `/admin/cora?tab=timeline&subscriber=<id>` | CoraSection → CoraTimelineDashboard | Per-subscriber Cora touch timeline |
 | `*` | `NotFoundPage` | |
 
 `SkipLink` (`src/components/ui/SkipLink.jsx`) renders above routes for a11y.
@@ -60,6 +61,7 @@ All requests go through `src/api/client.js` (`apiRequest`, `api.get`, `api.post`
 - `landing.js` — Founding summary, ZIP check, checkout, waitlist.
 - `dashboard.js` — Lead feed, stats, lead packs, hot lead unlock.
 - `phase2b.js` — Phase 2B (Cora agent) endpoints.
+- `admin.js` — Admin endpoints incl. `fetchCoraTimeline(token, subscriberId, opts)` → per-subscriber Cora touch timeline.
 - `chat.js` — Concierge Chat (M5a): `createSession`, `sendMessage`, `streamTurn` (EventSource), `linkSession`, `escalateSession`.
 
 ### Stripe Integration

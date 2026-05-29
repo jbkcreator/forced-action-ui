@@ -335,6 +335,19 @@ export function resolveCoraIncident(token, incidentId, body = {}, options = {}) 
 
 // fa045 — fetchCoraTimeline removed; use fetchSubscriberConversation below.
 
+// GET /api/admin/cora/subscribers/{subscriberId}/timeline
+// opts: { cursor, limit, graphName, status, since }
+// Returns { subscriber_id, items, next_cursor }
+export function fetchCoraTimeline(token, subscriberId, opts = {}, options = {}) {
+  const params = new URLSearchParams();
+  if (opts.cursor) params.set('cursor', opts.cursor);
+  if (opts.limit) params.set('limit', String(opts.limit));
+  if (opts.graphName) params.set('graph_name', opts.graphName);
+  if (opts.status) params.set('status', opts.status);
+  if (opts.since) params.set('since', opts.since);
+  const qs = params.toString();
+  return adminFetch(token, `/api/admin/cora/subscribers/${subscriberId}/timeline${qs ? '?' + qs : ''}`, options);
+}
 
 // ─── SMS Analytics (fa038) ───────────────────────────────────────────────────
 
