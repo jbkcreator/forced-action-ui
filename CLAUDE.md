@@ -34,6 +34,8 @@ Copy `.env.example` to `.env` and set:
 | `/success` | `SuccessPage` | Post-checkout; reads `?tier=&zips=` query params |
 | `/email-previews` | `EmailPreviewsPage` | Dev tool — preview transactional email templates |
 | `/admin` | `AdminPage` | Admin upload / ops surface; sub-sections via `?tab=` |
+| `/admin/subscribers` | SubscribersSection | Queue + All tabs (fa045 — operator CRM). Hot Subscriber Queue = at-risk (RSS≥60 ∧ cool>7d). |
+| `/admin/subscribers/:id` | SubscriberDetailPage | 4 tabs: Revenue Signal, Conversation, Deals, Notes & Tags |
 | `/admin/cora?tab=timeline&subscriber=<id>` | CoraSection → CoraTimelineDashboard | Per-subscriber Cora touch timeline |
 | `*` | `NotFoundPage` | |
 

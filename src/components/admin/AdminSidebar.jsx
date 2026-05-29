@@ -15,6 +15,18 @@ const SECTIONS = [
     ),
   },
   {
+    id: 'subscribers',
+    label: 'Subscribers',
+    path: '/admin/subscribers',
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 014-4h.5" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M17 11a4 4 0 100-8 4 4 0 000 8z" />
+      </svg>
+    ),
+  },
+  {
     id: 'revenue',
     label: 'Revenue',
     path: '/admin/revenue',

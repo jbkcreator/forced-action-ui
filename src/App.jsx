@@ -24,6 +24,8 @@ const RevenueSection   = lazy(() => import('./components/admin/sections/RevenueS
 const MessagingSection = lazy(() => import('./components/admin/sections/MessagingSection'));
 const OpsSection       = lazy(() => import('./components/admin/sections/OpsSection'));
 const CoraSection      = lazy(() => import('./components/admin/sections/CoraSection'));
+const SubscribersSection = lazy(() => import('./components/admin/sections/SubscribersSection'));
+const SubscriberDetailPage = lazy(() => import('./pages/SubscriberDetailPage'));
 
 function withBoundary(element) {
   return <ErrorBoundary>{element}</ErrorBoundary>;
@@ -49,6 +51,8 @@ export default function App() {
             <Route path="messaging" element={withBoundary(<MessagingSection />)} />
             <Route path="ops"       element={withBoundary(<OpsSection />)} />
             <Route path="cora"      element={withBoundary(<CoraSection />)} />
+            <Route path="subscribers"       element={withBoundary(<SubscribersSection />)} />
+            <Route path="subscribers/:id"   element={withBoundary(<SubscriberDetailPage />)} />
           </Route>
           <Route path="/dev" element={withBoundary(<DevPage />)} />
           <Route path="/stage5-sandbox" element={withBoundary(<Stage5SandboxPage />)} />
