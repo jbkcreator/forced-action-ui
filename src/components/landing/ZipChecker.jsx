@@ -5,8 +5,9 @@ import { checkZip as apiCheckZip } from '../../api/landing';
 import SampleLeads from './SampleLeads';
 import WaitlistForm from './WaitlistForm';
 
-export default function ZipChecker({ onZipChecked }) {
-  const { selectedVertical, countyId } = useLanding();
+export default function ZipChecker({ onZipChecked, countyId: externalCountyId, onZipTaken }) {
+  const { selectedVertical, countyId: contextCountyId } = useLanding();
+  const countyId = externalCountyId || contextCountyId;
   const [zip, setZip] = useState('');
   const [result, setResult] = useState(null);
   const [checkedZip, setCheckedZip] = useState('');
@@ -32,8 +33,11 @@ export default function ZipChecker({ onZipChecked }) {
         setResult({ status: 'available', message: `✓ ZIP ${trimmed} is available for ${label} — lock it in when you subscribe.` });
       } else if (data.status === 'grace') {
         setResult({ status: 'grace', message: `⏳ ZIP ${trimmed} is opening soon for ${label} — subscribe now to claim it.` });
+      } else if (data.status === 'taken') {
+        setResult({ status: 'taken', message: `✗ ZIP ${trimmed} is taken for ${label} by another subscriber.`, zip: trimmed });
+        if (onZipTaken) onZipTaken(trimmed);
       } else {
-        setResult({ status: 'taken', message: `✗ ZIP ${trimmed} is taken for ${label} by another subscriber.` });
+        setResult({ status: 'error', message: 'Unknown status' });
       }
     } catch {
       setResult({ status: 'error', message: 'Error checking ZIP. Please try again.' });
@@ -89,7 +93,7 @@ export default function ZipChecker({ onZipChecked }) {
       )}
 
       {result?.status === 'taken' && (
-        <WaitlistForm zip={checkedZip} />
+        <WaitlistForm zip={checkedZip} countyId={countyId} />
       )}
     </>
   );
