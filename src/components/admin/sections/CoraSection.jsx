@@ -5,6 +5,9 @@ import SmsOutcomesDashboard from '../SmsOutcomesDashboard';
 import SmsVariantPerformanceDashboard from '../SmsVariantPerformanceDashboard';
 import SectionLayout from './SectionLayout';
 
+// fa045 — Subscriber Timeline tab retired; per-subscriber conversation
+// history now lives at /admin/subscribers/:id?tab=conversation.
+
 const TABS = [
   { id: 'autonomy',    label: 'Autonomy Scorecard',       Component: CoraAutonomyDashboard },
   { id: 'playbooks',  label: 'Playbook Recommendations',  Component: CoraPlaybookDashboard },

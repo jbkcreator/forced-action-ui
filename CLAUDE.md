@@ -33,7 +33,9 @@ Copy `.env.example` to `.env` and set:
 | `/dashboard/:feedUuid` | `DashboardPage` | Auth via UUID in URL; lead feed with filters |
 | `/success` | `SuccessPage` | Post-checkout; reads `?tier=&zips=` query params |
 | `/email-previews` | `EmailPreviewsPage` | Dev tool — preview transactional email templates |
-| `/admin` | `AdminPage` | Admin upload / ops surface |
+| `/admin` | `AdminPage` | Admin upload / ops surface; sub-sections via `?tab=` |
+| `/admin/subscribers` | SubscribersSection | Queue + All tabs (fa045 — operator CRM). Hot Subscriber Queue = at-risk (RSS≥60 ∧ cool>7d). |
+| `/admin/subscribers/:id` | SubscriberDetailPage | 4 tabs: Revenue Signal, Conversation, Deals, Notes & Tags |
 | `*` | `NotFoundPage` | |
 
 `SkipLink` (`src/components/ui/SkipLink.jsx`) renders above routes for a11y.
