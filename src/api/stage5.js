@@ -48,8 +48,10 @@ export function acceptAnnual({ feedUuid }) {
 // GET /api/proof-wall?limit=N
 //   returns { items: [{ deal_outcome_id, deal_size_bucket, label,
 //     vertical, county_id, days_ago, graphic_url }] }
-export function fetchProofWall({ limit = 50 } = {}) {
-  return api.get('/api/proof-wall', { limit });
+export function fetchProofWall({ limit = 50, countyId } = {}) {
+  const params = { limit };
+  if (countyId) params.county_id = countyId;
+  return api.get('/api/proof-wall', params);
 }
 
 

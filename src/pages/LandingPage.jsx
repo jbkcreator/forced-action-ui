@@ -17,18 +17,21 @@ import EmailGateModal from '../components/landing/EmailGateModal';
 import ZipCollectorModal from '../components/landing/ZipCollectorModal';
 import ZipTerritoryMap from '../components/landing/ZipTerritoryMap';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
+import WaitlistForm from '../components/landing/WaitlistForm';
 import useStripeCheckout from '../hooks/useStripeCheckout';
 import { createFreeSignup, logBusinessEvent } from '../api/phase2b';
 import ConciergeChat from '../components/concierge/ConciergeChat';
 
 function LandingContent() {
   const navigate = useNavigate();
-  const { selectedVertical, countyId, attribution } = useLanding();
+  const { selectedVertical, countyId, landingData, attribution } = useLanding();
+  const ctaMode = landingData?.cta_mode ?? 'signup'; // default signup for backward compat
   // emailGate.flow: 'paid' (goes to ZIP collector → Stripe) or 'free' (goes to /api/free-signup → dashboard)
   const [emailGate, setEmailGate] = useState({ open: false, tier: null, flow: 'paid' });
   const [userEmail, setUserEmail] = useState('');
   const [zipCollector, setZipCollector] = useState({ open: false, tier: null });
   const [lastCheckedZip, setLastCheckedZip] = useState('');
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
   const [freeSigningUp, setFreeSigningUp] = useState(false);
   const { isOpen, loading, checkoutError, openCheckout, closeCheckout, embeddedRef } = useStripeCheckout();
   const pricingRef = useRef(null);
@@ -104,38 +107,90 @@ function LandingContent() {
         <StickyHeaderCTA targetRef={pricingRef} />
 
         <div id="main-content">
-          <HeroBanner onStartFree={handleStartFree} />
-          <div className="max-w-6xl mx-auto px-6 text-center">
-            <TrustBar />
-            <VerticalSelector />
-          </div>
-          <HowItWorks />
+          {/* ctaMode=null → unavailable county: show only coming-soon message */}
+          {ctaMode === null && (
+            <div className="max-w-2xl mx-auto px-6 pt-32 pb-16 text-center">
+              <h2 className="text-3xl font-bold text-white mb-4">Coming Soon to Your Area</h2>
+              <p className="text-slate-400 mb-8">
+                We&apos;re not in {landingData?.county_name || 'this county'} yet.
+                Join the waitlist and we&apos;ll notify you when we launch.
+              </p>
+              <button
+                type="button"
+                onClick={() => setWaitlistOpen(true)}
+                className="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-8 py-3 rounded-xl transition"
+              >
+                Join Waitlist
+              </button>
+            </div>
+          )}
 
-          {/* First-Session Monetization Wall (Phase 2B, §1):
-              proof moment + countdown + ROI framing. Unlock CTAs route to
-              EmailGate since there's no free-tier signup endpoint yet — the
-              email gate funnels into the existing pricing/checkout flow. */}
-          <FirstSessionWall
-            onRequestUnlock={() => setEmailGate({ open: true, tier: 'starter' })}
-          />
+          {ctaMode !== null && (
+            <>
+              <HeroBanner onStartFree={ctaMode === 'signup' ? handleStartFree : null} />
+              <div className="max-w-6xl mx-auto px-6 text-center">
+                <TrustBar />
+                <VerticalSelector />
+              </div>
+              <HowItWorks />
 
-          <div id="zip-check">
-            <ZipChecker onZipChecked={setLastCheckedZip} />
-          </div>
+              {ctaMode === 'signup' && (
+                <FirstSessionWall
+                  onRequestUnlock={() => setEmailGate({ open: true, tier: 'starter' })}
+                />
+              )}
 
-          <div className="max-w-6xl mx-auto px-6">
-            <ZipTerritoryMap
-              highlightZip={lastCheckedZip}
-              onZipSelect={(zipObj) => {
-                setLastCheckedZip(zipObj.zip);
-                setEmailGate({ open: true, tier: 'starter' });
-              }}
-            />
-          </div>
+              <div id="zip-check">
+                <ZipChecker onZipChecked={setLastCheckedZip} />
+              </div>
 
-          <div id="pricing" ref={pricingRef}>
-            <PricingSection onCheckout={handleCheckout} onStartFree={handleStartFree} />
-          </div>
+              <div className="max-w-6xl mx-auto px-6">
+                <ZipTerritoryMap
+                  highlightZip={lastCheckedZip}
+                  onZipSelect={(zipObj) => {
+                    setLastCheckedZip(zipObj.zip);
+                    if (ctaMode === 'signup') setEmailGate({ open: true, tier: 'starter' });
+                    else setWaitlistOpen(true);
+                  }}
+                />
+              </div>
+
+              {/* Coming Soon / Waitlist button — show prominently for waitlist mode,
+                  subtly as secondary option for signup mode */}
+              {ctaMode === 'waitlist' ? (
+                <div className="max-w-6xl mx-auto px-6 py-8 text-center">
+                  <p className="text-slate-300 text-base mb-4">
+                    {landingData?.county_name || 'This county'} is coming soon.
+                    Join the waitlist to be first in the door.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setWaitlistOpen(true)}
+                    className="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-8 py-3 rounded-xl transition"
+                  >
+                    Join Waitlist
+                  </button>
+                </div>
+              ) : (
+                <div className="max-w-6xl mx-auto px-6 py-6 text-center">
+                  <p className="text-slate-400 text-sm mb-3">Not in a live county yet?</p>
+                  <button
+                    type="button"
+                    onClick={() => setWaitlistOpen(true)}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-yellow-400/30 text-yellow-400 text-sm font-semibold hover:bg-yellow-400/10 transition-colors"
+                  >
+                    <span>🔔</span> Coming Soon — Join the Waitlist
+                  </button>
+                </div>
+              )}
+
+              {ctaMode === 'signup' && (
+                <div id="pricing" ref={pricingRef}>
+                  <PricingSection onCheckout={handleCheckout} onStartFree={handleStartFree} />
+                </div>
+              )}
+            </>
+          )}
 
           {/* Stage 5: anonymized social proof wall — recent contractor wins */}
           <SocialProofWall />
@@ -172,6 +227,32 @@ function LandingContent() {
           error={checkoutError}
           embeddedRef={embeddedRef}
         />
+
+        {/* Waitlist modal */}
+        {waitlistOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+            onClick={(e) => { if (e.target === e.currentTarget) setWaitlistOpen(false); }}
+          >
+            <div className="relative w-full max-w-xl">
+              <button
+                type="button"
+                onClick={() => setWaitlistOpen(false)}
+                className="absolute -top-3 -right-3 z-10 w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-slate-300 flex items-center justify-center text-sm transition-colors"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+              <WaitlistForm
+                zip={lastCheckedZip || ''}
+                countyId={countyId}
+                waitlistType="coming_soon"
+                vertical={selectedVertical}
+                onSuccess={() => setWaitlistOpen(false)}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Concierge Chat — PDF/Markdown-grounded info widget */}
         <ConciergeChat mode="pre_signup" />

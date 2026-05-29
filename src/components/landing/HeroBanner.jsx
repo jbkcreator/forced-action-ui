@@ -1,4 +1,11 @@
+import { useLanding } from './LandingContext';
+
 export default function HeroBanner({ onStartFree }) {
+  const { landingData } = useLanding();
+  const countyName = landingData?.county_name || 'Your County';
+  const heroHeadline = landingData?.hero?.headline || null;
+  const heroSubtitle = landingData?.hero?.subtitle || null;
+
   return (
     <section className="max-w-6xl mx-auto px-6 pt-24 pb-8 text-center">
       <div className="animate-fade-in-up">
@@ -9,13 +16,17 @@ export default function HeroBanner({ onStartFree }) {
       </div>
 
       <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] mb-8 animate-fade-in-up delay-100 tracking-tight">
-        Real-Time Property Leads<br />
-        <span className="gradient-text">Before Your Competition</span><br />
-        <span className="gradient-text">Sees Them</span>
+        {heroHeadline || (
+          <>
+            Real-Time Property Leads<br />
+            <span className="gradient-text">Before Your Competition</span><br />
+            <span className="gradient-text">Sees Them</span>
+          </>
+        )}
       </h1>
 
       <p className="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto mb-6 leading-relaxed animate-fade-in-up delay-200">
-        Every storm, permit, eviction, and insurance claim in Hillsborough County — scored, ranked, and delivered to your exclusive territory before anyone else gets them.
+        {heroSubtitle || `Every storm, permit, eviction, and insurance claim in ${countyName} — scored, ranked, and delivered to your exclusive territory before anyone else gets them.`}
       </p>
 
       {onStartFree && (

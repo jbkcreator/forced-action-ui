@@ -1,4 +1,5 @@
 import Icon from '../ui/Icon';
+import { useLanding } from './LandingContext';
 
 const STEPS = [
   {
@@ -19,6 +20,13 @@ const STEPS = [
 ];
 
 export default function HowItWorks() {
+  const { landingData } = useLanding();
+  const countyName = landingData?.county_name || 'Your County';
+  const sampleCity = {
+    hillsborough: 'Tampa',
+    pinellas: 'St. Petersburg',
+  }[landingData?.county_id] || countyName.split(' ')[0];
+
   return (
     <section id="how-it-works" className="max-w-6xl mx-auto px-6 py-16">
       <div className="text-center mb-12">
@@ -45,7 +53,7 @@ export default function HowItWorks() {
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-white text-sm">4821 W Neptune St</p>
-              <p className="text-slate-400 text-xs mt-0.5">Tampa, FL 33614 · Built 1987 · 2,140 sqft</p>
+              <p className="text-slate-400 text-xs mt-0.5">{sampleCity}, FL · Built 1987 · 2,140 sqft</p>
               <p className="text-yellow-400 text-xs mt-1 flex items-center gap-1">
                 <Icon name="bolt" size={12} className="text-yellow-400" /> Hurricane damage — 2026-03-12
               </p>

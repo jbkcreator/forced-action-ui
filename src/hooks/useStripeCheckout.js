@@ -21,7 +21,7 @@ export default function useStripeCheckout() {
   const openCheckout = useCallback(async ({
     tier, vertical, countyId, zipCodes, email, attribution = null,
   }) => {
-    checkoutCtxRef.current = { tier, zipCodes };
+    checkoutCtxRef.current = { tier, zipCodes, countyId };
     setIsOpen(true);
     setLoading(true);
     setCheckoutError(null);
@@ -67,6 +67,11 @@ export default function useStripeCheckout() {
             params.set('zips', checkoutCtxRef.current.zipCodes.join(','));
             if (checkoutCtxRef.current.feedUuid) {
               params.set('feed_uuid', checkoutCtxRef.current.feedUuid);
+            }
+            // Preserve county_id through Stripe redirect so /success knows
+            // which county the subscriber signed up for.
+            if (checkoutCtxRef.current.countyId) {
+              params.set('county_id', checkoutCtxRef.current.countyId);
             }
           }
           window.location.href = `/success?${params.toString()}`;

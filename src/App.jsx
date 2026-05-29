@@ -56,6 +56,8 @@ export default function App() {
           </Route>
           <Route path="/dev" element={withBoundary(<DevPage />)} />
           <Route path="/stage5-sandbox" element={withBoundary(<Stage5SandboxPage />)} />
+          {/* /landing?county_id=hillsborough or /landing/hillsborough */}
+          <Route path="/landing" element={withBoundary(<LandingPage />)} />
           <Route path="/landing/:countyId" element={withBoundary(<CountyLanding />)} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

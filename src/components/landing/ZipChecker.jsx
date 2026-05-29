@@ -6,8 +6,9 @@ import SampleLeads from './SampleLeads';
 import WaitlistForm from './WaitlistForm';
 
 export default function ZipChecker({ onZipChecked, countyId: externalCountyId, onZipTaken }) {
-  const { selectedVertical, countyId: contextCountyId } = useLanding();
+  const { selectedVertical, countyId: contextCountyId, landingData } = useLanding();
   const countyId = externalCountyId || contextCountyId;
+  const countyName = landingData?.county_name || 'our service area';
   const [zip, setZip] = useState('');
   const [result, setResult] = useState(null);
   const [checkedZip, setCheckedZip] = useState('');
@@ -28,7 +29,7 @@ export default function ZipChecker({ onZipChecked, countyId: externalCountyId, o
       if (onZipChecked) onZipChecked(trimmed);
 
       if (data.status === 'invalid') {
-        setResult({ status: 'invalid', message: `✗ ZIP ${trimmed} is not in our Hillsborough County service area.` });
+        setResult({ status: 'invalid', message: `✗ ZIP ${trimmed} is not in our ${countyName} service area.` });
       } else if (data.status === 'available') {
         setResult({ status: 'available', message: `✓ ZIP ${trimmed} is available for ${label} — lock it in when you subscribe.` });
       } else if (data.status === 'grace') {
