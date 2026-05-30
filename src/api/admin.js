@@ -473,3 +473,17 @@ export function cancelCoraMessage(token, messageId, reason, options = {}) {
     ...options,
   });
 }
+
+// Human-review switch — when ON, Cora's outbound messages are held for
+// approve/cancel; when OFF (default) they send immediately.
+export function fetchCoraReviewSwitch(token, options = {}) {
+  return adminFetch(token, '/api/admin/cora-messages/review-switch', options);
+}
+
+export function setCoraReviewSwitch(token, enabled, options = {}) {
+  return adminFetch(token, '/api/admin/cora-messages/review-switch', {
+    method: 'POST',
+    body: { enabled },
+    ...options,
+  });
+}
