@@ -4,6 +4,10 @@ export function fetchPricing() {
   return api.get('/api/pricing');
 }
 
+export function fetchLandingData(countyId) {
+  return api.get('/api/landing-data', { county_id: countyId });
+}
+
 export function fetchFoundingSummary(vertical, countyId) {
   return api.get('/api/founding-summary', { vertical, county_id: countyId });
 }

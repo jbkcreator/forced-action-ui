@@ -373,3 +373,117 @@ export function fetchSmsVariantPerformance(token, { groupBy = 'prompt_version', 
   if (dateTo) params.set('date_to', dateTo);
   return adminFetch(token, `/api/admin/sms-variant-performance?${params.toString()}`, options);
 }
+
+// ─── Operator CRM (fa045) ───────────────────────────────────────────────────
+export function fetchSubscribers(token, filters = {}, options = {}) {
+  const p = new URLSearchParams();
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') p.set(k, String(v));
+  });
+  const qs = p.toString();
+  return adminFetch(token, `/api/admin/subscribers${qs ? '?' + qs : ''}`, options);
+}
+
+export function fetchHotSubscribers(token, options = {}) {
+  return adminFetch(token, '/api/admin/subscribers/hot', options);
+}
+
+export function fetchSubscriberDetail(token, id, options = {}) {
+  return adminFetch(token, `/api/admin/subscribers/${id}`, options);
+}
+
+export function fetchSubscriberConversation(token, id, opts = {}, options = {}) {
+  const p = new URLSearchParams();
+  if (opts.limit) p.set('limit', String(opts.limit));
+  if (opts.before) p.set('before', opts.before);
+  const qs = p.toString();
+  return adminFetch(token, `/api/admin/subscribers/${id}/conversation${qs ? '?' + qs : ''}`, options);
+}
+
+export function fetchSubscriberDeals(token, id, includeClosed = false, options = {}) {
+  return adminFetch(token, `/api/admin/subscribers/${id}/deals?include_closed=${includeClosed}`, options);
+}
+
+export function updateDealStage(token, dealId, pipelineStage, note, options = {}) {
+  return adminFetch(token, `/api/admin/deals/${dealId}`, {
+    method: 'PATCH',
+    body: { pipeline_stage: pipelineStage, note: note || null },
+    ...options,
+  });
+}
+
+export function fetchSubscriberNotes(token, id, options = {}) {
+  return adminFetch(token, `/api/admin/subscribers/${id}/notes`, options);
+}
+
+export function createSubscriberNote(token, id, body, pinned = false, options = {}) {
+  return adminFetch(token, `/api/admin/subscribers/${id}/notes`, {
+    method: 'POST', body: { body, pinned }, ...options,
+  });
+}
+
+export function updateSubscriberNote(token, noteId, patch, options = {}) {
+  return adminFetch(token, `/api/admin/notes/${noteId}`, {
+    method: 'PATCH', body: patch, ...options,
+  });
+}
+
+export function deleteSubscriberNote(token, noteId, options = {}) {
+  return adminFetch(token, `/api/admin/notes/${noteId}`, { method: 'DELETE', ...options });
+}
+
+export function fetchSubscriberTags(token, id, options = {}) {
+  return adminFetch(token, `/api/admin/subscribers/${id}/tags`, options);
+}
+
+export function addSubscriberTag(token, id, tag, options = {}) {
+  return adminFetch(token, `/api/admin/subscribers/${id}/tags`, {
+    method: 'POST', body: { tag }, ...options,
+  });
+}
+
+export function removeSubscriberTag(token, id, tag, options = {}) {
+  return adminFetch(token, `/api/admin/subscribers/${id}/tags/${encodeURIComponent(tag)}`, {
+    method: 'DELETE', ...options,
+  });
+}
+
+export function fetchTagSuggestions(token, options = {}) {
+  return adminFetch(token, '/api/admin/subscriber-tag-suggestions', options);
+}
+
+// ─── Cora Pending Messages ────────────────────────────────────────────────────
+
+export function fetchCoraPendingMessages(token, { limit = 100 } = {}, options = {}) {
+  return adminFetch(token, `/api/admin/cora-messages/pending?limit=${limit}`, options);
+}
+
+export function approveCoraMessage(token, messageId, options = {}) {
+  return adminFetch(token, `/api/admin/cora-messages/${messageId}/approve`, {
+    method: 'POST',
+    body: {},
+    ...options,
+  });
+}
+
+export function cancelCoraMessage(token, messageId, reason, options = {}) {
+  return adminFetch(token, `/api/admin/cora-messages/${messageId}/cancel`, {
+    method: 'POST',
+    body: { reason: reason || null },
+    ...options,
+  });
+}
+
+// Human-review switch — when ON, Cora's outbound messages are held for
+// approve/cancel; when OFF (default) they send immediately.
+export function fetchCoraReviewSwitch(token, options = {}) {
+  return adminFetch(token, '/api/admin/cora-messages/review-switch', options);
+}
+
+export function setCoraReviewSwitch(token, enabled, options = {}) {
+  return adminFetch(token, '/api/admin/cora-messages/review-switch', {
+    method: 'POST',
+    body: { enabled },
+    ...options,
+  });
+}

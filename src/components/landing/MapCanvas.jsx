@@ -8,16 +8,20 @@ const STATUS_COLOR = {
   grace:     '#f59e0b',
 };
 
-// Hillsborough County geographic center — fallback map center if no ZIP has coords
-const COUNTY_CENTER = [27.9644, -82.4572];
+// Geographic centers per county — fallback map center when no ZIP has coords
+const COUNTY_CENTERS = {
+  hillsborough: [27.9644, -82.4572],
+  pinellas:     [27.8758, -82.7873],
+};
+const DEFAULT_CENTER = [27.9644, -82.4572];
 
-export default function MapCanvas({ zips, highlightZip, onZipClick }) {
+export default function MapCanvas({ zips, highlightZip, onZipClick, countyId }) {
   const reducedMotion = useReducedMotion();
 
   const mappable = zips.filter((z) => z.lat != null && z.lon != null);
   if (!zips.length) return null;
 
-  const anchor = COUNTY_CENTER;
+  const anchor = COUNTY_CENTERS[countyId] || DEFAULT_CENTER;
 
   return (
     <MapContainer

@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { approveCoraMessage, cancelCoraMessage, fetchCoraPendingMessages } from '../../api/admin';
+import {
+  approveCoraMessage,
+  cancelCoraMessage,
+  fetchCoraPendingMessages,
+  fetchCoraReviewSwitch,
+  setCoraReviewSwitch,
+} from '../../api/admin';
 
 const STATUS_COLORS = {
   pending_review: { bg: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: 'rgba(251,191,36,0.3)' },
@@ -29,6 +35,8 @@ export default function CoraPendingMessagesDashboard({ token }) {
   const [successMsg, setSuccessMsg] = useState('');
   const [acting, setActing]       = useState(null); // id of message being actioned
   const [limit, setLimit]         = useState(100);
+  const [reviewOn, setReviewOn]   = useState(null);  // null = unknown / loading
+  const [switching, setSwitching] = useState(false);
   const successTimerRef           = useRef(null);
 
   const load = useCallback((signal) => {
@@ -45,6 +53,32 @@ export default function CoraPendingMessagesDashboard({ token }) {
     load(ctrl.signal);
     return () => ctrl.abort();
   }, [load]);
+
+  // Load the human-review switch state once on mount.
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetchCoraReviewSwitch(token, { signal: ctrl.signal })
+      .then(d => setReviewOn(!!d.enabled))
+      .catch(e => { if (e.name !== 'AbortError') setReviewOn(false); });
+    return () => ctrl.abort();
+  }, [token]);
+
+  async function toggleReview() {
+    if (switching || reviewOn === null) return;
+    const next = !reviewOn;
+    setSwitching(true);
+    try {
+      const d = await setCoraReviewSwitch(token, next);
+      setReviewOn(!!d.enabled);
+      showSuccess(
+        d.enabled
+          ? 'Human review ON — Cora messages will now be held for approval.'
+          : 'Human review OFF — Cora messages will send immediately.'
+      );
+    } catch (e) {
+      setError(e.message || e.detail || 'Failed to change review switch');
+    } finally { setSwitching(false); }
+  }
 
   function showSuccess(msg) {
     setSuccessMsg(msg);
@@ -83,6 +117,38 @@ export default function CoraPendingMessagesDashboard({ token }) {
 
   return (
     <div className="space-y-4">
+
+      {/* ── Human-review switch ──────────────────────────────────────────── */}
+      <div className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-slate-200">Human review</p>
+          <p className="text-xs text-slate-500">
+            {reviewOn === null
+              ? 'Checking switch status…'
+              : reviewOn
+                ? 'ON — Cora’s outbound messages are held here for you to approve or cancel before they send.'
+                : 'OFF — Cora’s messages send immediately. Turn on only when you want to intercept outgoing messages.'}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          role="switch"
+          aria-checked={reviewOn === true}
+          aria-label="Toggle human review of Cora outbound messages"
+          disabled={switching || reviewOn === null}
+          onClick={toggleReview}
+          className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+            reviewOn ? 'bg-emerald-500/80' : 'bg-slate-600'
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              reviewOn ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
 
       {/* ── Toolbar ──────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 flex-wrap">

@@ -33,6 +33,7 @@ export default function ZipTerritoryMap({ onZipSelect, highlightZip }) {
             zips={zips}
             highlightZip={highlightZip}
             onZipClick={(zip) => setActiveZip(zip)}
+            countyId={countyId}
           />
           {activeZip && (
             <MapZipPopup

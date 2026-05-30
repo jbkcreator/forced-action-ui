@@ -43,7 +43,7 @@ const ROI_FRAMES = {
 	roofing: {
 		avg_job_value: 8500,
 		monthly_revenue: 102000,
-		headline: 'Roofers in Hillsborough close 12+ storm/distress jobs/mo',
+		headline: 'Roofers in {countyName} close 12+ storm/distress jobs/mo',
 	},
 	remediation: {
 		avg_job_value: 6500,
@@ -204,7 +204,8 @@ function BlurredLead({ lead, onUnlock }) {
 
 
 export default function FirstSessionWall({ onRequestUnlock }) {
-	const { selectedVertical, countyId, attribution } = useLanding();
+	const { selectedVertical, countyId, landingData, attribution } = useLanding();
+	const countyName = landingData?.county_name || countyId;
 	const navigate = useNavigate();
 
 	const [payload, setPayload] = useState(null);
@@ -446,7 +447,7 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 							{windowExpired
 								? 'Your 15-minute priority window has passed. You can still unlock any lead below — subscribe to get unlimited access.'
 								: <>
-										{roi.headline}.{' '}
+										{roi.headline.replace('{countyName}', countyName)}.{' '}
 										{roi.avg_job_value && (
 											<>One closed job ≈ <span className="text-white font-semibold">${roi.avg_job_value.toLocaleString()}</span> (industry avg).</>
 										)}
@@ -477,7 +478,7 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 			<div className="text-center mb-6">
 				<h2 className="text-2xl font-bold text-white">Here's what Forced Action just scored for you</h2>
 				<p className="text-slate-400 text-sm mt-1">
-					3 real properties in {countyId === 'hillsborough' ? 'Hillsborough, FL' : countyId}.{' '}
+					3 real properties in {countyName}.{' '}
 					<span className="text-emerald-400">1 free preview.</span>{' '}
 					<span className="text-yellow-400">2 hidden — unlock one tap, card saved after.</span>
 				</p>

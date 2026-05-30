@@ -12,6 +12,7 @@
  */
 import useApi from '../../hooks/useApi';
 import { fetchProofWall } from '../../api/stage5';
+import { useLanding } from './LandingContext';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -78,7 +79,8 @@ function ProofCard({ item }) {
 
 
 export default function SocialProofWall({ limit = 24, heading = 'Recent contractor wins', subheading = 'Real deals closed by Forced Action members. Identifying details stay private; only the bucket size, trade, and county appear here.', hideWhenEmpty = true }) {
-  const { data, loading, error } = useApi(() => fetchProofWall({ limit }), [limit]);
+  const { countyId } = useLanding();
+  const { data, loading, error } = useApi(() => fetchProofWall({ limit, countyId }), [limit, countyId]);
 
   if (loading) {
     return (

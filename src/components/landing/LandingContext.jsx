@@ -1,12 +1,13 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { DEFAULT_VERTICAL, DEFAULT_COUNTY_ID } from '../../config/constants';
 import { api } from '../../api/client';
-import { fetchPricing } from '../../api/landing';
+import { fetchPricing, fetchLandingData } from '../../api/landing';
 
 const LandingContext = createContext();
 
 const ATTRIBUTION_STORAGE_KEY = 'fa.attribution';
+const COUNTY_STORAGE_KEY = 'fa.county_id';
 
 // Allowed signup_source values — must stay in sync with backend
 // `signup_engine.ALLOWED_SIGNUP_SOURCES`.
@@ -32,6 +33,22 @@ function persistAttribution(attr) {
   }
 }
 
+function persistCountyId(countyId) {
+  try {
+    sessionStorage.setItem(COUNTY_STORAGE_KEY, countyId);
+  } catch {
+    /* noop */
+  }
+}
+
+function readStoredCountyId() {
+  try {
+    return sessionStorage.getItem(COUNTY_STORAGE_KEY) || null;
+  } catch {
+    return null;
+  }
+}
+
 function resolveSignupSource(rawSource, hasReferral) {
   const cleaned = (rawSource || '').toString().trim().toLowerCase();
   if (cleaned && ALLOWED_SIGNUP_SOURCES.has(cleaned)) return cleaned;
@@ -40,29 +57,73 @@ function resolveSignupSource(rawSource, hasReferral) {
 }
 
 /**
- * Capture commercial-ladder attribution from the URL on first landing:
- *   signup_source, utm_source, utm_medium, utm_campaign, campaign_id,
- *   ref / referral_code, token.
+ * Provides county-aware landing page state.
  *
- * If `token` is present, POST it to /api/landing/resolve-token. On success
- * the user is redirected straight to /dashboard/{feed_uuid} — recognised
- * missed-call / DBPR / Cora links skip the signup form.
+ * county_id resolution order:
+ *   1. Route param  /landing/:countyId
+ *   2. Query param  ?county_id=hillsborough
+ *   3. sessionStorage (persisted from prior visit on same session)
+ *   4. DEFAULT_COUNTY_ID fallback (backward-compat for root `/` route)
  *
- * Stored in React state + sessionStorage so the FirstSessionWall modal
- * + Stripe Checkout success page can read it later.
+ * Fetches GET /api/landing-data?county_id=<countyId> on mount and exposes
+ * landingData + landingDataLoading through context so child components can
+ * drive copy, CTA mode, and county name from the API response.
  */
 export function LandingProvider({ children }) {
   const [selectedVertical, setSelectedVertical] = useState(DEFAULT_VERTICAL);
-  const countyId = DEFAULT_COUNTY_ID;
 
+  // ── County ID resolution ──────────────────────────────────────────────────
+  const { countyId: routeCountyId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
+  const resolvedCountyId = (
+    routeCountyId ||
+    searchParams.get('county_id') ||
+    readStoredCountyId() ||
+    DEFAULT_COUNTY_ID
+  );
+  const [countyId, setCountyId] = useState(resolvedCountyId);
+
+  // Keep countyId in sync if the URL changes (e.g. browser back/forward)
+  useEffect(() => {
+    const next = routeCountyId || searchParams.get('county_id');
+    if (next && next !== countyId) {
+      setCountyId(next);
+    }
+  }, [routeCountyId, searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist county to sessionStorage so it survives Stripe redirect back to /success
+  useEffect(() => {
+    persistCountyId(countyId);
+  }, [countyId]);
+
+  // ── Attribution ───────────────────────────────────────────────────────────
   const [attribution, setAttribution] = useState(() => readStoredAttribution() || null);
   const [tokenResolving, setTokenResolving] = useState(false);
 
-  // Pricing config (per-tier amounts + display copy) — fetched once from
-  // GET /pricing so the backend is the single source of truth.
+  // ── Landing data (county-specific metrics + cta_mode) ────────────────────
+  const [landingData, setLandingData] = useState(null);
+  const [landingDataLoading, setLandingDataLoading] = useState(true);
+
+  useEffect(() => {
+    if (!countyId) return;
+    let cancelled = false;
+    setLandingDataLoading(true);
+    fetchLandingData(countyId)
+      .then((res) => {
+        if (!cancelled) setLandingData(res);
+      })
+      .catch(() => {
+        if (!cancelled) setLandingData(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLandingDataLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [countyId]);
+
+  // ── Pricing config ────────────────────────────────────────────────────────
   const [pricing, setPricing] = useState(null);
   const [pricingLoading, setPricingLoading] = useState(true);
 
@@ -82,9 +143,8 @@ export function LandingProvider({ children }) {
     return () => { cancelled = true; };
   }, []);
 
+  // ── Attribution capture ───────────────────────────────────────────────────
   useEffect(() => {
-    // First-touch wins: if we already persisted attribution for this session,
-    // keep it. Only refresh on explicit token + new params arrival.
     const hasUrlParams =
       searchParams.has('signup_source') ||
       searchParams.has('utm_source') ||
@@ -112,15 +172,13 @@ export function LandingProvider({ children }) {
     setAttribution(captured);
     persistAttribution(captured);
 
-    // Fire-and-forget landing-page-viewed audit event.
     api
       .post('/api/business-event', {
         event_type: 'LANDING_PAGE_VIEWED',
-        payload: captured,
+        payload: { ...captured, county_id: countyId },
       })
       .catch(() => {});
 
-    // Signed-token resolve → skip signup, go straight to dashboard.
     if (captured.attributionToken && !tokenResolving) {
       setTokenResolving(true);
       api
@@ -130,13 +188,9 @@ export function LandingProvider({ children }) {
             navigate(`/dashboard/${res.feed_uuid}`, { replace: true });
           }
         })
-        .catch(() => {
-          /* invalid / expired → silently fall back to normal signup flow */
-        })
+        .catch(() => {})
         .finally(() => setTokenResolving(false));
     }
-    // intentionally omit `attribution` + `tokenResolving` from deps —
-    // we only re-run when searchParams change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
@@ -145,6 +199,9 @@ export function LandingProvider({ children }) {
       selectedVertical,
       setSelectedVertical,
       countyId,
+      setCountyId,
+      landingData,
+      landingDataLoading,
       attribution: attribution || {
         signupSource: 'landing_page',
         utmSource: null,
@@ -158,7 +215,7 @@ export function LandingProvider({ children }) {
       pricing,
       pricingLoading,
     }),
-    [selectedVertical, countyId, attribution, tokenResolving, pricing, pricingLoading],
+    [selectedVertical, countyId, landingData, landingDataLoading, attribution, tokenResolving, pricing, pricingLoading],
   );
 
   return <LandingContext.Provider value={value}>{children}</LandingContext.Provider>;
