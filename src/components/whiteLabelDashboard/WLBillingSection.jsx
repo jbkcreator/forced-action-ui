@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import useApi from '../../hooks/useApi.js';
 import { wlGetBillingStatus, wlCreateCheckout, wlGetBillingPortal } from '../../api/whiteLabelClient.js';
 import LoadingSpinner from '../ui/LoadingSpinner.jsx';
@@ -5,25 +6,38 @@ import LoadingSpinner from '../ui/LoadingSpinner.jsx';
 const PLAN_LABELS = { standard: 'Standard', premium: 'Premium' };
 
 export default function WLBillingSection() {
-  const { data: billing, loading, error } = useApi(wlGetBillingStatus, []);
+  const { data: billing, loading, error: fetchError } = useApi(wlGetBillingStatus, []);
+  const [actionError, setActionError] = useState('');
+  const [checkoutLoading, setCheckoutLoading] = useState(''); // plan tier being loaded
 
   async function handleCheckout(planTier) {
+    setActionError('');
+    setCheckoutLoading(planTier);
     try {
       const res = await wlCreateCheckout(planTier);
+      if (!res?.url) throw new Error('No checkout URL returned from server.');
       window.location.href = res.url;
     } catch (err) {
-      alert(err?.message || 'Failed to start checkout');
+      // Surface the server's detail message if present, otherwise fall back.
+      const msg = err?.detail || err?.message || 'Failed to start checkout. Please try again.';
+      setActionError(msg);
+    } finally {
+      setCheckoutLoading('');
     }
   }
 
   async function handleManageBilling() {
+    setActionError('');
     try {
       const res = await wlGetBillingPortal();
       window.open(res.url, '_blank', 'noopener');
     } catch (err) {
-      alert(err?.message || 'Failed to open billing portal');
+      const msg = err?.detail || err?.message || 'Failed to open billing portal.';
+      setActionError(msg);
     }
   }
+
+  const error = fetchError;
 
   if (loading) return <LoadingSpinner />;
 
@@ -35,6 +49,18 @@ export default function WLBillingSection() {
       <h2 className="text-xl font-bold text-fa-text-primary mb-6">Billing</h2>
 
       {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+
+      {/* Inline action error (checkout / portal failures) */}
+      {actionError && (
+        <div className="mb-5 flex items-start gap-3 rounded-lg border border-red-800 bg-red-900/20 px-4 py-3">
+          <span className="mt-0.5 text-red-400 flex-shrink-0">⚠</span>
+          <div className="flex-1">
+            <p className="text-red-400 text-sm font-medium">Action failed</p>
+            <p className="text-red-300 text-xs mt-0.5">{actionError}</p>
+          </div>
+          <button onClick={() => setActionError('')} className="text-red-500 hover:text-red-300 text-xs flex-shrink-0">✕</button>
+        </div>
+      )}
 
       {/* Status card */}
       <div className="bg-fa-bg-card border border-fa-border-default rounded-lg p-6 mb-6">
@@ -100,7 +126,8 @@ export default function WLBillingSection() {
               const isIntended = billing?.intended_plan_tier === plan.tier;
               return (
                 <button key={plan.tier} onClick={() => handleCheckout(plan.tier)}
-                  className={`relative rounded-lg p-5 text-left transition-all ${
+                  disabled={!!checkoutLoading}
+                  className={`relative rounded-lg p-5 text-left transition-all disabled:opacity-60 disabled:cursor-not-allowed ${
                     isIntended
                       ? 'bg-fa-bg-card border-2 border-fa-primary'
                       : 'bg-fa-bg-card border border-fa-border-default hover:border-fa-primary'
@@ -113,7 +140,11 @@ export default function WLBillingSection() {
                   <p className="text-fa-primary font-bold text-xl">{plan.price}<span className="text-fa-text-muted text-sm font-normal">/mo</span></p>
                   <p className="text-fa-text-primary font-medium mt-1">{plan.label}</p>
                   <p className="text-fa-text-muted text-xs mt-2">14-day free trial included</p>
-                  <p className="text-fa-primary text-sm font-medium mt-3">{isIntended ? 'Start trial →' : 'Subscribe →'}</p>
+                  <p className="text-fa-primary text-sm font-medium mt-3">
+                    {checkoutLoading === plan.tier
+                      ? 'Opening Stripe…'
+                      : isIntended ? 'Start trial →' : 'Subscribe →'}
+                  </p>
                 </button>
               );
             })}

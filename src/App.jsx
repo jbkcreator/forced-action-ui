@@ -35,10 +35,13 @@ const DataSection      = lazy(() => import('./components/admin/sections/DataSect
 const RevenueSection   = lazy(() => import('./components/admin/sections/RevenueSection'));
 const MessagingSection = lazy(() => import('./components/admin/sections/MessagingSection'));
 const OpsSection       = lazy(() => import('./components/admin/sections/OpsSection'));
-const CoraSection      = lazy(() => import('./components/admin/sections/CoraSection'));
+const CoraSection        = lazy(() => import('./components/admin/sections/CoraSection'));
 const SubscribersSection = lazy(() => import('./components/admin/sections/SubscribersSection'));
+const IcpChannelSection    = lazy(() => import('./components/admin/sections/IcpChannelSection'));
+const SupplierIntelSection = lazy(() => import('./components/admin/sections/SupplierIntelSection'));
 const EmailCampaignsSection = lazy(() => import('./components/admin/sections/EmailCampaignsSection'));
 const SubscriberDetailPage = lazy(() => import('./pages/SubscriberDetailPage'));
+const SupplierDashboard    = lazy(() => import('./pages/SupplierDashboard'));
 
 // White-label tier pages (Stage 12 / fa056)
 // Auth pages are eager (not lazy): they're tiny and navigate between each other
@@ -87,8 +90,12 @@ export default function App() {
             <Route path="cora"      element={withBoundary(<CoraSection />)} />
             <Route path="subscribers"       element={withBoundary(<SubscribersSection />)} />
             <Route path="subscribers/:id"   element={withBoundary(<SubscriberDetailPage />)} />
+            <Route path="icp"               element={withBoundary(<IcpChannelSection />)} />
+            <Route path="supplier-intel"    element={withBoundary(<SupplierIntelSection />)} />
             <Route path="email-campaigns"   element={withBoundary(<EmailCampaignsSection />)} />
           </Route>
+          {/* Supplier Intelligence dashboard (access_token auth) */}
+          <Route path="/supplier/:accessToken" element={withBoundary(<SupplierDashboard />)} />
           <Route path="/dev" element={withBoundary(<DevPage />)} />
           <Route path="/stage5-sandbox" element={withBoundary(<Stage5SandboxPage />)} />
           {/* /landing?county_id=hillsborough or /landing/hillsborough */}

@@ -1,3 +1,5 @@
+// Vertical config is now owned by verticals.js — edit there, not here.
+export { VERTICAL_LABELS, VERTICAL_ICONS, VERTICAL_OPTIONS, DEFAULT_VERTICAL } from './verticals.js';
 // Allowed personalisation variables — mirrors the backend whitelist exactly.
 // Backend rejects any {{variable}} outside this list with 422.
 // Loaded dynamically from /api/admin/email-templates/variables; this is the fallback.

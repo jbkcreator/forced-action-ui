@@ -30,16 +30,15 @@ import {
 import PaymentSheetModal from '../common/PaymentSheetModal';
 import LandingAttribution from './LandingAttribution';
 import Icon from '../ui/Icon';
+import { getVerticalRoi } from '../../config/verticals.js';
 
 const COUNTDOWN_SECONDS = 15 * 60;          // 15 minutes
 const LS_KEY = 'fa.landing.wall.expires';   // survive refresh within the window
 
-// Static ROI frame per vertical — mirrors the backend's _ROI_FRAMES in
-// src/services/monetization_wall.py. Duplicated intentionally so the
-// landing wall renders fast without a backend round-trip; if these drift
-// the UI just shows slightly different framing copy — not a correctness
-// bug. Labeled "industry avg" so users don't read them as personal figures.
-const ROI_FRAMES = {
+// ROI frames are now driven by config/verticals.js.  getVerticalRoi(vertical)
+// returns the frame for the active vertical and falls back to DEFAULT_ROI.
+// The old inline ROI_FRAMES dict is replaced below.
+const _LEGACY_ROI_FRAMES = {
 	roofing: {
 		avg_job_value: 8500,
 		monthly_revenue: 102000,
@@ -283,7 +282,7 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 		if (windowExpired) localStorage.removeItem(LS_KEY);
 	}, [windowExpired]);
 
-	const roi = useMemo(() => ROI_FRAMES[selectedVertical] || DEFAULT_ROI, [selectedVertical]);
+	const roi = useMemo(() => getVerticalRoi(selectedVertical), [selectedVertical]);
 	const verticalLabel = (selectedVertical || '').charAt(0).toUpperCase() + (selectedVertical || '').slice(1);
 
 	// Begin the unlock flow for a specific blurred lead.
