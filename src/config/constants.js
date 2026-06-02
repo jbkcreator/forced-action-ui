@@ -16,25 +16,7 @@ export const INSTANTLY_VARIABLES = [
   { name: 'linkedIn',    description: 'LinkedIn profile URL' },
 ];
 
-export const VERTICAL_LABELS = {
-  roofing: 'Roofing',
-  restoration: 'Restoration',
-  public_adjusters: 'Public Adjusters',
-  wholesalers: 'Wholesalers',
-  fix_flip: 'Fix & Flip',
-  attorneys: 'Attorneys',
-};
 
-export const VERTICAL_ICONS = {
-  roofing: 'home',
-  restoration: 'droplet',
-  public_adjusters: 'clipboard',
-  wholesalers: 'building',
-  fix_flip: 'hammer',
-  attorneys: 'scale',
-};
-
-export const DEFAULT_VERTICAL = 'roofing';
 export const DEFAULT_COUNTY_ID = 'hillsborough';
 export const PAGE_SIZE = 25;
 
