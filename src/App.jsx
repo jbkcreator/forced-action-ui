@@ -37,6 +37,7 @@ const MessagingSection = lazy(() => import('./components/admin/sections/Messagin
 const OpsSection       = lazy(() => import('./components/admin/sections/OpsSection'));
 const CoraSection      = lazy(() => import('./components/admin/sections/CoraSection'));
 const SubscribersSection = lazy(() => import('./components/admin/sections/SubscribersSection'));
+const EmailCampaignsSection = lazy(() => import('./components/admin/sections/EmailCampaignsSection'));
 const SubscriberDetailPage = lazy(() => import('./pages/SubscriberDetailPage'));
 
 // White-label tier pages (Stage 12 / fa056)
@@ -86,6 +87,7 @@ export default function App() {
             <Route path="cora"      element={withBoundary(<CoraSection />)} />
             <Route path="subscribers"       element={withBoundary(<SubscribersSection />)} />
             <Route path="subscribers/:id"   element={withBoundary(<SubscriberDetailPage />)} />
+            <Route path="email-campaigns"   element={withBoundary(<EmailCampaignsSection />)} />
           </Route>
           <Route path="/dev" element={withBoundary(<DevPage />)} />
           <Route path="/stage5-sandbox" element={withBoundary(<Stage5SandboxPage />)} />
