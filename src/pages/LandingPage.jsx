@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LandingProvider, useLanding } from '../components/landing/LandingContext';
 import Navbar from '../components/layout/Navbar';
@@ -15,12 +15,15 @@ import SocialProofWall from '../components/landing/SocialProofWall';
 import StickyHeaderCTA from '../components/landing/StickyHeaderCTA';
 import EmailGateModal from '../components/landing/EmailGateModal';
 import ZipCollectorModal from '../components/landing/ZipCollectorModal';
-import ZipTerritoryMap from '../components/landing/ZipTerritoryMap';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
 import WaitlistForm from '../components/landing/WaitlistForm';
 import useStripeCheckout from '../hooks/useStripeCheckout';
 import { createFreeSignup, logBusinessEvent } from '../api/phase2b';
-import ConciergeChat from '../components/concierge/ConciergeChat';
+
+// Lazy-loaded: leaflet (~120 KB) and react-markdown (~75 KB) are excluded from
+// the main chunk and only fetched when these components actually render.
+const ZipTerritoryMap = lazy(() => import('../components/landing/ZipTerritoryMap'));
+const ConciergeChat   = lazy(() => import('../components/concierge/ConciergeChat'));
 
 function LandingContent() {
   const navigate = useNavigate();
@@ -145,14 +148,16 @@ function LandingContent() {
               </div>
 
               <div className="max-w-6xl mx-auto px-6">
-                <ZipTerritoryMap
-                  highlightZip={lastCheckedZip}
-                  onZipSelect={(zipObj) => {
-                    setLastCheckedZip(zipObj.zip);
-                    if (ctaMode === 'signup') setEmailGate({ open: true, tier: 'starter' });
-                    else setWaitlistOpen(true);
-                  }}
-                />
+                <Suspense fallback={<div className="h-64 bg-fa-bg-card rounded-xl animate-pulse" />}>
+                  <ZipTerritoryMap
+                    highlightZip={lastCheckedZip}
+                    onZipSelect={(zipObj) => {
+                      setLastCheckedZip(zipObj.zip);
+                      if (ctaMode === 'signup') setEmailGate({ open: true, tier: 'starter' });
+                      else setWaitlistOpen(true);
+                    }}
+                  />
+                </Suspense>
               </div>
 
               {/* Coming Soon / Waitlist button — show prominently for waitlist mode,
@@ -254,8 +259,10 @@ function LandingContent() {
           </div>
         )}
 
-        {/* Concierge Chat — PDF/Markdown-grounded info widget */}
-        <ConciergeChat mode="pre_signup" />
+        {/* Concierge Chat — PDF/Markdown-grounded info widget (lazy: defers react-markdown) */}
+        <Suspense fallback={null}>
+          <ConciergeChat mode="pre_signup" />
+        </Suspense>
       </div>
     </div>
   );

@@ -3,7 +3,16 @@ import { loadStripe } from '@stripe/stripe-js';
 import { createCheckout } from '../api/landing';
 import { createFreeSignup } from '../api/phase2b';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+// Module-level variable — populated on first checkout open, not on module
+// evaluation. This keeps Stripe (~100 KB) out of the initial bundle: the SDK
+// is only fetched when the user actually clicks a buy button.
+let _stripePromise = null;
+function getStripePromise() {
+  if (!_stripePromise) {
+    _stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+  }
+  return _stripePromise;
+}
 
 export default function useStripeCheckout() {
   const [isOpen, setIsOpen] = useState(false);
@@ -56,7 +65,7 @@ export default function useStripeCheckout() {
       const { client_secret } = await createCheckout({
         tier, vertical, countyId, zipCodes, email,
       });
-      const stripe = await stripePromise;
+      const stripe = await getStripePromise();
 
       embeddedRef.current = await stripe.initEmbeddedCheckout({
         clientSecret: client_secret,
