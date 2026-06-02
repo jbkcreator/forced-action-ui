@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Modal, { ModalClose } from '../../ui/Modal';
-import { fetchEmailTemplates, fetchEligibleCount, createCampaign } from '../../../api/emailCampaigns';
+import { fetchEmailTemplates, fetchEligibleCount, createCampaign, fetchWarmupStatus } from '../../../api/emailCampaigns';
 import { VERTICAL_LABELS } from '../../../config/constants';
 import ScheduleEditor, { DEFAULT_SCHEDULE, buildSchedulePayload } from './ScheduleEditor';
 
@@ -40,6 +40,9 @@ export default function CreateEmailCampaignModal({ token, onClose, onCreated }) 
   });
   const [templates, setTemplates]         = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
+  const [inboxes, setInboxes]             = useState([]);
+  const [selectedInboxes, setSelectedInboxes] = useState([]);
+  const [loadingInboxes, setLoadingInboxes] = useState(true);
   const [eligibleCount, setEligibleCount] = useState(null);
   const [countLoading, setCountLoading]   = useState(false);
   const [submitting, setSubmitting]       = useState(false);
@@ -56,6 +59,24 @@ export default function CreateEmailCampaignModal({ token, onClose, onCreated }) 
       .catch(() => setTemplates([]))
       .finally(() => setLoadingTemplates(false));
   }, [token]);
+
+  useEffect(() => {
+    fetchWarmupStatus(token)
+      .then(data => {
+        const list = Array.isArray(data) ? data : [];
+        setInboxes(list);
+        // Auto-select all connected inboxes by default (most common case: send from all)
+        setSelectedInboxes(list.map(i => i.email).filter(Boolean));
+      })
+      .catch(() => setInboxes([]))
+      .finally(() => setLoadingInboxes(false));
+  }, [token]);
+
+  function toggleInbox(email) {
+    setSelectedInboxes(prev =>
+      prev.includes(email) ? prev.filter(e => e !== email) : [...prev, email]
+    );
+  }
 
   const debouncedFilters = useDebounce(
     { county_id: form.county_id, zips: form.zips, vertical: form.vertical },
@@ -109,6 +130,7 @@ export default function CreateEmailCampaignModal({ token, onClose, onCreated }) 
         start_date:    form.startDate   || undefined,
         end_date:      form.endDate     || undefined,
         send_schedule: showSchedule ? buildSchedulePayload(schedule) : undefined,
+        email_list:    selectedInboxes.length ? selectedInboxes : undefined,
       });
 
       if (result?.status === 'draft') {
@@ -153,6 +175,36 @@ export default function CreateEmailCampaignModal({ token, onClose, onCreated }) 
               <option value="" style={OPT}>— Select template —</option>
               {templates.map(t => <option key={t.id} value={t.id} style={OPT}>{t.name}</option>)}
             </select>
+          </Field>
+
+          <Field label="Sending Inboxes" hint="(campaign sends from these accounts)">
+            {loadingInboxes ? (
+              <p className="text-xs" style={{ color: '#64748b' }}>Loading connected inboxes…</p>
+            ) : inboxes.length === 0 ? (
+              <p className="text-xs rounded-lg px-3 py-2"
+                 style={{ background: 'rgba(251,146,60,0.1)', color: '#fb923c', border: '1px solid rgba(251,146,60,0.2)' }}>
+                No sending inboxes connected in Instantly. Connect one in the Instantly dashboard first — the campaign cannot send without it.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                {inboxes.map(inbox => (
+                  <label key={inbox.email} className="flex items-center gap-2 text-sm cursor-pointer"
+                         style={{ color: '#e2e8f0' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedInboxes.includes(inbox.email)}
+                      onChange={() => toggleInbox(inbox.email)}
+                    />
+                    <span>{inbox.email}</span>
+                    {inbox.health_warning && (
+                      <span className="text-xs" style={{ color: '#fb923c' }}>
+                        ⚠ low health ({inbox.health_score})
+                      </span>
+                    )}
+                  </label>
+                ))}
+              </div>
+            )}
           </Field>
 
           <div className="grid grid-cols-2 gap-4">
