@@ -1,3 +1,19 @@
+// Allowed personalisation variables — mirrors the backend whitelist exactly.
+// Backend rejects any {{variable}} outside this list with 422.
+// Loaded dynamically from /api/admin/email-templates/variables; this is the fallback.
+export const INSTANTLY_VARIABLES = [
+  { name: 'firstName',   description: 'First name' },
+  { name: 'lastName',    description: 'Last name' },
+  { name: 'company',     description: 'Company name / full name fallback' },
+  { name: 'city',        description: 'City' },
+  { name: 'licenseType', description: 'License type description' },
+  { name: 'email',       description: 'Email / work email fallback' },
+  { name: 'phone',       description: 'Phone number' },
+  { name: 'website',     description: 'Website domain' },
+  { name: 'location',    description: 'Location (city)' },
+  { name: 'linkedIn',    description: 'LinkedIn profile URL' },
+];
+
 export const VERTICAL_LABELS = {
   roofing: 'Roofing',
   restoration: 'Restoration',
