@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import useApi from '../hooks/useApi';
 import useFeedFilters from '../hooks/useFeedFilters';
@@ -42,7 +42,8 @@ import PauseStatusBanner from '../components/dashboard/PauseStatusBanner';
 import PauseModal from '../components/dashboard/PauseModal';
 import BundleCTAs from '../components/dashboard/BundleCTAs';
 import BundleOfferModal from '../components/dashboard/BundleOfferModal';
-import ConciergeChat from '../components/concierge/ConciergeChat';
+// Lazy: defers react-markdown + remark-gfm (~75 KB) out of the main chunk.
+const ConciergeChat = lazy(() => import('../components/concierge/ConciergeChat'));
 import StormPackBanner from '../components/dashboard/StormPackBanner';
 import BundleLeadSection from '../components/dashboard/BundleLeadSection';
 import TeamViewTile from '../components/dashboard/TeamViewTile';
@@ -58,6 +59,7 @@ import ErrorState from '../components/ui/ErrorState';
 import EmptyState from '../components/ui/EmptyState';
 import { useState, useRef } from 'react';
 import useStormStatus from '../hooks/useStormStatus';
+import { decodeSubToken } from '../api/subscriber.js';
 
 function isWithinFirst48h(createdAtIso) {
   if (!createdAtIso) return false;
@@ -93,6 +95,7 @@ function writeAnnualDismissed(feedUuid) {
 
 export default function DashboardPage() {
   const { feedUuid } = useParams();
+
   const [searchParams, setSearchParams] = useSearchParams();
   const { filters, setFilter, setPage, searchInput, setSearchInput } = useFeedFilters();
   const { isContacted, toggleContacted } = useContacted();
@@ -177,6 +180,14 @@ export default function DashboardPage() {
     next.delete('variant');
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
+
+  // fa061 — mount guard: if no valid subscriber token exists, redirect to the
+  // password-login page for this specific feed UUID.
+  useEffect(() => {
+    if (!decodeSubToken()) {
+      window.location.replace(`/dashboard/${feedUuid}/login`);
+    }
+  }, [feedUuid]);
 
   const { data, loading, error, refetch } = useApi(
     (signal) => fetchFeed(feedUuid, {
@@ -918,8 +929,10 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Concierge Chat — PDF/Markdown-grounded info widget */}
-      <ConciergeChat mode="post_signup" feedUuid={feedUuid} />
+      {/* Concierge Chat — lazy: defers react-markdown out of initial bundle */}
+      <Suspense fallback={null}>
+        <ConciergeChat mode="post_signup" feedUuid={feedUuid} />
+      </Suspense>
     </div>
   );
 }

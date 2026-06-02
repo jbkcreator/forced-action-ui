@@ -1,4 +1,14 @@
 import { api } from './client';
+import { subHeaders, withSubRefresh } from './subscriber.js';
+
+// fa061 — feed endpoints require a subscriber session JWT.
+// subHeaders() attaches Authorization: Bearer <token>.
+// withSubRefresh() clears the token and redirects to the feed-specific
+// login page on 401.
+
+function _loginPath(feedUuid) {
+  return `/dashboard/${feedUuid}/login`;
+}
 
 export function fetchFeed(feedUuid, { page = 1, pageSize = 25, sort, minScore, incidentType, search, signal } = {}) {
   const params = { page, page_size: pageSize };
@@ -6,11 +16,17 @@ export function fetchFeed(feedUuid, { page = 1, pageSize = 25, sort, minScore, i
   if (minScore) params.min_score = minScore;
   if (incidentType) params.incident_type = incidentType;
   if (search) params.search = search;
-  return api.get(`/api/feed/${feedUuid}`, params, { signal });
+  return withSubRefresh(
+    () => api.get(`/api/feed/${feedUuid}`, params, { signal, headers: subHeaders() }),
+    { loginPath: _loginPath(feedUuid) },
+  );
 }
 
 export function fetchFeedStats(feedUuid, { signal } = {}) {
-  return api.get(`/api/feed/${feedUuid}/stats`, undefined, { signal }).catch(() => null);
+  return withSubRefresh(
+    () => api.get(`/api/feed/${feedUuid}/stats`, undefined, { signal, headers: subHeaders() }),
+    { loginPath: _loginPath(feedUuid) },
+  ).catch(() => null);
 }
 
 export function createPortalSession(feedUuid) {

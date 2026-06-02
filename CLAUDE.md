@@ -30,7 +30,11 @@ Copy `.env.example` to `.env` and set:
 | Path | Page | Notes |
 |------|------|-------|
 | `/` | `LandingPage` | Public — founding counter, ZIP check, pricing, Stripe checkout |
-| `/dashboard/:feedUuid` | `DashboardPage` | Auth via UUID in URL; lead feed with filters |
+| `/login` | `SubscriberLoginPage` | Email + password login (fa061) |
+| `/dashboard/:feedUuid/login` | `SubscriberLoginPage` | UUID-mode login — password only (fa061) |
+| `/forgot-password` | `SubscriberForgotPasswordPage` | Emailed reset link (fa061) |
+| `/reset-password/:token` | `SubscriberResetPasswordPage` | Set new password via token (fa061) |
+| `/dashboard/:feedUuid` | `DashboardPage` | Token-gated (fa061); redirects to login if no valid JWT |
 | `/success` | `SuccessPage` | Post-checkout; reads `?tier=&zips=` query params |
 | `/email-previews` | `EmailPreviewsPage` | Dev tool — preview transactional email templates |
 | `/admin` | `AdminPage` | Admin upload / ops surface; sub-sections via `?tab=` |
@@ -63,6 +67,7 @@ All requests go through `src/api/client.js` (`apiRequest`, `api.get`, `api.post`
 - `phase2b.js` — Phase 2B (Cora agent) endpoints.
 - `admin.js` — Admin endpoints incl. `fetchCoraTimeline(token, subscriberId, opts)` → per-subscriber Cora touch timeline.
 - `chat.js` — Concierge Chat (M5a): `createSession`, `sendMessage`, `streamTurn` (EventSource), `linkSession`, `escalateSession`.
+- `subscriber.js` — Subscriber feed auth (fa061): `subscriberLogin`, `subscriberForgotPassword`, `subscriberResetPassword`, `subHeaders`, `withSubRefresh`, `decodeSubToken`. Token stored in `localStorage.sub_access_token`.
 
 ### Stripe Integration
 
