@@ -6,12 +6,13 @@ const DAY_LABELS = { monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 
 export const DEFAULT_SCHEDULE = {
   from: '09:00',
   to: '17:00',
-  timezone: 'America/New_York',
+  // Instantly's timezone enum rejects America/New_York / US/Eastern — use America/Detroit for ET.
+  timezone: 'America/Detroit',
   days: { monday: true, tuesday: true, wednesday: true, thursday: true, friday: true, saturday: false, sunday: false },
 };
 
 const TIMEZONES = [
-  { value: 'America/New_York',    label: 'Eastern (ET)' },
+  { value: 'America/Detroit',     label: 'Eastern (ET)' },
   { value: 'America/Chicago',     label: 'Central (CT)' },
   { value: 'America/Denver',      label: 'Mountain (MT)' },
   { value: 'America/Los_Angeles', label: 'Pacific (PT)' },

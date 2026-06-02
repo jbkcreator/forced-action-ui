@@ -43,6 +43,7 @@ export default function CreateEmailCampaignModal({ token, onClose, onCreated }) 
   const [inboxes, setInboxes]             = useState([]);
   const [selectedInboxes, setSelectedInboxes] = useState([]);
   const [loadingInboxes, setLoadingInboxes] = useState(true);
+  const [inboxOpen, setInboxOpen]         = useState(false);
   const [eligibleCount, setEligibleCount] = useState(null);
   const [countLoading, setCountLoading]   = useState(false);
   const [submitting, setSubmitting]       = useState(false);
@@ -65,7 +66,7 @@ export default function CreateEmailCampaignModal({ token, onClose, onCreated }) 
       .then(data => {
         const list = Array.isArray(data) ? data : [];
         setInboxes(list);
-        // Auto-select all connected inboxes by default (most common case: send from all)
+        // Default: select all connected inboxes
         setSelectedInboxes(list.map(i => i.email).filter(Boolean));
       })
       .catch(() => setInboxes([]))
@@ -177,7 +178,7 @@ export default function CreateEmailCampaignModal({ token, onClose, onCreated }) 
             </select>
           </Field>
 
-          <Field label="Sending Inboxes" hint="(campaign sends from these accounts)">
+          <Field label="Sending Inboxes" hint="(campaign sends from these accounts — select one or more)">
             {loadingInboxes ? (
               <p className="text-xs" style={{ color: '#64748b' }}>Loading connected inboxes…</p>
             ) : inboxes.length === 0 ? (
@@ -186,23 +187,44 @@ export default function CreateEmailCampaignModal({ token, onClose, onCreated }) 
                 No sending inboxes connected in Instantly. Connect one in the Instantly dashboard first — the campaign cannot send without it.
               </p>
             ) : (
-              <div className="flex flex-col gap-1.5">
-                {inboxes.map(inbox => (
-                  <label key={inbox.email} className="flex items-center gap-2 text-sm cursor-pointer"
-                         style={{ color: '#e2e8f0' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedInboxes.includes(inbox.email)}
-                      onChange={() => toggleInbox(inbox.email)}
-                    />
-                    <span>{inbox.email}</span>
-                    {inbox.health_warning && (
-                      <span className="text-xs" style={{ color: '#fb923c' }}>
-                        ⚠ low health ({inbox.health_score})
-                      </span>
-                    )}
-                  </label>
-                ))}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setInboxOpen(o => !o)}
+                  className={`${INPUT} flex items-center justify-between text-left`}
+                  style={SEL_STYLE}
+                >
+                  <span style={{ color: selectedInboxes.length ? '#e2e8f0' : '#64748b' }}>
+                    {selectedInboxes.length === 0
+                      ? '— Select inbox(es) —'
+                      : selectedInboxes.length === 1
+                        ? selectedInboxes[0]
+                        : `${selectedInboxes.length} inboxes selected`}
+                  </span>
+                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                    style={{ color: '#94a3b8', transform: inboxOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {inboxOpen && (
+                  <div
+                    className="absolute z-10 mt-1 w-full rounded-xl py-1 max-h-52 overflow-y-auto"
+                    style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}
+                  >
+                    {inboxes.map(inbox => (
+                      <label key={inbox.email} className="flex items-center gap-2.5 text-sm cursor-pointer px-3 py-2 hover:bg-white/5"
+                             style={{ color: '#e2e8f0' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedInboxes.includes(inbox.email)}
+                          onChange={() => toggleInbox(inbox.email)}
+                          style={{ accentColor: '#facc15' }}
+                        />
+                        <span>{inbox.email}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </Field>
