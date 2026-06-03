@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { fetchTerritoryMap, isAbortError } from '../api/territoryMap';
 
 export default function useTerritoryMap(countyId, vertical, intervalMs = 60000) {
-  const [state, setState] = useState({ zips: [], loading: true, error: null });
+  const [state, setState] = useState({ zips: [], mapConfig: null, loading: true, error: null });
 
   useEffect(() => {
     if (!countyId || !vertical) return undefined;
@@ -12,7 +12,12 @@ export default function useTerritoryMap(countyId, vertical, intervalMs = 60000) 
     async function load() {
       try {
         const res = await fetchTerritoryMap(countyId, vertical, { signal: controller.signal });
-        if (!cancelled) setState({ zips: res.zips || [], loading: false, error: null });
+        if (!cancelled) setState({
+          zips: res.zips || [],
+          mapConfig: res.map_config || null,
+          loading: false,
+          error: null,
+        });
       } catch (err) {
         if (isAbortError(err)) return;
         if (!cancelled) setState((d) => ({ ...d, loading: false, error: err }));

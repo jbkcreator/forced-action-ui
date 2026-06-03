@@ -1,4 +1,5 @@
-import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet';
+import { useEffect } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import useReducedMotion from '../../hooks/useReducedMotion';
 
@@ -8,28 +9,60 @@ const STATUS_COLOR = {
   grace:     '#f59e0b',
 };
 
-// Geographic centers per county — fallback map center when no ZIP has coords
-const COUNTY_CENTERS = {
-  hillsborough: [27.9644, -82.4572],
-  pinellas:     [27.8758, -82.7873],
+// Fallback when the server hasn't returned map_config yet (shouldn't normally happen,
+// but avoids a white map if the API is slow or a new county has no config entry).
+const FALLBACK_CONFIG = {
+  center:       [27.9644, -82.4572],
+  default_zoom: 10,
+  min_zoom:     9,
+  bounds:       null,
 };
-const DEFAULT_CENTER = [27.9644, -82.4572];
 
-export default function MapCanvas({ zips, highlightZip, onZipClick, countyId }) {
+/**
+ * Imperatively resets the map viewport whenever mapConfig changes.
+ * MapContainer's center/zoom are init-only; this child uses useMap() to
+ * handle county switches without unmounting the whole Leaflet instance.
+ */
+function BoundsController({ mapConfig }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!mapConfig) return;
+    if (mapConfig.bounds) {
+      map.fitBounds(mapConfig.bounds, { padding: [20, 20], animate: false });
+      map.setMaxBounds(mapConfig.bounds);
+    } else {
+      map.setView(mapConfig.center, mapConfig.default_zoom ?? 10, { animate: false });
+    }
+    if (mapConfig.min_zoom != null) {
+      map.setMinZoom(mapConfig.min_zoom);
+    }
+  }, [map, mapConfig]);
+  return null;
+}
+
+export default function MapCanvas({ zips, highlightZip, onZipClick, mapConfig }) {
   const reducedMotion = useReducedMotion();
 
   const mappable = zips.filter((z) => z.lat != null && z.lon != null);
   if (!zips.length) return null;
 
-  const anchor = COUNTY_CENTERS[countyId] || DEFAULT_CENTER;
+  const cfg = mapConfig ?? FALLBACK_CONFIG;
+  const center = cfg.center ?? FALLBACK_CONFIG.center;
+  const zoom   = cfg.default_zoom ?? 10;
+  const minZoom = cfg.min_zoom ?? 9;
+  const bounds = cfg.bounds ?? null;
 
   return (
     <MapContainer
-      center={anchor}
-      zoom={10}
+      center={center}
+      zoom={zoom}
+      minZoom={minZoom}
+      maxBounds={bounds}
+      maxBoundsViscosity={1.0}
       style={{ height: '100%', width: '100%' }}
       scrollWheelZoom={false}
     >
+      <BoundsController mapConfig={cfg} />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -49,7 +82,9 @@ export default function MapCanvas({ zips, highlightZip, onZipClick, countyId }) 
           className={!reducedMotion && z.active_viewers > 0 ? 'animate-pulse' : ''}
         >
           <Tooltip direction="top" opacity={1}>
-            <strong>{z.zip}</strong> {z.status === 'available' ? '🟢' : z.status === 'grace' ? '🟡' : '🔴'} {z.status}
+            <strong>{z.zip}</strong>{' '}
+            {z.status === 'available' ? '🟢' : z.status === 'grace' ? '🟡' : '🔴'}{' '}
+            {z.status}
             {z.active_viewers > 0 && <> · {z.active_viewers} viewing</>}
             {z.lead_count != null && <> · {z.lead_count} leads</>}
           </Tooltip>

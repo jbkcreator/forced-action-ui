@@ -10,7 +10,7 @@ import EmptyState from '../ui/EmptyState';
 
 export default function ZipTerritoryMap({ onZipSelect, highlightZip }) {
   const { countyId, selectedVertical } = useLanding();
-  const { zips, loading, error } = useTerritoryMap(countyId, selectedVertical);
+  const { zips, mapConfig, loading, error } = useTerritoryMap(countyId, selectedVertical);
   const [activeZip, setActiveZip] = useState(null);
 
   return (
@@ -33,7 +33,7 @@ export default function ZipTerritoryMap({ onZipSelect, highlightZip }) {
             zips={zips}
             highlightZip={highlightZip}
             onZipClick={(zip) => setActiveZip(zip)}
-            countyId={countyId}
+            mapConfig={mapConfig}
           />
           {activeZip && (
             <MapZipPopup
