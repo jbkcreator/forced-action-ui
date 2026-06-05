@@ -32,6 +32,7 @@ function LandingContent() {
   // emailGate.flow: 'paid' (goes to ZIP collector → Stripe) or 'free' (goes to /api/free-signup → dashboard)
   const [emailGate, setEmailGate] = useState({ open: false, tier: null, flow: 'paid' });
   const [userEmail, setUserEmail] = useState('');
+  const [userConsent, setUserConsent] = useState(null);
   const [zipCollector, setZipCollector] = useState({ open: false, tier: null });
   const [lastCheckedZip, setLastCheckedZip] = useState('');
   const [waitlistOpen, setWaitlistOpen] = useState(false);
@@ -50,11 +51,12 @@ function LandingContent() {
     setEmailGate({ open: true, tier: null, flow: 'free' });
   }, []);
 
-  // Step 2: Email collected
+  // Step 2: Email + consent collected
   //   - paid flow → ZIP collector grid → Stripe
   //   - free flow → /api/free-signup (no intent, welcome email fires) → /dashboard/{uuid}
-  const handleEmailProceed = useCallback(async (email) => {
+  const handleEmailProceed = useCallback(async (email, consent, phone) => {
     setUserEmail(email);
+    setUserConsent(consent);
 
     if (emailGate.flow === 'free') {
       setFreeSigningUp(true);
@@ -63,6 +65,8 @@ function LandingContent() {
           email,
           vertical: selectedVertical,
           countyId,
+          phone: phone || null,
+          consentAcceptance: consent || null,
           signupSource: attribution?.signupSource || 'landing_page',
           utmSource: attribution?.utmSource || null,
           utmMedium: attribution?.utmMedium || null,
@@ -70,7 +74,6 @@ function LandingContent() {
           campaignId: attribution?.campaignId || null,
           referralCode: attribution?.referralCode || null,
           attributionToken: attribution?.attributionToken || null,
-          // intent omitted → welcome email fires from /api/free-signup
         });
         setEmailGate({ open: false, tier: null, flow: 'paid' });
         if (resp?.feed_uuid) {
@@ -99,9 +102,10 @@ function LandingContent() {
       countyId,
       zipCodes: zips,
       email: userEmail,
+      consent: userConsent,
       attribution,
     });
-  }, [zipCollector.tier, selectedVertical, countyId, openCheckout, userEmail, attribution]);
+  }, [zipCollector.tier, selectedVertical, countyId, openCheckout, userEmail, userConsent, attribution]);
 
   return (
     <div className="gradient-bg min-h-screen text-white" style={{ scrollBehavior: 'smooth' }}>
@@ -211,6 +215,7 @@ function LandingContent() {
           onProceed={handleEmailProceed}
           submitting={freeSigningUp && emailGate.flow === 'free'}
           submitLabel={emailGate.flow === 'free' ? 'Start Free' : 'Continue'}
+          sourceFlow={emailGate.flow === 'free' ? 'free_signup' : 'checkout'}
           title={emailGate.flow === 'free' ? 'Get your free dashboard access' : 'Enter your email to continue'}
           description={emailGate.flow === 'free'
             ? "We'll set up your free dashboard with blurred leads in your county. Unlock the ones you want for $4 each."

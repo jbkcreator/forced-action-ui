@@ -32,7 +32,7 @@ export function getCountyLanding(countyId) {
   return api.get(`/api/counties/${countyId}/landing`);
 }
 
-export function submitWaitlist({ zipCode, vertical, countyId, name, email, phone, sms_opt_in, waitlist_type }) {
+export function submitWaitlist({ zipCode, vertical, countyId, name, email, phone, sms_opt_in, waitlist_type, consent_acceptance }) {
   return api.post('/api/waitlist', {
     zip_code: zipCode,
     vertical,
@@ -42,15 +42,17 @@ export function submitWaitlist({ zipCode, vertical, countyId, name, email, phone
     phone,
     sms_opt_in,
     waitlist_type,
+    consent_acceptance,
   });
 }
 
-export function createCheckout({ tier, vertical, countyId, zipCodes, email }) {
+export function createCheckout({ tier, vertical, countyId, zipCodes, email, consentAcceptance = null }) {
   return api.post('/api/checkout', {
     tier,
     vertical,
     county_id: countyId,
     zip_codes: zipCodes,
     email,
+    consent_acceptance: consentAcceptance,
   });
 }

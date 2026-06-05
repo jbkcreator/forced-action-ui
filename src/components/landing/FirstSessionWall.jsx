@@ -21,6 +21,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanding } from './LandingContext';
+import TermsConsentGate from '../shared/TermsConsentGate';
 import {
   fetchProofLeads,
   createFreeSignup,
@@ -237,7 +238,7 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 		lead: null,
 		email: '',
 		phone: '',
-		smsConsent: false,
+		consent: null,
 		feedUuid: null,
 		clientSecret: null,
 		publishableKey: null,
@@ -357,7 +358,7 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 				vertical: selectedVertical,
 				countyId,
 				phone: rawPhone || null,
-				smsConsent: !!(rawPhone && flow.smsConsent),
+				consentAcceptance: flow.consent || null,
 				// fa017 — attribution captured at landing
 				signupSource: attribution?.signupSource || null,
 				utmSource: attribution?.utmSource || null,
@@ -543,19 +544,14 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 							disabled={flow.state !== 'email'}
 							className="mt-3 w-full rounded-md bg-white/5 border border-white/10 px-3 py-2 text-white placeholder:text-slate-500 focus:border-yellow-400/60 focus:outline-none"
 						/>
-						<label className="mt-3 flex items-start gap-2 cursor-pointer">
-							<input
-								type="checkbox"
-								checked={flow.smsConsent}
-								onChange={e => setFlow(f => ({ ...f, smsConsent: e.target.checked }))}
-								disabled={flow.state !== 'email' || !flow.phone}
-								className="mt-0.5 h-3.5 w-3.5 rounded border-white/20 bg-white/5 accent-yellow-400 disabled:opacity-40"
+						<div className="mt-3">
+							<TermsConsentGate
+								sourceFlow="free_signup"
+								showTcpa={true}
+								phoneProvided={flow.phone.replace(/\D/g, '').length >= 10}
+								onAccept={(c) => setFlow(f => ({ ...f, consent: c }))}
 							/>
-							<span className="text-slate-400 text-[11px] leading-snug">
-								Text me lead alerts &amp; offers. Reply STOP to opt out anytime.
-								Msg &amp; data rates may apply.
-							</span>
-						</label>
+						</div>
 						{flow.err && <p className="mt-2 text-red-400 text-xs">{flow.err}</p>}
 						<p className="mt-3 text-slate-500 text-[11px]">
 							Card saved on unlock. <span className="text-emerald-400">+2 bonus credits</span> if saved within 10 min.
@@ -571,7 +567,7 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 							</button>
 							<button
 								type="submit"
-								disabled={flow.state !== 'email'}
+								disabled={flow.state !== 'email' || !flow.consent?.terms_accepted}
 								className="cta-primary text-sm px-5 py-2 disabled:opacity-60"
 							>
 								{flow.state === 'signing_up' ? 'Creating account…'

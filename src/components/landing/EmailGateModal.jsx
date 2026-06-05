@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Modal, { ModalClose } from '../ui/Modal';
+import TermsConsentGate from '../shared/TermsConsentGate';
 
 export default function EmailGateModal({
   isOpen,
@@ -9,9 +10,14 @@ export default function EmailGateModal({
   description = "We'll use this to set up your account and send your lead feed access.",
   submitLabel = 'Continue',
   submitting = false,
+  sourceFlow = 'free_signup',
 }) {
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [consent, setConsent] = useState(null);
   const [error, setError] = useState('');
+
+  const termsAccepted = consent?.terms_accepted === true;
 
   function validate(value) {
     const v = value.trim().toLowerCase();
@@ -24,8 +30,9 @@ export default function EmailGateModal({
     if (submitting) return;
     const err = validate(email);
     if (err) { setError(err); return; }
+    if (!termsAccepted) { setError('Please accept the Terms & Conditions to continue.'); return; }
     setError('');
-    onProceed(email.trim().toLowerCase());
+    onProceed(email.trim().toLowerCase(), consent, phone.trim() || null);
   }
 
   function handleClose() {
@@ -66,16 +73,34 @@ export default function EmailGateModal({
           className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400/40 text-sm mb-2 disabled:opacity-60"
         />
 
+        <input
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder="Phone (optional — for lead alerts &amp; call consent)"
+          value={phone}
+          onChange={(e) => { setPhone(e.target.value); setError(''); }}
+          disabled={submitting}
+          className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-yellow-400/40 text-sm mb-4 disabled:opacity-60"
+        />
+
+        <TermsConsentGate
+          sourceFlow={sourceFlow}
+          showTcpa={true}
+          phoneProvided={phone.replace(/\D/g, '').length >= 10}
+          onAccept={setConsent}
+        />
+
         {error && (
-          <p className="text-red-400 text-xs mb-3">{error}</p>
+          <p className="text-red-400 text-xs mt-3">{error}</p>
         )}
 
-        {!error && <div className="mb-3" />}
+        {!error && <div className="mt-3" />}
 
         <button
           onClick={handleSubmit}
-          disabled={submitting}
-          className="w-full bg-yellow-400 hover:bg-yellow-300 disabled:bg-yellow-400/60 text-black font-bold py-3 rounded-xl transition"
+          disabled={submitting || !termsAccepted}
+          className="w-full bg-yellow-400 hover:bg-yellow-300 disabled:bg-yellow-400/60 text-black font-bold py-3 rounded-xl transition mt-2"
         >
           {submitting ? 'Setting up your dashboard…' : submitLabel}
         </button>
