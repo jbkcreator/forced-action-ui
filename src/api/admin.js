@@ -77,7 +77,7 @@ export function fetchDlq(token, { limit = 100, offset = 0, reason, q } = {}, opt
   const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
   if (reason) params.set('reason', reason);
   if (q) params.set('q', q);
-  return adminFetch(token, `/admin/dlq?${params.toString()}`, options);
+  return adminFetch(token, `/api/admin/dlq?${params.toString()}`, options);
 }
 
 // Per-SKU margin / refund / dispute summary
