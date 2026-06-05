@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { submitWaitlist } from '../../api/landing';
+import TermsConsentGate from '../shared/TermsConsentGate';
 
 const TRADE_OPTIONS = [
   { value: 'roofing',          label: 'Roofing' },
@@ -24,12 +25,25 @@ export default function WaitlistForm({ zip, countyId, waitlistType = 'sold_out',
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [smsOptIn, setSmsOptIn] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState(null);
 
+  // Consent state
+  const [consentPayload, setConsentPayload] = useState(null);
+  const termsAccepted = consentPayload?.terms_accepted === true;
+
+  const handleConsentChange = useCallback((payload) => {
+    setConsentPayload(payload);
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!termsAccepted) {
+      setMsg({ type: 'error', text: 'You must accept the Terms & Conditions and Privacy Policy to join the waitlist.' });
+      return;
+    }
+
     setSubmitting(true);
     setMsg(null);
 
@@ -42,8 +56,9 @@ export default function WaitlistForm({ zip, countyId, waitlistType = 'sold_out',
         name: name.trim(),
         email,
         phone: hasPhone ? phone.trim() : undefined,
-        sms_opt_in: smsOptIn && hasPhone,
+        sms_opt_in: consentPayload?.tcpa_accepted === true && hasPhone,
         waitlist_type: waitlistType,
+        consent_acceptance: consentPayload,
       });
 
       if (res?.status === 'already_registered') {
@@ -54,11 +69,18 @@ export default function WaitlistForm({ zip, countyId, waitlistType = 'sold_out',
 
       setTimeout(() => { onSuccess?.(); }, 1800);
     } catch (err) {
-      setMsg({ type: 'error', text: 'Could not join waitlist. Please try again.' });
+      const detail = err?.response?.data?.detail;
+      if (detail?.error === 'terms_not_accepted') {
+        setMsg({ type: 'error', text: detail.message || 'You must accept the Terms & Conditions.' });
+      } else {
+        setMsg({ type: 'error', text: 'Could not join waitlist. Please try again.' });
+      }
     } finally {
       setSubmitting(false);
     }
   };
+
+  const canSubmit = termsAccepted && !submitting;
 
   return (
     <div className="glass-card rounded-2xl flex flex-col max-h-[85vh]">
@@ -66,7 +88,7 @@ export default function WaitlistForm({ zip, countyId, waitlistType = 'sold_out',
       <div className="px-6 pt-6 pb-4 border-b border-white/[0.06] shrink-0">
         <h3 className="text-base font-bold text-center">Get Notified When This ZIP Opens</h3>
         <p className="text-slate-400 text-xs text-center mt-1">
-          Join the waitlist — we&apos;ll email you the moment this territory becomes available.
+          Join the waitlist — we'll email you the moment this territory becomes available.
         </p>
       </div>
 
@@ -120,14 +142,14 @@ export default function WaitlistForm({ zip, countyId, waitlistType = 'sold_out',
                 onChange={(e) => setPhone(e.target.value)} className={inputCls} />
             </div>
 
-            {/* Row 4: SMS opt-in — full width */}
-            <div className="col-span-2 flex items-start gap-2 pt-1">
-              <input type="checkbox" id="sms-opt-in" checked={smsOptIn}
-                onChange={(e) => setSmsOptIn(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border border-white/[0.2] bg-white/[0.06] text-yellow-400 focus:ring-1 focus:ring-yellow-400/40 shrink-0" />
-              <label htmlFor="sms-opt-in" className="text-xs text-slate-400 leading-snug">
-                I agree to receive SMS notifications about my ZIP becoming available.
-              </label>
+            {/* Row 4: Consent Gate — full width */}
+            <div className="col-span-2 pt-1 border-t border-white/[0.06]">
+              <TermsConsentGate
+                sourceFlow="waitlist"
+                showTcpa={true}
+                phoneProvided={phone.trim().length > 0}
+                onAccept={handleConsentChange}
+              />
             </div>
           </div>
         </form>
@@ -140,7 +162,7 @@ export default function WaitlistForm({ zip, countyId, waitlistType = 'sold_out',
             {msg.text}
           </p>
         )}
-        <button type="submit" form="waitlist-form" disabled={submitting}
+        <button type="submit" form="waitlist-form" disabled={!canSubmit}
           className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 rounded-xl disabled:opacity-50 text-sm transition-colors">
           {submitting ? 'Joining...' : 'Join Waitlist'}
         </button>

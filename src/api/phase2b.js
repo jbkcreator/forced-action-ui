@@ -16,7 +16,7 @@ export function createFreeSignup({
   name = null,
   referralCode = null,
   phone = null,
-  smsConsent = false,
+  consentAcceptance = null,
   // fa017 signup-source attribution
   signupSource = null,
   utmSource = null,
@@ -36,7 +36,7 @@ export function createFreeSignup({
     name,
     referral_code: referralCode,
     phone,
-    sms_consent: smsConsent,
+    consent_acceptance: consentAcceptance,
     signup_source: signupSource,
     utm_source: utmSource,
     utm_medium: utmMedium,
