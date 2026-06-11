@@ -72,6 +72,13 @@ export function uploadTaxDelinquency(token, file, countyId, taxYear) {
   return adminFetch(token, '/api/admin/upload/tax-delinquency', { method: 'POST', body: form });
 }
 
+export function uploadVoterRegistry(token, file, countyId) {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('county_id', countyId || 'hillsborough');
+  return adminFetch(token, '/api/admin/upload/voter-registry', { method: 'POST', body: form });
+}
+
 // ─── DLQ ─────────────────────────────────────────────────────────────────────
 export function fetchDlq(token, { limit = 100, offset = 0, reason, q } = {}, options = {}) {
   const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
