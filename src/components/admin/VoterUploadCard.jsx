@@ -73,7 +73,19 @@ export default function VoterUploadCard({ token, onLogout = () => {}, hideHeader
           </div>
         )}
 
-        {result && (
+        {result && result.status === 'processing' && (
+          <div className="mb-5 rounded-xl p-4 bg-sky-950/40 border border-sky-800/40">
+            <p className="text-sm font-semibold text-sky-300 mb-1">
+              Upload received — processing in background
+            </p>
+            <p className="text-xs text-sky-500/90">
+              {result.message
+                || `Voter file is loading for county=${result.county_id}. Full county files take 1-4 minutes; check contact stats shortly.`}
+            </p>
+          </div>
+        )}
+
+        {result && result.status !== 'processing' && (
           <div className="mb-5 rounded-xl p-4 bg-emerald-950/40 border border-emerald-800/40">
             <p className="text-sm font-semibold text-emerald-300 mb-3">
               Upload complete — {result.total_rows?.toLocaleString()} rows processed
