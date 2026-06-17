@@ -40,6 +40,7 @@ const SubscribersSection = lazy(() => import('./components/admin/sections/Subscr
 const IcpChannelSection    = lazy(() => import('./components/admin/sections/IcpChannelSection'));
 const SupplierIntelSection = lazy(() => import('./components/admin/sections/SupplierIntelSection'));
 const EmailCampaignsSection = lazy(() => import('./components/admin/sections/EmailCampaignsSection'));
+const RoasSection           = lazy(() => import('./components/admin/sections/RoasSection'));
 const SubscriberDetailPage = lazy(() => import('./pages/SubscriberDetailPage'));
 const SupplierDashboard    = lazy(() => import('./pages/SupplierDashboard'));
 
@@ -93,6 +94,7 @@ export default function App() {
             <Route path="icp"               element={withBoundary(<IcpChannelSection />)} />
             <Route path="supplier-intel"    element={withBoundary(<SupplierIntelSection />)} />
             <Route path="email-campaigns"   element={withBoundary(<EmailCampaignsSection />)} />
+            <Route path="roas"              element={withBoundary(<RoasSection />)} />
           </Route>
           {/* Supplier Intelligence dashboard (access_token auth) */}
           <Route path="/supplier/:accessToken" element={withBoundary(<SupplierDashboard />)} />

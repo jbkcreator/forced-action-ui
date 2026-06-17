@@ -286,6 +286,17 @@ export function retirePlaybook(token, id, actor, options = {}) {
   return adminFetch(token, `/api/admin/cora-playbook/${id}/retire`, { method: 'POST', body: { actor }, ...options });
 }
 
+// ─── ROAS / Campaign Performance (S2) ────────────────────────────────────────
+
+export function fetchRoas(token, { campaignId, utmCampaign, adSpend } = {}, options = {}) {
+  const params = new URLSearchParams();
+  if (campaignId) params.set('campaign_id', campaignId);
+  if (utmCampaign) params.set('utm_campaign', utmCampaign);
+  if (adSpend !== '' && adSpend != null) params.set('ad_spend', String(adSpend));
+  const qs = params.toString();
+  return adminFetch(token, `/api/admin/roas${qs ? '?' + qs : ''}`, options);
+}
+
 // ─── Attribution (Stage 8) ────────────────────────────────────────────────────
 
 export function fetchAttributionStats(token, { groupBy = 'conversion_type', dateFrom, dateTo } = {}, options = {}) {

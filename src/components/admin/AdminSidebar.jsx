@@ -98,6 +98,17 @@ const SECTIONS = [
       </svg>
     ),
   },
+  {
+    id: 'roas',
+    label: 'ROAS',
+    path: '/admin/roas',
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path d="M3 17l4-4 4 4 4-6 4 3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M3 21h18" strokeLinecap="round" />
+      </svg>
+    ),
+  },
 ];
 
 export default function AdminSidebar() {
