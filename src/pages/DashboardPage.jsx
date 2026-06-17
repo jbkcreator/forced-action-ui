@@ -57,6 +57,7 @@ import LeadCardSkeletonList from '../components/dashboard/LeadCardSkeleton';
 import Pagination from '../components/ui/Pagination';
 import ErrorState from '../components/ui/ErrorState';
 import EmptyState from '../components/ui/EmptyState';
+import PageLoader from '../components/ui/PageLoader';
 import { useState, useRef } from 'react';
 import useStormStatus from '../hooks/useStormStatus';
 import { decodeSubToken } from '../api/subscriber.js';
@@ -95,6 +96,13 @@ function writeAnnualDismissed(feedUuid) {
 
 export default function DashboardPage() {
   const { feedUuid } = useParams();
+
+  // Synchronous check — runs during render, before any effects fire.
+  // Prevents one-frame flash of dashboard content when the token is missing/wrong.
+  const isAuthReady = useMemo(() => {
+    const payload = decodeSubToken();
+    return !!(payload && payload.feed_uuid === feedUuid);
+  }, [feedUuid]);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const { filters, setFilter, setPage, searchInput, setSearchInput } = useFeedFilters();
@@ -181,10 +189,11 @@ export default function DashboardPage() {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  // fa061 — mount guard: if no valid subscriber token exists, redirect to the
-  // password-login page for this specific feed UUID.
+  // fa061 — mount guard: redirect to login if no valid token exists OR if the
+  // stored token belongs to a different feed (stale session from another account).
   useEffect(() => {
-    if (!decodeSubToken()) {
+    const payload = decodeSubToken();
+    if (!payload || payload.feed_uuid !== feedUuid) {
       window.location.replace(`/dashboard/${feedUuid}/login`);
     }
   }, [feedUuid]);
@@ -200,6 +209,12 @@ export default function DashboardPage() {
     }),
     [feedUuid, filters.page, filters.sort, filters.minScore, filters.incidentType, filters.search],
   );
+
+  useEffect(() => {
+    if (error?.status === 401 || error?.status === 403) {
+      window.location.replace(`/dashboard/${feedUuid}/login`);
+    }
+  }, [error, feedUuid]);
 
   const handleTopupSuccess = useCallback(() => {
     closeTopup();
@@ -463,6 +478,7 @@ export default function DashboardPage() {
 
   return (
     <div className="gradient-bg-dashboard min-h-screen text-white">
+      <PageLoader visible={!isAuthReady || loading} />
       <div className="relative z-[1]">
         <Navbar variant="dashboard">
           {subscriber.founding_member && (
