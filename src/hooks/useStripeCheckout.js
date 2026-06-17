@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { createCheckout } from '../api/landing';
 import { createFreeSignup } from '../api/phase2b';
+import { getAttribution } from '../utils/attribution';
 
 // Module-level variable — populated on first checkout open, not on module
 // evaluation. This keeps Stripe (~100 KB) out of the initial bundle: the SDK
@@ -64,6 +65,7 @@ export default function useStripeCheckout() {
     try {
       const { client_secret } = await createCheckout({
         tier, vertical, countyId, zipCodes, email, consentAcceptance: consent,
+        attribution: getAttribution(),
       });
       const stripe = await getStripePromise();
 

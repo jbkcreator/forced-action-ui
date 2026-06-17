@@ -5,6 +5,7 @@
  * See docs/PLATFORM-OPERATIONS-GUIDE.md for semantics.
  */
 import { api } from './client';
+import { getAttribution } from '../utils/attribution';
 
 // ─── Free Signup ────────────────────────────────────────────────────────────
 // POST /api/free-signup — creates (or reuses) a free-tier subscriber by email.
@@ -104,6 +105,7 @@ export function createPaymentIntent({
     description,
     save_card: saveCard,
     metadata,
+    attribution: getAttribution(),
   });
 }
 
