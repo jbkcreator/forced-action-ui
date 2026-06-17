@@ -19,6 +19,13 @@ body {
   color: var(--fa-text-primary);
 }
 
+/* ── Aircall SDK iframe ─────────────────────────────────── */
+#aircall-workspace iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: none;
+}
+
 /* ── Scrollbar ─────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }

@@ -6,9 +6,6 @@ export default function usePolling(fetcher, intervalMs = 30000, deps = []) {
   const [error, setError] = useState(null);
   const timerRef = useRef(null);
   const controllerRef = useRef(null);
-  const mountedRef = useRef(true);
-
-  useEffect(() => () => { mountedRef.current = false; }, []);
 
   const execute = useCallback(async () => {
     if (controllerRef.current) controllerRef.current.abort();
@@ -16,13 +13,13 @@ export default function usePolling(fetcher, intervalMs = 30000, deps = []) {
     controllerRef.current = controller;
     try {
       const result = await fetcher(controller.signal);
-      if (!controller.signal.aborted && mountedRef.current) {
+      if (!controller.signal.aborted) {
         setData(result);
         setError(null);
       }
     } catch (err) {
       if (isAbortError(err) || controller.signal.aborted) return;
-      if (mountedRef.current) setError(err);
+      setError(err);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
@@ -36,5 +33,5 @@ export default function usePolling(fetcher, intervalMs = 30000, deps = []) {
     };
   }, [execute, intervalMs]);
 
-  return { data, error };
+  return { data, error, refetch: execute };
 }
