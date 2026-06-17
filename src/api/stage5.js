@@ -5,6 +5,7 @@
  * Matches the FastAPI endpoints added in Stage 5 (src/api/main.py).
  */
 import { api, apiRequest } from './client';
+import { getAttribution } from '../utils/attribution';
 
 // ─── Premium Credits ────────────────────────────────────────────────────────
 // POST /api/premium/purchase
@@ -26,6 +27,7 @@ export function purchasePremium({ feedUuid, sku, paymentMode, propertyId = null,
     payment_mode: paymentMode,
     property_id: propertyId,
     target_address: targetAddress,
+    attribution: getAttribution(),
   });
 }
 

@@ -1,4 +1,5 @@
 import { api } from './client';
+import { getAttribution } from '../utils/attribution';
 
 /**
  * POST /api/bundle/checkout
@@ -12,6 +13,7 @@ export function bundleCheckout({ feedUuid, bundleType, zipCode, vertical, abVari
     zip_code: zipCode || null,
     vertical: vertical || null,
     ab_variant: abVariant || null,
+    attribution: getAttribution(),
   });
 }
 

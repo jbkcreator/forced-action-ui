@@ -1,5 +1,6 @@
 import { api } from './client';
 import { subHeaders, withSubRefresh } from './subscriber.js';
+import { getAttribution } from '../utils/attribution';
 
 // fa061 — feed endpoints require a subscriber session JWT.
 // subHeaders() attaches Authorization: Bearer <token>.
@@ -43,6 +44,7 @@ export function createLeadPackCheckout({ feedUuid, zipCode, vertical, countyId }
     zip_code: zipCode,
     vertical,
     county_id: countyId,
+    attribution: getAttribution(),
   });
 }
 
@@ -68,6 +70,7 @@ export function unlockLead({ feedUuid, propertyId, leadTier, zip }) {
     description: `Unlock ${leadTier || 'Gold'} lead in ${zip || 'your area'}`,
     save_card: true,
     metadata: { product: 'lead_unlock', property_id: String(propertyId) },
+    attribution: getAttribution(),
   });
 }
 
