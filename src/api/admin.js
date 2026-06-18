@@ -297,6 +297,17 @@ export function fetchRoas(token, { campaignId, utmCampaign, adSpend } = {}, opti
   return adminFetch(token, `/api/admin/roas${qs ? '?' + qs : ''}`, options);
 }
 
+// ─── Revenue Leak (S5) ────────────────────────────────────────────────────────
+// GET /api/admin/revenue-leak?county_id=&limit=
+//   returns [{ log_date, county_id, total_leads_leaked,
+//     estimated_dollar_value (string decimal), vertical_breakdown: {
+//       [vertical]: { count, dollars } } }] newest-first. limit 1–90.
+export function fetchRevenueLeak(token, { countyId, limit = 30 } = {}, options = {}) {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (countyId) params.set('county_id', countyId);
+  return adminFetch(token, `/api/admin/revenue-leak?${params.toString()}`, options);
+}
+
 // ─── Attribution (Stage 8) ────────────────────────────────────────────────────
 
 export function fetchAttributionStats(token, { groupBy = 'conversion_type', dateFrom, dateTo } = {}, options = {}) {

@@ -2,11 +2,15 @@ import { useState, useCallback } from 'react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import SocialProofWall from '../components/landing/SocialProofWall';
+import WinStoryTicker from '../components/landing/WinStoryTicker';
+import { LandingProvider, useLanding } from '../components/landing/LandingContext';
 
 const PAGE_SIZE = 60;
 const MAX_LIMIT = 200;
 
-export default function ProofWallPage() {
+// Inner component so useLanding() runs inside <LandingProvider>.
+function ProofWallContent() {
+  const { countyId } = useLanding();
   const [limit, setLimit] = useState(PAGE_SIZE);
 
   const loadMore = useCallback(() => {
@@ -29,6 +33,10 @@ export default function ProofWallPage() {
               Bucket size, trade, and county only — no names, no addresses.
             </p>
           </header>
+
+          {/* S5: live lead-pack proof feed — county-filtered, distinct from the
+              DealOutcome wall below. Renders null when empty. */}
+          <WinStoryTicker countyId={countyId} />
 
           <SocialProofWall
             limit={limit}
@@ -58,5 +66,15 @@ export default function ProofWallPage() {
         <Footer />
       </div>
     </div>
+  );
+}
+
+// Navbar (variant="landing") and SocialProofWall both consume LandingContext
+// via useLanding(); without this provider the page throws on render.
+export default function ProofWallPage() {
+  return (
+    <LandingProvider>
+      <ProofWallContent />
+    </LandingProvider>
   );
 }

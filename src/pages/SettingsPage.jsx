@@ -14,6 +14,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import ErrorState from '../components/ui/ErrorState';
 import Icon from '../components/ui/Icon';
 import PauseModal from '../components/dashboard/PauseModal';
+import BonusZipModal from '../components/dashboard/BonusZipModal';
 import PauseStatusBanner from '../components/dashboard/PauseStatusBanner';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
 
@@ -92,23 +93,23 @@ export default function SettingsPage() {
   const subscriber = data?.subscriber || {};
   const tierLabel = TIER_LABEL[subscriber.tier] || subscriber.tier || '—';
 
-  const { data: referralData } = useApi(
+  const { data: referralData, refetch: refetchReferral } = useApi(
     (signal) => fetchReferralStatus(feedUuid, { signal }).catch(() => null),
     [feedUuid],
   );
+  const [bonusZipOpen, setBonusZipOpen] = useState(false);
 
   const referralLink = (() => {
-    if (!referralData) return null;
-    // Backend returns share_url like "{base_url}/share/REFXXXX"; if base_url
-    // isn't configured server-side it falls back to "/share/REFXXXX" with no
-    // origin — compose from window.location.origin for the user-facing copy.
-    const raw = referralData.share_url;
-    if (raw && raw.startsWith('http')) return raw;
-    // Extract the code from a partial path, or derive from `?ref=` query usage.
-    const codeMatch = raw && raw.match(/\/share\/([^/?#]+)/);
-    const code = codeMatch ? codeMatch[1] : null;
-    if (!code) return null;
-    return `${window.location.origin}/?ref=${code}`;
+    const raw = referralData?.share_url;
+    if (!raw) return null;
+    // The backend's share_url carries its own base_url (e.g. http://localhost:8000
+    // in dev, the backend's own origin) and a /share/CODE path that the SPA does
+    // not route. Always rebuild the shareable link against THIS frontend origin
+    // using /?ref=CODE, which LandingContext captures for referral attribution.
+    const m = raw.match(/[?&]ref=([^&#]+)/) || raw.match(/\/share\/([^/?#]+)/);
+    const code = m ? m[1] : null;
+    if (code) return `${window.location.origin}/?ref=${code}`;
+    return raw.startsWith('http') ? raw : null;
   })();
 
   const [copied, setCopied] = useState(false);
@@ -272,6 +273,14 @@ export default function SettingsPage() {
             onClose={() => setPauseModalOpen(false)}
             feedUuid={feedUuid}
             onPaused={() => { setPauseModalOpen(false); refetch(); }}
+          />
+
+          <BonusZipModal
+            isOpen={bonusZipOpen}
+            onClose={() => setBonusZipOpen(false)}
+            feedUuid={feedUuid}
+            slotsAvailable={referralData?.bonus_zip_slots || 0}
+            onClaimed={() => { refetchReferral?.(); refetch(); }}
           />
 
           <StripeCheckoutModal
@@ -439,9 +448,18 @@ export default function SettingsPage() {
                   )}
 
                   {referralData?.bonus_zip_slots > 0 && (
-                    <p className="text-xs text-emerald-300 mt-3">
-                      You have {referralData.bonus_zip_slots} bonus ZIP slot{referralData.bonus_zip_slots === 1 ? '' : 's'} available — redeem via support.
-                    </p>
+                    <div className="mt-3 flex items-center gap-3 flex-wrap">
+                      <p className="text-xs text-emerald-300">
+                        You have {referralData.bonus_zip_slots} bonus ZIP slot{referralData.bonus_zip_slots === 1 ? '' : 's'} available.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setBonusZipOpen(true)}
+                        className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-900 bg-emerald-400 hover:bg-emerald-300 transition-colors"
+                      >
+                        Claim now →
+                      </button>
+                    </div>
                   )}
                 </Tile>
               )}

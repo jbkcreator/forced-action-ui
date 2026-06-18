@@ -82,6 +82,14 @@ export function fetchReferralStatus(feedUuid, { signal } = {}) {
   return api.get(`/api/referral/status/${feedUuid}`, undefined, { signal });
 }
 
+// POST /api/referral/claim-bonus-zip/{feed_uuid}  body: { zip_code }
+//   200 → { ok, zip_code, bonus_zip_slots_remaining }
+//   409 → no bonus slots available · 400 → ZIP validation failed / already owned / out of county
+// Matches the auth style of fetchReferralStatus above (UUID-gated, no subHeaders).
+export function claimBonusZip(feedUuid, zipCode) {
+  return api.post(`/api/referral/claim-bonus-zip/${feedUuid}`, { zip_code: zipCode });
+}
+
 // Auto Mode — Phase 2B v9 add-on
 // Returns { url, session_id }. Frontend should redirect to `url` for hosted
 // Stripe Checkout. Webhook activates auto_mode_enabled=True on success.
