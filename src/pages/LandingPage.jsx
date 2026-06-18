@@ -74,6 +74,7 @@ function LandingContent() {
           campaignId: attribution?.campaignId || null,
           referralCode: attribution?.referralCode || null,
           attributionToken: attribution?.attributionToken || null,
+          affiliateRef: attribution?.affiliateRef || null,
         });
         setEmailGate({ open: false, tier: null, flow: 'paid' });
         if (resp?.feed_uuid) {

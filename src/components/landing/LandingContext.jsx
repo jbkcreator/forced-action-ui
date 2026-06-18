@@ -8,13 +8,42 @@ const LandingContext = createContext();
 
 const ATTRIBUTION_STORAGE_KEY = 'fa.attribution';
 const COUNTY_STORAGE_KEY = 'fa.county_id';
+// Affiliate ?aff= token lives in localStorage (NOT sessionStorage) with a
+// 60-day TTL so a click survives browser close to a later paid signup —
+// honoring the backend's 60-day Attribution Window. Distinct from the peer
+// ?ref=/referral_code loop.
+const AFFILIATE_STORAGE_KEY = 'fa.affiliate_ref';
+const AFFILIATE_TTL_MS = 60 * 24 * 60 * 60 * 1000;
 
 // Allowed signup_source values — must stay in sync with backend
 // `signup_engine.ALLOWED_SIGNUP_SOURCES`.
 const ALLOWED_SIGNUP_SOURCES = new Set([
   'direct', 'landing_page', 'dbpr_email', 'cora_sms',
-  'missed_call', 'referral', 'admin', 'unknown',
+  'missed_call', 'referral', 'admin', 'unknown', 'affiliate',
 ]);
+
+function persistAffiliateRef(ref) {
+  try {
+    localStorage.setItem(AFFILIATE_STORAGE_KEY, JSON.stringify({ ref, ts: Date.now() }));
+  } catch {
+    /* noop — private mode etc. */
+  }
+}
+
+function readStoredAffiliateRef() {
+  try {
+    const raw = localStorage.getItem(AFFILIATE_STORAGE_KEY);
+    if (!raw) return null;
+    const { ref, ts } = JSON.parse(raw);
+    if (!ref || !ts || Date.now() - ts > AFFILIATE_TTL_MS) {
+      localStorage.removeItem(AFFILIATE_STORAGE_KEY);
+      return null;
+    }
+    return ref;
+  } catch {
+    return null;
+  }
+}
 
 function readStoredAttribution() {
   try {
@@ -153,7 +182,12 @@ export function LandingProvider({ children }) {
       searchParams.has('campaign_id') ||
       searchParams.has('ref') ||
       searchParams.has('referral_code') ||
+      searchParams.has('aff') ||
       searchParams.has('token');
+
+    // Affiliate ?aff= token — last-touch wins, persisted 60 days in localStorage.
+    const affParam = searchParams.get('aff');
+    if (affParam) persistAffiliateRef(affParam);
 
     if (!hasUrlParams && attribution) return;
 
@@ -202,14 +236,18 @@ export function LandingProvider({ children }) {
       setCountyId,
       landingData,
       landingDataLoading,
-      attribution: attribution || {
-        signupSource: 'landing_page',
-        utmSource: null,
-        utmMedium: null,
-        utmCampaign: null,
-        campaignId: null,
-        referralCode: null,
-        attributionToken: null,
+      attribution: {
+        ...(attribution || {
+          signupSource: 'landing_page',
+          utmSource: null,
+          utmMedium: null,
+          utmCampaign: null,
+          campaignId: null,
+          referralCode: null,
+          attributionToken: null,
+        }),
+        // localStorage-backed (60-day), independent of the sessionStorage attribution
+        affiliateRef: readStoredAffiliateRef(),
       },
       tokenResolving,
       pricing,

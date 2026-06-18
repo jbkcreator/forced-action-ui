@@ -25,6 +25,8 @@ export function createFreeSignup({
   utmCampaign = null,
   campaignId = null,
   attributionToken = null,
+  // fa081 — affiliate ?aff= token (distinct from referralCode/peer loop)
+  affiliateRef = null,
   // Phase 2B: tells the backend the user is mid-purchase so the welcome
   // email is deferred. Accepted values: 'upgrade' (paid plan), 'unlock'
   // ($4 lead unlock), or null (true free signup → send welcome now).
@@ -44,6 +46,7 @@ export function createFreeSignup({
     utm_campaign: utmCampaign,
     campaign_id: campaignId,
     attribution_token: attributionToken,
+    affiliate_ref: affiliateRef,
     intent,
   });
 }
