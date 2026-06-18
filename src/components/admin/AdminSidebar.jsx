@@ -110,6 +110,26 @@ const SECTIONS = [
     ),
   },
   {
+    id: 'scrapers',
+    label: 'Scrapers',
+    path: '/admin/scrapers',
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path d="M12 2a5 5 0 00-5 5v1H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2v-9a2 2 0 00-2-2h-2V7a5 5 0 00-5-5zm0 2a3 3 0 013 3v1H9V7a3 3 0 013-3zm-1 9a1 1 0 112 0v2a1 1 0 11-2 0v-2z" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    id: 'dfy-lite',
+    label: 'DFY-Lite',
+    path: '/admin/dfy-lite',
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
     id: 'closer',
     label: 'Closer Cockpit',
     path: '/admin/closer',

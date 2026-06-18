@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Button from '../ui/Button';
+import { markPitchReviewed, markPitchDelivered } from '../../api/dfyLite';
 
 const SECTION_LABELS = {
   email_subject:    'Email Subject',
@@ -75,11 +76,27 @@ function OutputSection({ sectionKey, content, editable, onChange }) {
   );
 }
 
-export default function DfyLitePitchResult({ output, onBack, onClose, editable = false, onSave }) {
+export default function DfyLitePitchResult({
+  output,
+  onBack,
+  onClose,
+  editable = false,
+  onSave,
+  // Status action props — only used in view (non-editable) mode
+  feedUuid,
+  orderId,
+  initialStatus,
+  onStatusChange,
+}) {
   const [draft, setDraft] = useState(() => ({ ...output }));
   const [saving, setSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
   const [saveErr, setSaveErr] = useState(null);
+
+  const [status, setStatus] = useState(initialStatus || null);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [actionMsg, setActionMsg] = useState(null);
+  const [actionErr, setActionErr] = useState(null);
 
   function handleChange(key, value) {
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -114,7 +131,43 @@ export default function DfyLitePitchResult({ output, onBack, onClose, editable =
     URL.revokeObjectURL(url);
   }
 
+  async function handleMarkReviewed() {
+    if (!feedUuid || !orderId || actionBusy) return;
+    setActionBusy(true);
+    setActionErr(null);
+    try {
+      await markPitchReviewed(feedUuid, orderId);
+      setStatus('Reviewed');
+      setActionMsg('Marked as reviewed');
+      setTimeout(() => setActionMsg(null), 2500);
+      onStatusChange?.('Reviewed');
+    } catch {
+      setActionErr('Failed to mark reviewed. Please try again.');
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  async function handleMarkDelivered() {
+    if (!feedUuid || !orderId || actionBusy) return;
+    setActionBusy(true);
+    setActionErr(null);
+    try {
+      await markPitchDelivered(feedUuid, orderId);
+      setStatus('Delivered');
+      setActionMsg('Marked as delivered');
+      setTimeout(() => setActionMsg(null), 2500);
+      onStatusChange?.('Delivered');
+    } catch {
+      setActionErr('Failed to mark delivered. Please try again.');
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
   const displayOutput = editable ? draft : output;
+  const canMarkReviewed  = feedUuid && orderId && status === 'Needs_Review';
+  const canMarkDelivered = feedUuid && orderId && status === 'Reviewed';
 
   return (
     <div className="space-y-4">
@@ -143,7 +196,9 @@ export default function DfyLitePitchResult({ output, onBack, onClose, editable =
         )}
       </div>
 
-      {saveErr && <p className="text-xs text-red-400">{saveErr}</p>}
+      {saveErr  && <p className="text-xs text-red-400">{saveErr}</p>}
+      {actionErr && <p className="text-xs text-red-400">{actionErr}</p>}
+      {actionMsg && <p className="text-xs text-green-400">{actionMsg} ✓</p>}
 
       <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-white/[0.06]">
         {editable ? (
@@ -159,6 +214,26 @@ export default function DfyLitePitchResult({ output, onBack, onClose, editable =
             <Button variant="secondary" className="text-sm px-4 py-2" onClick={onBack}>
               Cancel
             </Button>
+            {canMarkReviewed && (
+              <Button
+                variant="secondary"
+                className="text-sm px-4 py-2"
+                onClick={handleMarkReviewed}
+                disabled={actionBusy}
+              >
+                {actionBusy ? '…' : 'Mark Reviewed'}
+              </Button>
+            )}
+            {canMarkDelivered && (
+              <Button
+                variant="secondary"
+                className="text-sm px-4 py-2"
+                onClick={handleMarkDelivered}
+                disabled={actionBusy}
+              >
+                {actionBusy ? '…' : 'Mark Delivered'}
+              </Button>
+            )}
             <Button variant="secondary" className="text-sm px-4 py-2 ml-auto" onClick={handleDownloadAll}>
               Download
             </Button>
@@ -171,6 +246,26 @@ export default function DfyLitePitchResult({ output, onBack, onClose, editable =
             <Button variant="secondary" className="text-sm px-4 py-2" onClick={handleDownloadAll}>
               Download All
             </Button>
+            {canMarkReviewed && (
+              <Button
+                variant="secondary"
+                className="text-sm px-4 py-2"
+                onClick={handleMarkReviewed}
+                disabled={actionBusy}
+              >
+                {actionBusy ? '…' : 'Mark Reviewed'}
+              </Button>
+            )}
+            {canMarkDelivered && (
+              <Button
+                variant="secondary"
+                className="text-sm px-4 py-2"
+                onClick={handleMarkDelivered}
+                disabled={actionBusy}
+              >
+                {actionBusy ? '…' : 'Mark Delivered'}
+              </Button>
+            )}
             <Button variant="secondary" className="text-sm px-4 py-2 ml-auto" onClick={onClose}>
               Close
             </Button>

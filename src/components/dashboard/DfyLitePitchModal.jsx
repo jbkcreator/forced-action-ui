@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Modal from '../ui/Modal';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import Button from '../ui/Button';
 import DfyLitePitchResult from './DfyLitePitchResult';
-import { getDfyLiteOptions, getDfyLiteHistory, generatePitch, updatePitchOutput } from '../../api/dfyLite';
+import { getDfyLiteOptions, getDfyLiteHistory, getDfyLiteOrder, generatePitch, updatePitchOutput } from '../../api/dfyLite';
 
 // Maps each distress signal to the options it unlocks
 const SIGNAL_OPTIONS = {
@@ -98,11 +98,11 @@ function relativeDate(iso) {
 
 function StatusBadge({ status }) {
   const map = {
-    Pitch_Generated: 'bg-green-500/10 text-green-400 border-green-500/20',
-    Needs_Review:    'bg-yellow-400/10 text-yellow-300 border-yellow-400/20',
-    Delivered:       'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    Pitch_Failed:    'bg-red-500/10 text-red-400 border-red-500/20',
-    Signal_Failed:   'bg-red-500/10 text-red-400 border-red-500/20',
+    Needs_Review:  'bg-yellow-400/10 text-yellow-300 border-yellow-400/20',
+    Delivered:     'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    Pitch_Failed:  'bg-red-500/10 text-red-400 border-red-500/20',
+    Signal_Failed: 'bg-red-500/10 text-red-400 border-red-500/20',
+    Cancelled:     'bg-red-500/10 text-red-400 border-red-500/20',
   };
   return (
     <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${map[status] ?? 'bg-white/5 text-slate-400 border-white/10'}`}>
@@ -115,12 +115,14 @@ export default function DfyLitePitchModal({ lead, feedUuid, onClose }) {
   // 'form' | 'loading' | 'result' | 'error' | 'history' | 'edit'
   const [step, setStep] = useState('form');
   const [result, setResult] = useState(null);
+  const [activeOrderId, setActiveOrderId] = useState(null);
   const [error, setError] = useState(null);
   const [options, setOptions] = useState(null);
   const [history, setHistory] = useState([]);
   const [countData, setCountData] = useState(null);
   const [editOrder, setEditOrder] = useState(null);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const pollTimerRef = useRef(null);
 
   const [form, setForm] = useState({
     target_vertical: '',
@@ -162,6 +164,17 @@ export default function DfyLitePitchModal({ lead, feedUuid, onClose }) {
     }));
   }
 
+  // Clear any running poll timer
+  const clearPoll = useCallback(() => {
+    if (pollTimerRef.current) {
+      clearTimeout(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => clearPoll, [clearPoll]);
+
   const handleSubmit = useCallback(async () => {
     setValidationError(null);
     if (!form.target_vertical) return setValidationError('Select a target vertical.');
@@ -171,11 +184,13 @@ export default function DfyLitePitchModal({ lead, feedUuid, onClose }) {
     if (form.custom_instructions.length > MAX_CUSTOM_LEN)
       return setValidationError(`Custom instructions must be ≤ ${MAX_CUSTOM_LEN} characters.`);
 
+    clearPoll();
     setStep('loading');
     setError(null);
 
+    let accepted;
     try {
-      const order = await generatePitch(feedUuid, {
+      accepted = await generatePitch(feedUuid, {
         property_id:             lead.property_id,
         target_vertical:         form.target_vertical,
         pitch_type:              form.pitch_type,
@@ -183,35 +198,77 @@ export default function DfyLitePitchModal({ lead, feedUuid, onClose }) {
         selected_output_formats: form.selected_output_formats,
         custom_instructions:     form.custom_instructions || undefined,
       });
-
-      const outputs = order.generated_outputs ?? order.generated_outputs_json ?? {};
-      setResult(outputs);
-
-      // push to local history so History tab reflects it immediately
-      setHistory((prev) => [{
-        id:                     order.order_id,
-        status:                 order.status,
-        pitch_type:             form.pitch_type,
-        target_vertical:        form.target_vertical,
-        pitch_generation_number: order.pitch_generation_number,
-        generated_outputs_json: outputs,
-        created_at:             new Date().toISOString(),
-      }, ...prev]);
-      setCountData((prev) => prev
-        ? { ...prev, count: prev.count + 1, remaining: Math.max(0, prev.remaining - 1) }
-        : null,
-      );
-
-      setStep('result');
     } catch (err) {
       setError(
         err?.status === 422
           ? `You've reached the 3-pitch limit for this lead.`
-          : 'Generation failed. Please try again.',
+          : 'Order creation failed. Please try again.',
       );
       setStep('error');
+      return;
     }
-  }, [feedUuid, form, lead.property_id]);
+
+    const orderId = accepted.order_id;
+
+    // Optimistically add to history as In_Progress so History tab shows it
+    setHistory((prev) => [{
+      id:                      orderId,
+      status:                  'Order_Received',
+      pitch_type:              form.pitch_type,
+      target_vertical:         form.target_vertical,
+      pitch_generation_number: accepted.pitch_generation_number,
+      generated_outputs_json:  null,
+      created_at:              new Date().toISOString(),
+    }, ...prev]);
+    setCountData((prev) => prev
+      ? { ...prev, count: prev.count + 1, remaining: Math.max(0, prev.remaining - 1) }
+      : null,
+    );
+
+    // Poll until Cora completes (Needs_Review) or fails
+    const TERMINAL = new Set(['Needs_Review', 'Pitch_Failed', 'Signal_Failed', 'Cancelled']);
+    const POLL_MS = 2500;
+    const MAX_POLLS = 72; // 3 minutes
+    let attempts = 0;
+
+    const poll = async () => {
+      if (attempts++ >= MAX_POLLS) {
+        setError('Pitch generation timed out. Please try again.');
+        setStep('error');
+        return;
+      }
+      try {
+        const order = await getDfyLiteOrder(feedUuid, orderId);
+        if (TERMINAL.has(order.status)) {
+          if (order.status === 'Needs_Review') {
+            const outputs = order.generated_outputs ?? order.generated_outputs_json ?? {};
+            setResult(outputs);
+            setActiveOrderId(orderId);
+            setHistory((prev) =>
+              prev.map((o) => o.id === orderId
+                ? { ...o, status: order.status, generated_outputs_json: outputs }
+                : o,
+              ),
+            );
+            setStep('result');
+          } else {
+            setError('Pitch generation failed. Please try again.');
+            setHistory((prev) =>
+              prev.map((o) => o.id === orderId ? { ...o, status: order.status } : o),
+            );
+            setStep('error');
+          }
+          return;
+        }
+        pollTimerRef.current = setTimeout(poll, POLL_MS);
+      } catch {
+        setError('Generation failed. Please try again.');
+        setStep('error');
+      }
+    };
+
+    pollTimerRef.current = setTimeout(poll, POLL_MS);
+  }, [feedUuid, form, lead.property_id, clearPoll]);
 
   const handleSaveEdit = useCallback(async (updates) => {
     await updatePitchOutput(feedUuid, editOrder.id, updates);
@@ -220,6 +277,13 @@ export default function DfyLitePitchModal({ lead, feedUuid, onClose }) {
     );
     setEditOrder((prev) => ({ ...prev, generated_outputs_json: updates }));
   }, [feedUuid, editOrder]);
+
+  const handleStatusChange = useCallback((orderId, newStatus) => {
+    setHistory((prev) => prev.map((o) => o.id === orderId ? { ...o, status: newStatus } : o));
+    if (editOrder?.id === orderId) {
+      setEditOrder((prev) => ({ ...prev, status: newStatus }));
+    }
+  }, [editOrder]);
 
   const remaining = countData?.remaining ?? null;
   const historyCount = history.filter((o) => o.generated_outputs_json).length;
@@ -368,7 +432,7 @@ export default function DfyLitePitchModal({ lead, feedUuid, onClose }) {
         {/* ── Loading ── */}
         {step === 'loading' && (
           <div className="py-8">
-            <LoadingSpinner text="Generating your pitch..." />
+            <LoadingSpinner text="Cora is building your pitch..." />
           </div>
         )}
 
@@ -378,6 +442,10 @@ export default function DfyLitePitchModal({ lead, feedUuid, onClose }) {
             output={result}
             onBack={() => setStep('form')}
             onClose={onClose}
+            feedUuid={feedUuid}
+            orderId={activeOrderId}
+            initialStatus="Needs_Review"
+            onStatusChange={(newStatus) => handleStatusChange(activeOrderId, newStatus)}
           />
         )}
 
@@ -463,6 +531,10 @@ export default function DfyLitePitchModal({ lead, feedUuid, onClose }) {
             onSave={handleSaveEdit}
             onBack={() => { setStep('history'); setEditOrder(null); }}
             onClose={onClose}
+            feedUuid={feedUuid}
+            orderId={editOrder.id}
+            initialStatus={editOrder.status}
+            onStatusChange={(newStatus) => handleStatusChange(editOrder.id, newStatus)}
           />
         )}
       </div>

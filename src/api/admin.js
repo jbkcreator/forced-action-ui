@@ -505,3 +505,10 @@ export function setCoraReviewSwitch(token, enabled, options = {}) {
     ...options,
   });
 }
+
+export function fetchDfyLiteOrders(token, { status, subscriberId, page = 1, pageSize = 50 } = {}, options = {}) {
+  const params = new URLSearchParams({ page, page_size: pageSize });
+  if (status)       params.set('status', status);
+  if (subscriberId) params.set('subscriber_id', subscriberId);
+  return adminFetch(token, `/api/admin/dfy-lite/orders?${params}`, options);
+}

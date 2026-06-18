@@ -42,6 +42,8 @@ const SupplierIntelSection = lazy(() => import('./components/admin/sections/Supp
 const EmailCampaignsSection = lazy(() => import('./components/admin/sections/EmailCampaignsSection'));
 const RoasSection           = lazy(() => import('./components/admin/sections/RoasSection'));
 const CloserSection         = lazy(() => import('./components/admin/sections/CloserSection'));
+const ScrapersSection       = lazy(() => import('./components/admin/sections/ScrapersSection'));
+const DfyLiteSection        = lazy(() => import('./components/admin/sections/DfyLiteSection'));
 const SubscriberDetailPage = lazy(() => import('./pages/SubscriberDetailPage'));
 const SupplierDashboard    = lazy(() => import('./pages/SupplierDashboard'));
 
@@ -97,6 +99,8 @@ export default function App() {
             <Route path="email-campaigns"   element={withBoundary(<EmailCampaignsSection />)} />
             <Route path="roas"              element={withBoundary(<RoasSection />)} />
             <Route path="closer"            element={withBoundary(<CloserSection />)} />
+            <Route path="scrapers"          element={withBoundary(<ScrapersSection />)} />
+            <Route path="dfy-lite"          element={withBoundary(<DfyLiteSection />)} />
           </Route>
           {/* Supplier Intelligence dashboard (access_token auth) */}
           <Route path="/supplier/:accessToken" element={withBoundary(<SupplierDashboard />)} />
