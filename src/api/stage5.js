@@ -57,6 +57,19 @@ export function fetchProofWall({ limit = 50, countyId } = {}) {
 }
 
 
+// ─── Win-Story proof feed (S5, public) ──────────────────────────────────────
+// GET /api/proof/win-stories?limit=N
+//   returns [{ id, event_type, county_id, proof_text, created_at }] newest-first.
+//   proof_text is display-ready; county_id is a slug. event_type is "lead_pack"
+//   today; "loan_funded" rows appear automatically once S1 is live (no FE change).
+//   Distinct from /api/proof-wall (fetchProofWall) which serves DealOutcome wins.
+export function fetchWinStories({ limit = 20, countyId, signal } = {}) {
+  const params = { limit };
+  if (countyId) params.county_id = countyId;
+  return api.get('/api/proof/win-stories', params, { signal });
+}
+
+
 // Win-graphic URL helper (image src for <img>).
 export function winGraphicUrl(dealOutcomeId, base = '') {
   const root = base || import.meta.env.VITE_API_BASE_URL || '';
