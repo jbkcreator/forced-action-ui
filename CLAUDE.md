@@ -41,6 +41,7 @@ Copy `.env.example` to `.env` and set:
 | `/admin/subscribers` | SubscribersSection | Queue + All tabs (fa045 — operator CRM). Hot Subscriber Queue = at-risk (RSS≥60 ∧ cool>7d). |
 | `/admin/subscribers/:id` | SubscriberDetailPage | 4 tabs: Revenue Signal, Conversation, Deals, Notes & Tags |
 | `/admin/cora?tab=timeline&subscriber=<id>` | CoraSection → CoraTimelineDashboard | Per-subscriber Cora touch timeline |
+| `/admin/closer` | CloserSection | Closer Cockpit — full-height 3-panel workspace; Aircall V2 SDK; Cora-escalated prospect queue |
 | `*` | `NotFoundPage` | |
 
 `SkipLink` (`src/components/ui/SkipLink.jsx`) renders above routes for a11y.
@@ -66,6 +67,7 @@ All requests go through `src/api/client.js` (`apiRequest`, `api.get`, `api.post`
 - `dashboard.js` — Lead feed, stats, lead packs, hot lead unlock.
 - `phase2b.js` — Phase 2B (Cora agent) endpoints.
 - `admin.js` — Admin endpoints incl. `fetchCoraTimeline(token, subscriberId, opts)` → per-subscriber Cora touch timeline.
+- `closer.js` — Closer Cockpit endpoints: queue, prospect detail/conversation/calls, dial-time correlation, feedback, recording, escalation outcome. `USE_MOCK=true` flag at top for local dev (delete mock block before push).
 - `chat.js` — Concierge Chat (M5a): `createSession`, `sendMessage`, `streamTurn` (EventSource), `linkSession`, `escalateSession`.
 - `subscriber.js` — Subscriber feed auth (fa061): `subscriberLogin`, `subscriberForgotPassword`, `subscriberResetPassword`, `subHeaders`, `withSubRefresh`, `decodeSubToken`. Token stored in `localStorage.sub_access_token`.
 
@@ -86,6 +88,7 @@ All requests go through `src/api/client.js` (`apiRequest`, `api.get`, `api.post`
 - `theme.json` — visual tokens (only place to edit theme).
 - `constants.js` — vertical labels/icons, distress tag colors, trust stats.
 - `pricing.js` — Tier pricing (Starter/Pro/Dominator), ZIP limits, feature lists.
+- `closerOptions.js` — Closer Cockpit feedback enums: OBJECTION_TYPES, PITCH_VARIANTS, RATING_SCALE, OUTCOME_OPTIONS. Must stay in sync with `config/closer.py` on backend.
 - `src/data/emailTemplates.js` — 9 transactional email templates (HTML strings); preview at `/email-previews`.
 
 ## Tooling Rules (strict)
