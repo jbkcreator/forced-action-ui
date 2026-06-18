@@ -24,6 +24,7 @@ import OnboardingChecklist from '../components/dashboard/OnboardingChecklist';
 import MonetizationWall from '../components/dashboard/MonetizationWall';
 import DealCapture from '../components/dashboard/DealCapture';
 import PremiumCreditsModal from '../components/dashboard/PremiumCreditsModal';
+import DfyLitePitchModal from '../components/dashboard/DfyLitePitchModal';
 import WalletTopupModal from '../components/dashboard/WalletTopupModal';
 import AnnualOfferBanner from '../components/dashboard/AnnualOfferBanner';
 import DataOnlySaveOfferBanner from '../components/dashboard/DataOnlySaveOfferBanner';
@@ -112,6 +113,8 @@ export default function DashboardPage() {
   const [lpOpen, setLpOpen] = useState(false);
   const [dealCaptureOpen, setDealCaptureOpen] = useState(false);
   const [premiumLead, setPremiumLead] = useState(null);   // lead obj for premium modal
+  const [pitchLead, setPitchLead] = useState(null);       // lead obj for DFY-Lite pitch modal
+  const handleOpenPitch = useCallback((lead) => setPitchLead(lead), []);
   const [unlockState, setUnlockState] = useState({
     open: false,
     lead: null,
@@ -752,6 +755,7 @@ export default function DashboardPage() {
                         contacted={isContacted(lead.property_id)}
                         onToggleContacted={toggleContacted}
                         onOpenPremium={setPremiumLead}
+                        onOpenPitch={handleOpenPitch}
                         urgencyViewers={zipActivity[lead.zip]?.active_viewers}
                         feedUuid={feedUuid}
                       />
@@ -900,6 +904,15 @@ export default function DashboardPage() {
           onClose={closeWalletOffer}
           onSuccess={handleAwSuccess}
         />
+
+        {/* S3b: DFY-Lite pitch modal */}
+        {pitchLead && (
+          <DfyLitePitchModal
+            lead={pitchLead}
+            feedUuid={feedUuid}
+            onClose={() => setPitchLead(null)}
+          />
+        )}
 
         {/* Stage 5: Premium credits modal */}
         <PremiumCreditsModal

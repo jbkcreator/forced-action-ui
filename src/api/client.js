@@ -4,8 +4,8 @@ export async function apiRequest(path, options = {}) {
   const url = `${API_BASE}${path}`;
   const { signal, ...rest } = options;
   const config = {
-    headers: { 'Content-Type': 'application/json', ...rest.headers },
     ...rest,
+    headers: { 'Content-Type': 'application/json', ...rest.headers },
   };
 
   if (config.body && typeof config.body === 'object') {
@@ -31,6 +31,9 @@ export const api = {
   },
   post(path, body, options = {}) {
     return apiRequest(path, { method: 'POST', body, ...options });
+  },
+  patch(path, body, options = {}) {
+    return apiRequest(path, { method: 'PATCH', body, ...options });
   },
 };
 

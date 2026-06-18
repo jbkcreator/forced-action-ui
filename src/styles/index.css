@@ -9,6 +9,13 @@
   font-family: var(--fa-font-family);
 }
 
+/* Native <select> dropdown — browser renders the popup with its own background,
+   so option elements need explicit dark bg + light text to stay readable. */
+select option {
+  background-color: #1a1d2e;
+  color: #f1f5f9;
+}
+
 *:focus-visible {
   outline: 2px solid #fbbf24;
   outline-offset: 2px;
