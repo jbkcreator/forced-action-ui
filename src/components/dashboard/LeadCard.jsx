@@ -14,7 +14,7 @@ function formatTagLabel(s) {
   return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-function LeadCard({ lead, index, onUnlockHotLead, contacted, onToggleContacted, onOpenPremium, urgencyViewers, feedUuid }) {
+function LeadCard({ lead, index, onUnlockHotLead, contacted, onToggleContacted, onOpenPremium, onOpenPitch, urgencyViewers, feedUuid }) {
   const [expanded, setExpanded] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const holdStatus = useLeadHold(lead.property_id, feedUuid, lead.property_id != null);
@@ -42,6 +42,11 @@ function LeadCard({ lead, index, onUnlockHotLead, contacted, onToggleContacted, 
     e.stopPropagation();
     onOpenPremium?.(lead);
   }, [lead, onOpenPremium]);
+
+  const handleOpenPitch = useCallback((e) => {
+    e.stopPropagation();
+    onOpenPitch?.(lead);
+  }, [lead, onOpenPitch]);
 
   return (
     <div
@@ -176,6 +181,15 @@ function LeadCard({ lead, index, onUnlockHotLead, contacted, onToggleContacted, 
                 Premium →
               </button>
             )}
+            {lead.unlocked && onOpenPitch && (
+              <button
+                onClick={handleOpenPitch}
+                className="text-xs px-3 py-1.5 rounded-lg font-medium bg-purple-500/10 text-purple-300 border border-purple-500/25 hover:bg-purple-500/20 transition"
+                title="Generate outbound pitch copy for this lead"
+              >
+                Generate Pitch
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -207,6 +221,7 @@ function areEqual(prev, next) {
     prev.feedUuid === next.feedUuid &&
     prev.onToggleContacted === next.onToggleContacted &&
     prev.onOpenPremium === next.onOpenPremium &&
+    prev.onOpenPitch === next.onOpenPitch &&
     prev.onUnlockHotLead === next.onUnlockHotLead
   );
 }
