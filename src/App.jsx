@@ -44,6 +44,7 @@ const RoasSection           = lazy(() => import('./components/admin/sections/Roa
 const CloserSection         = lazy(() => import('./components/admin/sections/CloserSection'));
 const ScrapersSection       = lazy(() => import('./components/admin/sections/ScrapersSection'));
 const DfyLiteSection        = lazy(() => import('./components/admin/sections/DfyLiteSection'));
+const QuoraSection          = lazy(() => import('./components/admin/sections/QuoraSection'));
 const SubscriberDetailPage = lazy(() => import('./pages/SubscriberDetailPage'));
 const SupplierDashboard    = lazy(() => import('./pages/SupplierDashboard'));
 
@@ -101,6 +102,7 @@ export default function App() {
             <Route path="closer"            element={withBoundary(<CloserSection />)} />
             <Route path="scrapers"          element={withBoundary(<ScrapersSection />)} />
             <Route path="dfy-lite"          element={withBoundary(<DfyLiteSection />)} />
+            <Route path="quora"             element={withBoundary(<QuoraSection />)} />
           </Route>
           {/* Supplier Intelligence dashboard (access_token auth) */}
           <Route path="/supplier/:accessToken" element={withBoundary(<SupplierDashboard />)} />
