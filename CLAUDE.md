@@ -42,6 +42,7 @@ Copy `.env.example` to `.env` and set:
 | `/admin/subscribers/:id` | SubscriberDetailPage | 4 tabs: Revenue Signal, Conversation, Deals, Notes & Tags |
 | `/admin/cora?tab=timeline&subscriber=<id>` | CoraSection → CoraTimelineDashboard | Per-subscriber Cora touch timeline |
 | `/admin/closer` | CloserSection | Closer Cockpit — full-height 3-panel workspace; Aircall V2 SDK; Cora-escalated prospect queue |
+| `/admin/quora` | QuoraSection | Quora Answers — review drafted answers, edit, post via Playwright (S6) |
 | `*` | `NotFoundPage` | |
 
 `SkipLink` (`src/components/ui/SkipLink.jsx`) renders above routes for a11y.
@@ -68,6 +69,7 @@ All requests go through `src/api/client.js` (`apiRequest`, `api.get`, `api.post`
 - `phase2b.js` — Phase 2B (Cora agent) endpoints.
 - `admin.js` — Admin endpoints incl. `fetchCoraTimeline(token, subscriberId, opts)` → per-subscriber Cora touch timeline.
 - `closer.js` — Closer Cockpit endpoints: queue, prospect detail/conversation/calls, dial-time correlation, feedback, recording, escalation outcome. `USE_MOCK=true` flag at top for local dev (delete mock block before push).
+- `quora.js` — Quora Answers (S6): `fetchQuoraQueue`, `updateQuoraDraft`, `postQuoraAnswer`. Uses same `adminFetch` JWT pattern as `closer.js`.
 - `chat.js` — Concierge Chat (M5a): `createSession`, `sendMessage`, `streamTurn` (EventSource), `linkSession`, `escalateSession`.
 - `subscriber.js` — Subscriber feed auth (fa061): `subscriberLogin`, `subscriberForgotPassword`, `subscriberResetPassword`, `subHeaders`, `withSubRefresh`, `decodeSubToken`. Token stored in `localStorage.sub_access_token`.
 
