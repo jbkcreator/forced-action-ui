@@ -1,4 +1,5 @@
 import ProspectHeader from './ProspectHeader';
+import CallBrief from './CallBrief';
 import RecentNotes from './RecentNotes';
 import PriorCallsHistory from './PriorCallsHistory';
 
@@ -24,6 +25,7 @@ export default function ProspectDetail({
   return (
     <div className="p-4 space-y-3">
       <ProspectHeader queueItem={queueItem} detail={detail} />
+      <CallBrief queueItem={queueItem} />
       {detail?.recent_notes?.length > 0 && (
         <RecentNotes notes={detail.recent_notes} />
       )}
