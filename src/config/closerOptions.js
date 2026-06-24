@@ -34,3 +34,64 @@ export const OUTCOME_OPTIONS = [
   { value: 'no_response',   label: 'No response',   color: '#94a3b8' },
   { value: 'rescheduled',   label: 'Rescheduled',   color: '#facc15' },
 ];
+
+// ── A6: Teaching Corrections (Closer-to-Cora) ────────────────────────────────
+// Closer flags a mis-scored lead. Must stay in sync with config/closer.py
+// (CORRECTION_REASONS, TEACHABLE_SIGNAL_TYPES) on the backend.
+
+// wrong_distress is the only reason that requires (and accepts) a signal_type.
+export const WRONG_DISTRESS_REASON = 'wrong_distress';
+
+// Reasons that apply a score dampener (vs. label-only). Mirrors DAMPENING_REASONS_SET.
+export const DAMPENING_REASONS = ['non_residential', 'owner_not_motivated', 'wrong_distress'];
+
+export const CORRECTION_REASONS = [
+  {
+    value: 'non_residential',
+    label: 'Not a residential property',
+    hint: 'Commercial / vacant lot / non-home. Kills the lead for all verticals, permanently.',
+  },
+  {
+    value: 'owner_not_motivated',
+    label: 'Owner not motivated to sell',
+    hint: 'Suppresses investment verticals (wholesale / fix-flip / attorney). Lifts on a newer distress signal.',
+  },
+  {
+    value: WRONG_DISTRESS_REASON,
+    label: 'A distress signal is wrong',
+    hint: 'e.g. that foreclosure was dismissed. Drops just that one signal. Lifts on a newer same-signal.',
+  },
+  {
+    value: 'bad_contact',
+    label: 'Bad contact info',
+    hint: 'Wrong phone / email. Routes to re-enrichment — does not change the score.',
+  },
+  {
+    value: 'other',
+    label: 'Other',
+    hint: 'Saved as a training label only — no score change.',
+  },
+];
+
+// Human labels for signal types (the wrong_distress picker). Keys mirror
+// TEACHABLE_SIGNAL_TYPES on the backend.
+export const SIGNAL_TYPE_LABELS = {
+  code_violations:    'Code violation',
+  judgment_liens:     'Judgment lien',
+  code_lien:          'Code lien',
+  hoa_liens:          'HOA lien',
+  mechanics_liens:    'Mechanic’s lien',
+  irs_tax_liens:      'IRS tax lien',
+  deed_transfers:     'Deed transfer',
+  probate:            'Probate',
+  evictions:          'Eviction',
+  bankruptcy:         'Bankruptcy',
+  tax_delinquencies:  'Tax delinquency',
+  foreclosures:       'Foreclosure',
+  building_permits:   'Building permit',
+  enforcement_permit: 'Enforcement permit',
+};
+
+export function signalLabel(type) {
+  return SIGNAL_TYPE_LABELS[type] || type;
+}

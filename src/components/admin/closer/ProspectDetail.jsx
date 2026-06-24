@@ -2,6 +2,7 @@ import ProspectHeader from './ProspectHeader';
 import CallBrief from './CallBrief';
 import RecentNotes from './RecentNotes';
 import PriorCallsHistory from './PriorCallsHistory';
+import DeliveredLeads from './DeliveredLeads';
 
 export default function ProspectDetail({
   queueItem,
@@ -9,6 +10,8 @@ export default function ProspectDetail({
   calls,
   callsLoading,
   callsError,
+  token,
+  showToast,
 }) {
   if (!queueItem) {
     return (
@@ -26,6 +29,11 @@ export default function ProspectDetail({
     <div className="p-4 space-y-3">
       <ProspectHeader queueItem={queueItem} detail={detail} />
       <CallBrief queueItem={queueItem} />
+      <DeliveredLeads
+        token={token}
+        subscriberId={queueItem.subscriber_id}
+        showToast={showToast}
+      />
       {detail?.recent_notes?.length > 0 && (
         <RecentNotes notes={detail.recent_notes} />
       )}
