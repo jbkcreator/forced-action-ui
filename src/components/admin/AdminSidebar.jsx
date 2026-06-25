@@ -27,6 +27,17 @@ const SECTIONS = [
     ),
   },
   {
+    id: 'deliveries',
+    label: 'Lead Delivery',
+    path: '/admin/deliveries',
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path d="M3 7l9-4 9 4-9 4-9-4z" />
+        <path d="M3 7v6l9 4 9-4V7" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
     id: 'revenue',
     label: 'Revenue',
     path: '/admin/revenue',

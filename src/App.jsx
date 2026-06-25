@@ -46,6 +46,7 @@ const ScrapersSection       = lazy(() => import('./components/admin/sections/Scr
 const DfyLiteSection        = lazy(() => import('./components/admin/sections/DfyLiteSection'));
 const QuoraSection          = lazy(() => import('./components/admin/sections/QuoraSection'));
 const PromptsSection        = lazy(() => import('./components/admin/sections/PromptsSection'));
+const LeadDeliverySection   = lazy(() => import('./components/admin/sections/LeadDeliverySection'));
 const SubscriberDetailPage = lazy(() => import('./pages/SubscriberDetailPage'));
 const SupplierDashboard    = lazy(() => import('./pages/SupplierDashboard'));
 
@@ -96,6 +97,7 @@ export default function App() {
             <Route path="cora"      element={withBoundary(<CoraSection />)} />
             <Route path="subscribers"       element={withBoundary(<SubscribersSection />)} />
             <Route path="subscribers/:id"   element={withBoundary(<SubscriberDetailPage />)} />
+            <Route path="deliveries"        element={withBoundary(<LeadDeliverySection />)} />
             <Route path="icp"               element={withBoundary(<IcpChannelSection />)} />
             <Route path="supplier-intel"    element={withBoundary(<SupplierIntelSection />)} />
             <Route path="email-campaigns"   element={withBoundary(<EmailCampaignsSection />)} />
