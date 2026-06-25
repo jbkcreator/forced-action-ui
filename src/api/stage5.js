@@ -31,6 +31,12 @@ export function purchasePremium({ feedUuid, sku, paymentMode, propertyId = null,
   });
 }
 
+// Returns the URL for downloading a delivered report/brief PDF.
+// Open in a new tab — browser handles display/save.
+export function premiumReportDownloadUrl(purchaseId, feedUuid) {
+  return `/api/premium/${purchaseId}/download?feed_uuid=${feedUuid}`;
+}
+
 
 // ─── AutoPilot Pro / tier upgrade ───────────────────────────────────────────
 // POST /api/upgrade — switches the Stripe subscription with proration.

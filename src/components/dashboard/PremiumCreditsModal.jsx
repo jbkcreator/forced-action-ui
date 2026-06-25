@@ -17,7 +17,7 @@
  *   onSuccess   — callback({ sku, paid_via, ... }) when fulfillment succeeds
  */
 import { useEffect, useState } from 'react';
-import { purchasePremium } from '../../api/stage5';
+import { purchasePremium, premiumReportDownloadUrl } from '../../api/stage5';
 import PaymentSheetModal from '../common/PaymentSheetModal';
 import Icon from '../ui/Icon';
 
@@ -201,13 +201,25 @@ export default function PremiumCreditsModal({
                 ? `${success.credits_spent} credits debited.`
                 : 'Payment processed.'}
             </p>
-            <button
-              onClick={onClose}
-              type="button"
-              className="cta-primary text-sm px-6 py-2 mt-5"
-            >
-              Done
-            </button>
+            <div className="mt-5 flex items-center justify-center gap-3">
+              {(sku.key === 'report' || sku.key === 'brief') && success.purchase_id && (
+                <a
+                  href={premiumReportDownloadUrl(success.purchase_id, feedUuid)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cta-primary text-sm px-6 py-2"
+                >
+                  ⬇ Download PDF
+                </a>
+              )}
+              <button
+                onClick={onClose}
+                type="button"
+                className="text-slate-400 hover:text-white text-sm px-4 py-2"
+              >
+                Done
+              </button>
+            </div>
           </div>
         ) : (
           <>

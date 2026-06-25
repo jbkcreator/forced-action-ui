@@ -922,7 +922,7 @@ export default function DashboardPage() {
           propertyAddress={premiumLead?.address || null}
           walletBalance={subscriber.wallet_balance || 0}
           onClose={() => setPremiumLead(null)}
-          onSuccess={() => setTimeout(() => setPremiumLead(null), 1500)}
+          onSuccess={() => {}}
         />
 
         {/* Phase 2B: $4 lead unlock payment sheet (dashboard) */}
