@@ -110,6 +110,8 @@ export default function CloserSection() {
           calls={callItems}
           callsLoading={callsLoading}
           callsError={callsError}
+          token={token}
+          showToast={showToast}
         />
       </div>
 

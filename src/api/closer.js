@@ -7,6 +7,9 @@
  *   POST /api/admin/closer-calls                     → dial-time correlation
  *   POST /api/admin/closer-calls/{id}/feedback       → one-tap feedback
  *   POST /api/admin/human-close/{id}/outcome         → close/remove from queue
+ *   GET  /api/admin/subscribers/{id}/delivered-leads → leads sent to a subscriber (A6)
+ *   POST /api/admin/closer/teach                     → record a Teaching Correction (A6)
+ *   DELETE /api/admin/closer/teach/{id}              → undo a Teaching Correction (A6)
  */
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -66,6 +69,29 @@ export function createCloserCall(token, body) {
 // body: { objection_type?, pitch_variant?, lead_quality_rating? }
 export function saveCallFeedback(token, callDbId, body) {
   return adminFetch(token, `/api/admin/closer-calls/${callDbId}/feedback`, { method: 'POST', body });
+}
+
+// ─── A6: Delivered leads + Teaching Corrections ───────────────────────────────
+
+// GET subscriber's delivered leads (the properties they were sent), each with
+// property_id, address, cds_score, lead_tier, signals[] (drives wrong_distress
+// picker), and active_corrections[] (existing teach state, for undo).
+// Returns: { subscriber_id, count, items: DeliveredLead[] }
+export function fetchDeliveredLeads(token, subscriberId, opts = {}) {
+  return adminFetch(token, `/api/admin/subscribers/${subscriberId}/delivered-leads`, opts);
+}
+
+// Record a Teaching Correction for a mis-scored property.
+// body: { subject_id, correction_reason, signal_type?, note?, closer_call_id? }
+// 201 → created (CoraTrainingOverride); 409 → duplicate active correction;
+// 422 → bad reason / signal_type rule; 404 → property not found.
+export function createTeachingCorrection(token, body) {
+  return adminFetch(token, '/api/admin/closer/teach', { method: 'POST', body });
+}
+
+// Undo a Teaching Correction → lifts the dampener and rescores. 200 | 404.
+export function deleteTeachingCorrection(token, correctionId) {
+  return adminFetch(token, `/api/admin/closer/teach/${correctionId}`, { method: 'DELETE' });
 }
 
 // ─── Escalation outcome ───────────────────────────────────────────────────────
