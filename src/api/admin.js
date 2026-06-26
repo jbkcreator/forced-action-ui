@@ -104,6 +104,10 @@ export function fetchKillSwitchStatus(token, options = {}) {
   return adminFetch(token, '/api/admin/kill-switch-status', options);
 }
 
+export function fetchEnrichmentHealth(token, options = {}) {
+  return adminFetch(token, '/api/admin/enrichment-health', options);
+}
+
 export function fetchDecisionAudit(token, decisionId, options = {}) {
   return adminFetch(token, `/api/admin/decision-audit/${encodeURIComponent(decisionId)}`, options);
 }
