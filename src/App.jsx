@@ -21,7 +21,16 @@ import SubscriberLoginPage from './pages/SubscriberLoginPage';
 import SubscriberForgotPasswordPage from './pages/SubscriberForgotPasswordPage';
 import SubscriberResetPasswordPage from './pages/SubscriberResetPasswordPage';
 
+// Broker auth pages — eager (same reasoning as WL auth)
+import BrokerLoginPage from './pages/BrokerLoginPage';
+import BrokerForgotPasswordPage from './pages/BrokerForgotPasswordPage';
+import BrokerResetPasswordPage from './pages/BrokerResetPasswordPage';
+
 const EmailPreviewsPage = lazy(() => import('./pages/EmailPreviewsPage'));
+const BrokerDashboardPage  = lazy(() => import('./pages/BrokerDashboardPage'));
+const BrokerLanesSection      = lazy(() => import('./components/brokerDashboard/BrokerLanesSection'));
+const BrokerCommissionsSection = lazy(() => import('./components/brokerDashboard/BrokerCommissionsSection'));
+const LaneDetailPage = lazy(() => import('./pages/LaneDetailPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const DevPage = lazy(() => import('./pages/DevPage'));
 const Stage5SandboxPage = lazy(() => import('./pages/Stage5SandboxPage'));
@@ -42,6 +51,8 @@ const SupplierIntelSection = lazy(() => import('./components/admin/sections/Supp
 const EmailCampaignsSection = lazy(() => import('./components/admin/sections/EmailCampaignsSection'));
 const RoasSection           = lazy(() => import('./components/admin/sections/RoasSection'));
 const CloserSection         = lazy(() => import('./components/admin/sections/CloserSection'));
+const BrokersLanesSection   = lazy(() => import('./components/admin/sections/BrokersLanesSection'));
+const CommissionsSection    = lazy(() => import('./components/admin/sections/CommissionsSection'));
 const ScrapersSection       = lazy(() => import('./components/admin/sections/ScrapersSection'));
 const DfyLiteSection        = lazy(() => import('./components/admin/sections/DfyLiteSection'));
 const QuoraSection          = lazy(() => import('./components/admin/sections/QuoraSection'));
@@ -107,6 +118,9 @@ export default function App() {
             <Route path="dfy-lite"          element={withBoundary(<DfyLiteSection />)} />
             <Route path="quora"             element={withBoundary(<QuoraSection />)} />
             <Route path="prompts"           element={withBoundary(<PromptsSection />)} />
+            <Route path="brokers-lanes"     element={withBoundary(<BrokersLanesSection />)} />
+            <Route path="brokers-lanes/:laneId" element={withBoundary(<LaneDetailPage />)} />
+            <Route path="commissions"       element={withBoundary(<CommissionsSection />)} />
           </Route>
           {/* Supplier Intelligence dashboard (access_token auth) */}
           <Route path="/supplier/:accessToken" element={withBoundary(<SupplierDashboard />)} />
@@ -115,6 +129,18 @@ export default function App() {
           {/* /landing?county_id=hillsborough or /landing/hillsborough */}
           <Route path="/landing" element={withBoundary(<LandingPage />)} />
           <Route path="/landing/:countyId" element={withBoundary(<CountyLanding />)} />
+
+          {/* Broker auth (public) */}
+          <Route path="/broker/login"                 element={withBoundary(<BrokerLoginPage />)} />
+          <Route path="/broker/forgot-password"       element={withBoundary(<BrokerForgotPasswordPage />)} />
+          <Route path="/broker/reset-password/:token" element={withBoundary(<BrokerResetPasswordPage />)} />
+
+          {/* Broker portal (auth-gated inside BrokerDashboardPage) */}
+          <Route path="/broker" element={withBoundary(<BrokerDashboardPage />)}>
+            <Route index element={<Navigate to="lanes" replace />} />
+            <Route path="lanes"       element={withBoundary(<BrokerLanesSection />)} />
+            <Route path="commissions" element={withBoundary(<BrokerCommissionsSection />)} />
+          </Route>
 
           {/* White-label auth (public) */}
           <Route path="/wl/login"            element={withBoundary(<WLLoginPage />)} />

@@ -141,6 +141,27 @@ const SECTIONS = [
     ),
   },
   {
+    id: 'brokers-lanes',
+    label: 'Brokers & Loan Lanes',
+    path: '/admin/brokers-lanes',
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    id: 'commissions',
+    label: 'Commissions',
+    path: '/admin/commissions',
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v-1m0 9v1" />
+      </svg>
+    ),
+  },
+  {
     id: 'closer',
     label: 'Closer Cockpit',
     path: '/admin/closer',
