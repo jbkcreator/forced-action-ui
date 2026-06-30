@@ -1,7 +1,7 @@
 /**
  * Broker "My Commissions" section.
  * Broker-scoped read of the commission ledger.
- * Fee-flag aware: when net_lines is omitted (fee_config_flag ON), shows a placeholder.
+ * Fee-flag aware: when net_lines is omitted (fee_config_flag OFF — pre-RESPA), shows a placeholder.
  * Spec §4.6 + plan B-FE-3.
  */
 

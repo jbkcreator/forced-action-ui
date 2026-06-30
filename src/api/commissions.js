@@ -33,7 +33,7 @@ const MOCK_COMMISSIONS = [
     ],
     status: 'posted',
     posted_at: '2025-06-01T15:05:00Z',
-    fee_config_flag: false,
+    fee_config_flag: true, // ON → fee surfaces visible (post-RESPA); net_lines present
   },
   {
     entry_id: 'ce-002',
@@ -46,10 +46,10 @@ const MOCK_COMMISSIONS = [
     trigger_transition_id: 't-020',
     gross_amount_cents: 800000,
     split_config_id: 'platform_30_broker_70',
-    net_lines: null, // fee_config_flag ON — gated
+    net_lines: null, // gated — fee_config_flag OFF (pre-RESPA): backend omits money
     status: 'posted',
     posted_at: '2025-06-10T10:00:00Z',
-    fee_config_flag: true,
+    fee_config_flag: false,
   },
   {
     entry_id: 'ce-003',
@@ -68,7 +68,7 @@ const MOCK_COMMISSIONS = [
     ],
     status: 'disputed',
     posted_at: '2025-05-28T11:00:00Z',
-    fee_config_flag: false,
+    fee_config_flag: true, // ON → fee surfaces visible (post-RESPA); net_lines present
   },
 ];
 
