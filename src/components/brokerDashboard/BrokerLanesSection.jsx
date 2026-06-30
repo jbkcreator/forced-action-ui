@@ -20,10 +20,8 @@ import {
   setLaneLender,
 } from '../../api/broker.js';
 import {
-  allowedNextStates,
   workStateLabel,
   workStateColors,
-  isTerminalState,
   REASON_CODES,
   LANE_OUTCOME_LABELS,
   LANE_OUTCOME_COLORS,
@@ -32,6 +30,7 @@ import { useBrokerContext } from './BrokerContext.jsx';
 import Modal from '../ui/Modal.jsx';
 import LoadingSpinner from '../ui/LoadingSpinner.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
+import LaneFilterBar, { LanePagination } from '../ui/LaneFilterBar.jsx';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -93,7 +92,11 @@ function formatDate(iso) {
 // Left panel — Pool tab (unclaimed prospects, D15 redacted)
 // ---------------------------------------------------------------------------
 
-function PoolPanel({ pool, poolLoading, onClaimed, onRemoveFromPool, onRefreshPool, showToast, countyFilter }) {
+// ---------------------------------------------------------------------------
+// Pool view — full-width card grid, no detail panel
+// ---------------------------------------------------------------------------
+
+function PoolView({ pool, poolTotal, poolLoading, poolFilters, onPoolFilterChange, poolOffset, onPoolPageChange, onClaimed, onRemoveFromPool, onRefreshPool, showToast }) {
   const [claimingId, setClaimingId] = useState(null);
 
   async function handleClaim(laneId) {
@@ -115,54 +118,74 @@ function PoolPanel({ pool, poolLoading, onClaimed, onRemoveFromPool, onRefreshPo
     }
   }
 
-  if (poolLoading) return <div className="flex justify-center py-8"><LoadingSpinner /></div>;
-
-  const visiblePool = countyFilter === 'all' ? pool : pool.filter(l => l.prospect?.county === countyFilter);
-
-  if (visiblePool.length === 0) return <EmptyState message={countyFilter === 'all' ? 'No unclaimed prospects available' : `No prospects in ${countyFilter} County`} />;
-
   return (
-    <div className="flex-1 overflow-y-auto">
-      {visiblePool.map(lane => {
-        const p = lane.prospect || {};
-        return (
-          <div key={lane.lane_id} className="px-4 py-3 border-b border-fa-border-default">
-            <div className="flex items-start justify-between gap-2 mb-1.5">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-fa-text-primary truncate">{p.address}</p>
-                <p className="text-xs text-fa-text-muted">{p.city}, {p.state}</p>
-              </div>
-              {/* Distress score badge */}
-              <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded ${
-                lane.distress_score >= 80 ? 'bg-red-900/50 text-red-300' :
-                lane.distress_score >= 65 ? 'bg-orange-900/50 text-orange-300' :
-                'bg-slate-800 text-slate-400'
-              }`}>
-                {lane.distress_score ?? '—'}
-              </span>
-            </div>
-            {/* County */}
-            {p.county && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-slate-800 text-slate-300 mb-1.5">
-                {p.county}
-              </span>
-            )}
-            {/* 2-line analysis summary */}
-            {lane.analysis_summary && (
-              <p className="text-xs text-fa-text-muted leading-relaxed mb-2 line-clamp-2">{lane.analysis_summary}</p>
-            )}
-            {/* Contact masked notice (D15) */}
-            <p className="text-xs text-amber-500/80 italic mb-2">Contact revealed after claim</p>
-            <button
-              onClick={() => handleClaim(lane.lane_id)}
-              disabled={!!claimingId}
-              className="w-full text-xs bg-fa-primary text-fa-bg-base font-semibold py-1.5 rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
-            >
-              {claimingId === lane.lane_id ? 'Claiming…' : 'Claim this lane'}
-            </button>
+    <div className="flex flex-col h-full">
+      <LaneFilterBar filters={poolFilters} onChange={onPoolFilterChange} mode="pool" />
+      {poolLoading ? (
+        <div className="flex-1 flex items-center justify-center"><LoadingSpinner /></div>
+      ) : pool.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center">
+          <EmptyState message="No unclaimed prospects match your filters" />
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto min-h-0 p-4">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+            {pool.map(lane => {
+              const p = lane.property || {};
+              const scoreColor = lane.intent_score >= 80 ? 'bg-red-900/50 text-red-300' :
+                lane.intent_score >= 65 ? 'bg-orange-900/50 text-orange-300' :
+                'bg-slate-800 text-slate-400';
+              return (
+                <div key={lane.lane_id} className="rounded-xl border border-fa-border-default bg-fa-bg-card flex flex-col">
+                  {/* Header: address + location + badges */}
+                  <div className="px-4 pt-4 pb-3 border-b border-fa-border-default">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <p className="text-sm font-semibold text-fa-text-primary leading-snug">{p.address || '—'}</p>
+                      <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded ${scoreColor}`}>
+                        {lane.intent_score != null ? Math.round(lane.intent_score) : '—'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-fa-text-muted mb-2">{p.city}, {p.state} {p.zip}</p>
+                    <div className="flex gap-1 flex-wrap">
+                      {p.county && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-slate-800 text-slate-300">{p.county}</span>
+                      )}
+                      {lane.intent_tier && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-fa-primary/10 text-fa-primary capitalize">{lane.intent_tier}</span>
+                      )}
+                    </div>
+                  </div>
+                  {/* Description — full, no clamp */}
+                  <div className="px-4 py-3 flex-1">
+                    {lane.lane_description ? (
+                      <>
+                        <p className="text-xs text-fa-text-secondary leading-relaxed">{lane.lane_description}</p>
+                        {lane.description_outdated && (
+                          <span className="inline-block mt-1.5 text-xs px-1.5 py-0.5 rounded bg-yellow-900/40 text-yellow-400">Outdated</span>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-xs text-fa-text-muted italic">No description available.</p>
+                    )}
+                  </div>
+                  {/* Footer: claim */}
+                  <div className="px-4 pb-4 pt-2">
+                    <p className="text-xs text-amber-500/80 italic mb-2">Contact revealed after claim</p>
+                    <button
+                      onClick={() => handleClaim(lane.lane_id)}
+                      disabled={!!claimingId}
+                      className="w-full text-xs bg-fa-primary text-fa-bg-base font-semibold py-2 rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
+                    >
+                      {claimingId === lane.lane_id ? 'Claiming…' : 'Claim this lane'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        );
-      })}
+        </div>
+      )}
+      <LanePagination total={poolTotal} limit={poolFilters?.limit || 50} offset={poolOffset} onPageChange={onPoolPageChange} />
     </div>
   );
 }
@@ -171,41 +194,24 @@ function PoolPanel({ pool, poolLoading, onClaimed, onRemoveFromPool, onRefreshPo
 // Left panel — My Lanes tab
 // ---------------------------------------------------------------------------
 
-function MyLanesPanel({ lanes, selectedId, onSelect, loading, countyFilter }) {
-  const [filter, setFilter] = useState('all');
-
-  const filtered = lanes.filter(l => {
-    if (filter === 'open')   return l.outcome === 'open';
-    if (filter === 'closed') return l.outcome !== 'open';
-    return true;
-  }).filter(l => countyFilter === 'all' || l.prospect?.county === countyFilter);
+function MyLanesPanel({ lanes, lanesTotal, selectedId, onSelect, loading, lanesFilters, onLanesFilterChange, lanesOffset, onLanesPageChange }) {
+  const limit = lanesFilters?.limit || 50;
 
   return (
-    <>
-      {/* Filter pills */}
-      <div className="px-4 py-2 border-b border-fa-border-default flex gap-1">
-        {['all', 'open', 'closed'].map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors capitalize ${
-              filter === f
-                ? 'bg-fa-primary/10 text-fa-primary'
-                : 'text-fa-text-muted hover:text-fa-text-secondary'
-            }`}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex-1 overflow-y-auto">
+    <div className="flex flex-col w-72 shrink-0 border-r border-fa-border-default h-full min-h-0">
+      <LaneFilterBar
+        filters={lanesFilters}
+        onChange={onLanesFilterChange}
+        mode="broker"
+        hiddenFilters={['date_range']}
+      />
+      <div className="flex-1 overflow-y-auto min-h-0">
         {loading ? (
           <div className="flex justify-center py-8"><LoadingSpinner /></div>
-        ) : filtered.length === 0 ? (
-          <EmptyState message="No lanes found" />
+        ) : lanes.length === 0 ? (
+          <EmptyState message="No lanes match your filters" />
         ) : (
-          filtered.map(lane => (
+          lanes.map(lane => (
             <button
               key={lane.lane_id}
               onClick={() => onSelect(lane.lane_id)}
@@ -217,9 +223,8 @@ function MyLanesPanel({ lanes, selectedId, onSelect, loading, countyFilter }) {
             >
               <div className="flex items-center gap-2 mb-0.5">
                 <p className="text-sm font-medium text-fa-text-primary truncate flex-1">
-                  {lane.prospect?.address || 'Unknown address'}
+                  {lane.property?.address || 'Unknown address'}
                 </p>
-                {/* Stale badge (D14) */}
                 {lane.is_stale && (
                   <span className="shrink-0 text-xs font-bold px-1.5 py-0.5 rounded bg-orange-900/50 text-orange-300">
                     STALE
@@ -227,7 +232,7 @@ function MyLanesPanel({ lanes, selectedId, onSelect, loading, countyFilter }) {
                 )}
               </div>
               <p className="text-xs text-fa-text-muted truncate mt-0.5">
-                {lane.prospect?.city}, {lane.prospect?.state} — {lane.prospect?.owner_name}
+                {lane.property?.city}, {lane.property?.state} — {lane.property?.owner_name}
               </p>
               <div className="flex items-center gap-2 mt-1.5">
                 <WorkStateBadge state={lane.current_work_state} />
@@ -237,93 +242,12 @@ function MyLanesPanel({ lanes, selectedId, onSelect, loading, countyFilter }) {
           ))
         )}
       </div>
-    </>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Left panel — outer shell with Pool / My Lanes tabs
-// ---------------------------------------------------------------------------
-
-function LeftPanel({ lanes, lanesLoading, selectedId, onSelect, onClaimed, showToast,
-  pool, poolLoading, onRemoveFromPool, onRefreshPool }) {
-  const [activeTab, setActiveTab] = useState('pool');
-  const [countyFilter, setCountyFilter] = useState('all');
-
-  // Derive county options from both datasets combined
-  const countyOptions = [...new Set([
-    ...lanes.map(l => l.prospect?.county),
-    ...pool.map(l => l.prospect?.county),
-  ].filter(Boolean))].sort();
-
-  function handleClaimed(claimedLane) {
-    onClaimed(claimedLane);
-    setActiveTab('my-lanes');
-  }
-
-  return (
-    <div className="flex flex-col h-full border-r border-fa-border-default w-72 shrink-0">
-      {/* Tab header */}
-      <div className="px-4 pt-4 pb-0 border-b border-fa-border-default">
-        <div className="flex gap-1 p-1 rounded-xl w-fit mb-3" style={{ background: 'rgba(255,255,255,0.04)' }}>
-          {[
-            { id: 'pool', label: 'Available Pool' },
-            { id: 'my-lanes', label: 'My Lanes' },
-          ].map(t => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-              style={{
-                background: activeTab === t.id ? 'rgba(250,204,21,0.15)' : 'transparent',
-                color: activeTab === t.id ? '#facc15' : '#94a3b8',
-                boxShadow: activeTab === t.id ? 'inset 0 0 0 1px rgba(250,204,21,0.25)' : 'none',
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {/* County filter — shown when options exist */}
-        {countyOptions.length > 0 && (
-          <div className="pb-3">
-            <select
-              value={countyFilter}
-              onChange={e => setCountyFilter(e.target.value)}
-              className="w-full text-xs bg-fa-bg-base border border-fa-border-default rounded-lg px-2.5 py-1.5 text-fa-text-primary focus:outline-none focus:border-fa-primary"
-            >
-              <option value="all">All counties</option>
-              {countyOptions.map(c => (
-                <option key={c} value={c}>{c} County</option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-
-      {/* Tab content */}
-      <div className="flex flex-col flex-1 min-h-0">
-        {activeTab === 'pool' ? (
-          <PoolPanel
-            pool={pool}
-            poolLoading={poolLoading}
-            onClaimed={handleClaimed}
-            onRemoveFromPool={onRemoveFromPool}
-            onRefreshPool={onRefreshPool}
-            showToast={showToast}
-            countyFilter={countyFilter}
-          />
-        ) : (
-          <MyLanesPanel
-            lanes={lanes}
-            selectedId={selectedId}
-            onSelect={onSelect}
-            loading={lanesLoading}
-            countyFilter={countyFilter}
-          />
-        )}
-      </div>
+      <LanePagination
+        total={lanesTotal}
+        limit={limit}
+        offset={lanesOffset}
+        onPageChange={onLanesPageChange}
+      />
     </div>
   );
 }
@@ -344,7 +268,7 @@ function TransitionRow({ t }) {
   );
 }
 
-function LaneDetail({ lane, transitions, transitionsLoading, brokerId }) {
+function LaneDetail({ lane, transitions, transitionsLoading, brokerId, brokerStates }) {
   if (!lane) {
     return (
       <div className="flex-1 flex items-center justify-center text-fa-text-muted text-sm">
@@ -353,7 +277,7 @@ function LaneDetail({ lane, transitions, transitionsLoading, brokerId }) {
     );
   }
 
-  const p = lane.prospect || {};
+  const p = lane.property || {};
   // Contact visible only when this broker owns the lane (D15)
   const contactVisible = lane.assigned_broker_id && lane.assigned_broker_id === brokerId;
 
@@ -364,6 +288,14 @@ function LaneDetail({ lane, transitions, transitionsLoading, brokerId }) {
         <div className="mb-4 px-4 py-2.5 rounded-lg bg-orange-900/30 border border-orange-700/50 flex items-center gap-2">
           <span className="text-orange-300 text-xs font-bold">STALE</span>
           <p className="text-xs text-orange-300/80">No activity for 30+ days. Update this lane or it may be reassigned.</p>
+        </div>
+      )}
+
+      {/* Lender rejected banner */}
+      {lane.current_work_state === 'lender_rejected' && (
+        <div className="mb-4 px-4 py-2.5 rounded-lg bg-red-900/30 border border-red-700/50">
+          <p className="text-xs text-red-300 font-semibold mb-0.5">Lender declined</p>
+          <p className="text-xs text-red-300/70">Select a new lender in the Actions panel and log <strong>Committed</strong> to retry, or close the lane.</p>
         </div>
       )}
 
@@ -505,16 +437,6 @@ function ClosedWonModal({ isOpen, onClose, onSubmit, loading, splits, splitsLoad
             </select>
           )}
         </div>
-        <div>
-          <label className="block text-sm font-medium text-fa-text-secondary mb-1">Reason</label>
-          <select
-            value={reasonCode}
-            onChange={e => setReasonCode(e.target.value)}
-            className="w-full bg-fa-bg-card border border-fa-border-default rounded-lg px-3 py-2 text-fa-text-primary focus:outline-none focus:border-fa-primary"
-          >
-            {REASON_CODES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-          </select>
-        </div>
         {err && <p className="text-red-400 text-sm">{err}</p>}
         <div className="flex gap-2 pt-1">
           <button
@@ -533,9 +455,16 @@ function ClosedWonModal({ isOpen, onClose, onSubmit, loading, splits, splitsLoad
   );
 }
 
-const LENDER_PICKER_STATES = new Set(['working', 'quoted', 'committed', 'closed_won']);
+const LENDER_PICKER_STATES = new Set(['working', 'quoted', 'committed', 'lender_rejected', 'closed_won']);
 
-function ActionPanel({ lane, stageConfig, stageConfigLoading, onTransition, onAdvanceStage, onLenderSet, transitionLoading, advanceLoading, showToast }) {
+const STAGE_WORK_STATE_GATE = {
+  quoted:    ['quoted', 'lender_rejected', 'committed', 'closed_won'],
+  committed: ['committed', 'closed_won'],
+  funded:    ['closed_won'],
+  dead:      ['closed_lost'],
+};
+
+function ActionPanel({ lane, stageConfig, stageConfigLoading, onTransition, onAdvanceStage, onLenderSet, transitionLoading, advanceLoading, showToast, brokerStates }) {
   const [selectedState, setSelectedState] = useState(null);
   const [reasonCode, setReasonCode] = useState('');
   const [showWonModal, setShowWonModal] = useState(false);
@@ -549,8 +478,8 @@ function ActionPanel({ lane, stageConfig, stageConfigLoading, onTransition, onAd
   const [selectedLenderId, setSelectedLenderId] = useState(lane?.lender_id || '');
 
   const currentWorkState = lane?.current_work_state || 'unassigned';
-  const nextStates = allowedNextStates(currentWorkState);
-  const terminal = isTerminalState(currentWorkState);
+  const nextStates = brokerStates?.allowed_transitions?.[currentWorkState] || [];
+  const terminal = !nextStates.length;
   const showLenderPicker = LENDER_PICKER_STATES.has(currentWorkState);
 
   // Sync lender selection when lane changes
@@ -595,12 +524,8 @@ function ActionPanel({ lane, stageConfig, stageConfigLoading, onTransition, onAd
   }
 
   function handleTransitionClick(toState) {
-    if (toState === 'closed_won') {
-      setShowWonModal(true);
-    } else {
-      setSelectedState(toState);
-      setReasonCode('');
-    }
+    setSelectedState(toState);
+    setReasonCode('');
   }
 
   function handleTransitionSubmit(e) {
@@ -659,16 +584,27 @@ function ActionPanel({ lane, stageConfig, stageConfigLoading, onTransition, onAd
           <p className="text-xs text-fa-text-muted mb-2">Advance lane stage</p>
           {stageConfigLoading ? <LoadingSpinner /> : (
             <div className="space-y-1">
-              {nextStageOptions.map(s => (
-                <button
-                  key={s.stage_key}
-                  onClick={() => { setSelectedAdvanceStage(s.stage_key); onAdvanceStage(s.stage_key); }}
-                  disabled={advanceLoading}
-                  className="w-full text-left px-3 py-2 rounded-lg text-sm border border-fa-border-default text-fa-text-secondary hover:bg-fa-bg-card transition-colors disabled:opacity-50"
-                >
-                  {advanceLoading && selectedAdvanceStage === s.stage_key ? 'Advancing…' : `Advance to ${s.display_name}`}
-                </button>
-              ))}
+              {nextStageOptions.map(s => {
+                const gateStates = STAGE_WORK_STATE_GATE[s.stage_key];
+                const gated = gateStates && !gateStates.includes(currentWorkState);
+                return (
+                  <div key={s.stage_key}>
+                    <button
+                      onClick={() => { setSelectedAdvanceStage(s.stage_key); onAdvanceStage(s.stage_key); }}
+                      disabled={advanceLoading || gated}
+                      title={gated ? `Requires work state: ${gateStates.join(' or ')}` : undefined}
+                      className="w-full text-left px-3 py-2 rounded-lg text-sm border border-fa-border-default text-fa-text-secondary hover:bg-fa-bg-card transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {advanceLoading && selectedAdvanceStage === s.stage_key ? 'Advancing…' : `Advance to ${s.display_name}`}
+                    </button>
+                    {gated && (
+                      <p className="text-xs text-amber-500/70 mt-0.5 px-1">
+                        Log <span className="font-medium">{gateStates[0]}</span> work state first
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -711,7 +647,7 @@ function ActionPanel({ lane, stageConfig, stageConfigLoading, onTransition, onAd
               className="w-full bg-fa-bg-card border border-fa-border-default rounded-lg px-3 py-2 text-fa-text-primary text-sm focus:outline-none focus:border-fa-primary"
             >
               <option value="">Select reason…</option>
-              {REASON_CODES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+              {REASON_CODES.filter(r => (brokerStates?.reason_codes_by_state?.[selectedState] || []).includes(r.value)).map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
             <div className="flex gap-2">
               <button
@@ -749,12 +685,27 @@ function ActionPanel({ lane, stageConfig, stageConfigLoading, onTransition, onAd
 // Main section
 // ---------------------------------------------------------------------------
 
+const DEFAULT_POOL_FILTERS = { sort_by: 'intent_score', sort_dir: 'desc', limit: 50 };
+const DEFAULT_LANES_FILTERS = { sort_by: 'last_activity', sort_dir: 'desc', limit: 50 };
+
 export default function BrokerLanesSection() {
-  const { broker } = useBrokerContext();
+  const { broker, brokerStates } = useBrokerContext();
+
+  // My Lanes
   const [lanes, setLanes] = useState([]);
+  const [lanesTotal, setLanesTotal] = useState(null);
   const [lanesLoading, setLanesLoading] = useState(true);
+  const [lanesFilters, setLanesFilters] = useState(DEFAULT_LANES_FILTERS);
+  const [lanesOffset, setLanesOffset] = useState(0);
+
+  // Pool
   const [pool, setPool] = useState([]);
+  const [poolTotal, setPoolTotal] = useState(null);
   const [poolLoading, setPoolLoading] = useState(true);
+  const [poolFilters, setPoolFilters] = useState(DEFAULT_POOL_FILTERS);
+  const [poolOffset, setPoolOffset] = useState(0);
+
+  // Lane detail
   const [selectedLaneId, setSelectedLaneId] = useState(null);
   const [selectedLane, setSelectedLane] = useState(null);
   const [laneLoading, setLaneLoading] = useState(false);
@@ -766,36 +717,58 @@ export default function BrokerLanesSection() {
   const [advanceLoading, setAdvanceLoading] = useState(false);
   const { toast, showToast } = useToast();
 
-  const loadLanes = useCallback(async (signal) => {
+  const loadLanes = useCallback(async (signal, filters = lanesFilters, offset = lanesOffset) => {
+    setLanesLoading(true);
     try {
-      const data = await fetchBrokerLanes({ signal });
+      const data = await fetchBrokerLanes({ ...filters, offset }, { signal });
       setLanes(data.lanes || []);
+      setLanesTotal(data.total ?? null);
     } catch (err) {
       if (err?.name === 'AbortError') return;
     } finally {
       setLanesLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadPool = useCallback(async (signal) => {
+  const loadPool = useCallback(async (signal, filters = poolFilters, offset = poolOffset) => {
     setPoolLoading(true);
     try {
-      const data = await fetchPool({ signal });
+      const data = await fetchPool({ ...filters, offset }, { signal });
       setPool(data.lanes || []);
+      setPoolTotal(data.total ?? null);
     } catch (err) {
       if (err?.name !== 'AbortError') showToast('Failed to load pool', 'error');
     } finally {
       setPoolLoading(false);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Load whenever filters or offset change (also fires on mount for initial load)
+  useEffect(() => {
+    const controller = new AbortController();
+    loadLanes(controller.signal, lanesFilters, lanesOffset);
+    return () => controller.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lanesFilters, lanesOffset]);
 
   useEffect(() => {
     const controller = new AbortController();
-    loadLanes(controller.signal);
-    loadPool(controller.signal);
-    const interval = setInterval(() => loadLanes(controller.signal), 30000);
-    return () => { controller.abort(); clearInterval(interval); };
-  }, [loadLanes, loadPool]);
+    loadPool(controller.signal, poolFilters, poolOffset);
+    return () => controller.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [poolFilters, poolOffset]);
+
+  function handleLanesFilterChange(patch) {
+    setLanesFilters(prev => ({ ...prev, ...patch }));
+    setLanesOffset(0);
+  }
+
+  function handlePoolFilterChange(patch) {
+    setPoolFilters(prev => ({ ...prev, ...patch }));
+    setPoolOffset(0);
+  }
 
   useEffect(() => {
     if (!selectedLaneId) { setSelectedLane(null); setTransitions([]); setStageConfig([]); return; }
@@ -822,10 +795,30 @@ export default function BrokerLanesSection() {
     return () => controller.abort();
   }, [selectedLaneId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Called when pool claim succeeds — add the claimed lane to My Lanes + select it
+  // Active tab: 'pool' | 'my-lanes'
+  const [activeTab, setActiveTab] = useState('pool');
+
+  function handleTabChange(newTab) {
+    setActiveTab(newTab);
+    // Auto-select first lane when switching to My Lanes
+    if (newTab === 'my-lanes' && !selectedLaneId && lanes.length > 0) {
+      setSelectedLaneId(lanes[0].lane_id);
+    }
+  }
+
+  // Auto-select first lane when My Lanes data loads while tab is active
+  useEffect(() => {
+    if (activeTab === 'my-lanes' && !selectedLaneId && lanes.length > 0) {
+      setSelectedLaneId(lanes[0].lane_id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lanes]);
+
+  // Called when pool claim succeeds — add the claimed lane to My Lanes, select it, switch tab
   function handleClaimed(claimedLane) {
     setLanes(prev => [claimedLane, ...prev.filter(l => l.lane_id !== claimedLane.lane_id)]);
     setSelectedLaneId(claimedLane.lane_id);
+    setActiveTab('my-lanes');
   }
 
   function handleRemoveFromPool(laneId) {
@@ -880,42 +873,85 @@ export default function BrokerLanesSection() {
   }
 
   return (
-    <div className="flex h-full" style={{ minHeight: 'calc(100vh - 0px)' }}>
-      <LeftPanel
-        lanes={lanes}
-        lanesLoading={lanesLoading}
-        pool={pool}
-        poolLoading={poolLoading}
-        onRemoveFromPool={handleRemoveFromPool}
-        onRefreshPool={() => loadPool()}
-        selectedId={selectedLaneId}
-        onSelect={setSelectedLaneId}
-        onClaimed={handleClaimed}
-        showToast={showToast}
-      />
+    <div className="flex flex-col h-full">
+      {/* Top tab bar */}
+      <div className="px-4 pt-3 pb-0 shrink-0 border-b border-fa-border-default">
+        <div className="flex gap-1 p-1 rounded-xl w-fit mb-3" style={{ background: 'rgba(255,255,255,0.04)' }}>
+          {[
+            { id: 'pool',     label: `Pool${poolTotal != null ? ` (${poolTotal.toLocaleString()})` : ''}` },
+            { id: 'my-lanes', label: `My Lanes${lanesTotal != null ? ` (${lanesTotal.toLocaleString()})` : ''}` },
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => handleTabChange(t.id)}
+              className="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
+              style={{
+                background: activeTab === t.id ? 'rgba(250,204,21,0.15)' : 'transparent',
+                color: activeTab === t.id ? '#facc15' : '#94a3b8',
+                boxShadow: activeTab === t.id ? 'inset 0 0 0 1px rgba(250,204,21,0.25)' : 'none',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {laneLoading ? (
-        <div className="flex-1 flex items-center justify-center"><LoadingSpinner /></div>
-      ) : (
-        <LaneDetail
-          lane={selectedLane}
-          transitions={transitions}
-          transitionsLoading={transitionsLoading}
-          brokerId={broker?.brokerId || broker?.id}
-        />
-      )}
-
-      <ActionPanel
-        lane={selectedLane}
-        stageConfig={stageConfig}
-        stageConfigLoading={stageConfigLoading}
-        onTransition={handleTransition}
-        onAdvanceStage={handleAdvanceStage}
-        onLenderSet={handleLenderSet}
-        transitionLoading={transitionLoading}
-        advanceLoading={advanceLoading}
-        showToast={showToast}
-      />
+      {/* Content area */}
+      <div className="flex-1 min-h-0">
+        {activeTab === 'pool' ? (
+          <PoolView
+            pool={pool}
+            poolTotal={poolTotal}
+            poolLoading={poolLoading}
+            poolFilters={poolFilters}
+            onPoolFilterChange={handlePoolFilterChange}
+            poolOffset={poolOffset}
+            onPoolPageChange={setPoolOffset}
+            onClaimed={handleClaimed}
+            onRemoveFromPool={handleRemoveFromPool}
+            onRefreshPool={() => loadPool(undefined, poolFilters, poolOffset)}
+            showToast={showToast}
+          />
+        ) : (
+          <div className="flex h-full">
+            <MyLanesPanel
+              lanes={lanes}
+              lanesTotal={lanesTotal}
+              selectedId={selectedLaneId}
+              onSelect={setSelectedLaneId}
+              loading={lanesLoading}
+              lanesFilters={lanesFilters}
+              onLanesFilterChange={handleLanesFilterChange}
+              lanesOffset={lanesOffset}
+              onLanesPageChange={setLanesOffset}
+            />
+            {laneLoading ? (
+              <div className="flex-1 flex items-center justify-center"><LoadingSpinner /></div>
+            ) : (
+              <LaneDetail
+                lane={selectedLane}
+                transitions={transitions}
+                transitionsLoading={transitionsLoading}
+                brokerId={broker?.broker_id}
+                brokerStates={brokerStates}
+              />
+            )}
+            <ActionPanel
+              lane={selectedLane}
+              stageConfig={stageConfig}
+              stageConfigLoading={stageConfigLoading}
+              onTransition={handleTransition}
+              onAdvanceStage={handleAdvanceStage}
+              onLenderSet={handleLenderSet}
+              transitionLoading={transitionLoading}
+              advanceLoading={advanceLoading}
+              showToast={showToast}
+              brokerStates={brokerStates}
+            />
+          </div>
+        )}
+      </div>
 
       <Toast toast={toast} />
     </div>

@@ -3,6 +3,7 @@
  * Layout mirrors AdminPage: sticky top header (brand + Sign out) + left sidebar + <Outlet>.
  */
 
+import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { BrokerProvider, useBrokerContext } from '../components/brokerDashboard/BrokerContext.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
@@ -29,18 +30,22 @@ const NAV_ITEMS = [
   },
 ];
 
-function BrokerSidebar() {
+function BrokerSidebar({ open = true }) {
   return (
     <aside
-      className="w-52 shrink-0 flex flex-col h-full"
-      style={{ borderRight: '1px solid rgba(255,255,255,0.07)' }}
+      className="shrink-0 flex flex-col h-full overflow-hidden"
+      style={{
+        width: open ? '208px' : '0',
+        transition: 'width 0.2s ease',
+        borderRight: open ? '1px solid rgba(255,255,255,0.07)' : 'none',
+      }}
     >
       <nav className="flex-1 py-3">
         {NAV_ITEMS.map(({ to, label, icon }) => (
           <NavLink
             key={to}
             to={to}
-            className="flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all"
+            className="flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all whitespace-nowrap"
             style={({ isActive }) => ({
               color: isActive ? '#facc15' : '#94a3b8',
               borderLeft: isActive ? '2px solid #facc15' : '2px solid transparent',
@@ -69,6 +74,7 @@ function BrokerSidebar() {
 
 function BrokerShell() {
   const { broker, logout, isLoading, error } = useBrokerContext();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   if (isLoading) {
     return (
@@ -88,7 +94,7 @@ function BrokerShell() {
 
   return (
     <div
-      className="min-h-screen flex flex-col"
+      className="h-screen flex flex-col"
       style={{ background: 'linear-gradient(135deg, #0a0f1e 0%, #0f172a 50%, #0a0f1e 100%)' }}
     >
       {/* Sticky header — matches AdminPage exactly */}
@@ -101,18 +107,29 @@ function BrokerShell() {
         }}
       >
         <div className="px-5 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm text-slate-900"
-              style={{ background: 'linear-gradient(135deg, #facc15, #f59e0b)' }}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(v => !v)}
+              className="text-slate-500 hover:text-slate-300 transition-colors p-1 rounded"
+              title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
             >
-              FA
-            </div>
-            <div>
-              <p className="font-bold text-white leading-none text-sm">Forced Action</p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
-                Broker Portal{broker?.name ? ` · ${broker.name}` : ''}
-              </p>
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
+              </svg>
+            </button>
+            <div className="flex items-center gap-2.5">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm text-slate-900"
+                style={{ background: 'linear-gradient(135deg, #facc15, #f59e0b)' }}
+              >
+                FA
+              </div>
+              <div>
+                <p className="font-bold text-white leading-none text-sm">Forced Action</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Broker Portal{broker?.name ? ` · ${broker.name}` : ''}
+                </p>
+              </div>
             </div>
           </div>
           <button
@@ -126,8 +143,8 @@ function BrokerShell() {
 
       {/* Body: sidebar + section content */}
       <div className="flex flex-1 min-h-0">
-        <BrokerSidebar />
-        <main className="flex-1 min-w-0 overflow-y-auto">
+        <BrokerSidebar open={sidebarOpen} />
+        <main className="flex-1 min-w-0 overflow-hidden flex flex-col">
           <Outlet />
         </main>
       </div>

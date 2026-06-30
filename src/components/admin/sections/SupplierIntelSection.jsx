@@ -112,7 +112,8 @@ export default function SupplierIntelSection() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="px-6 py-6">
+    <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-fa-text-primary">Supplier Intelligence</h2>
@@ -320,6 +321,7 @@ export default function SupplierIntelSection() {
           <p className="text-fa-text-muted text-sm">No supplier accounts yet. Create one above.</p>
         )}
       </div>
+    </div>
     </div>
   );
 }

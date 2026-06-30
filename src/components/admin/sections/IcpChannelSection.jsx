@@ -104,7 +104,8 @@ export default function IcpChannelSection() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="px-6 py-6">
+    <div className="max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-bold text-fa-text-primary">ICP Channel Management</h2>
@@ -198,6 +199,7 @@ export default function IcpChannelSection() {
           <p className="text-fa-text-muted text-sm col-span-2">No ICP channels found.</p>
         )}
       </div>
+    </div>
     </div>
   );
 }

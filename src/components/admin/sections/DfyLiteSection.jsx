@@ -74,7 +74,8 @@ export default function DfyLiteSection() {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <div className="space-y-5">
+    <div className="px-6 py-6">
+    <div className="max-w-5xl mx-auto space-y-5">
       <div>
         <h2 className="text-base font-semibold text-white">DFY-Lite Orders</h2>
         <p className="text-xs text-slate-400 mt-0.5">{total.toLocaleString()} total orders</p>
@@ -193,6 +194,7 @@ export default function DfyLiteSection() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

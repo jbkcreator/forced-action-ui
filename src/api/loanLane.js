@@ -17,7 +17,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 // ---------------------------------------------------------------------------
 // Mock data
 // ---------------------------------------------------------------------------
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 const MOCK_BROKERS = [
   { broker_id: 'b-001', name: 'Jane Broker',  email: 'jane@example.com',  is_active: true,  open_lanes: 2, assigned_lanes: 2 },
@@ -44,7 +44,7 @@ const MOCK_ADMIN_LANES = [
     entered_at: '2025-06-01T10:00:00Z',
     fee_config_flag: false,
     is_stale: false, lender_id: 'l-001', lender_name: 'Suncoast Funding Partners',
-    prospect: { address: '123 Main St', city: 'Tampa', state: 'FL', county: 'Hillsborough', owner_name: 'John Homeowner' },
+    property: { address: '123 Main St', city: 'Tampa', state: 'FL', county: 'Hillsborough', owner_name: 'John Homeowner' },
   },
   {
     lane_id: 'lane-002',
@@ -59,7 +59,7 @@ const MOCK_ADMIN_LANES = [
     entered_at: '2026-05-25T14:30:00Z',
     fee_config_flag: false,
     is_stale: true, lender_id: null, lender_name: null,
-    prospect: { address: '456 Oak Ave', city: 'Tampa', state: 'FL', county: 'Hillsborough', owner_name: 'Mary Smith' },
+    property: { address: '456 Oak Ave', city: 'Tampa', state: 'FL', county: 'Hillsborough', owner_name: 'Mary Smith' },
   },
   {
     lane_id: 'lane-003',
@@ -73,7 +73,7 @@ const MOCK_ADMIN_LANES = [
     entered_at: '2026-05-20T09:00:00Z',
     fee_config_flag: false,
     is_stale: false, lender_id: 'l-002', lender_name: 'Bay Area Bridge Capital',
-    prospect: { address: '789 Pine Rd', city: 'Brandon', state: 'FL', county: 'Hillsborough', owner_name: 'Bob Johnson' },
+    property: { address: '789 Pine Rd', city: 'Brandon', state: 'FL', county: 'Hillsborough', owner_name: 'Bob Johnson' },
   },
   {
     lane_id: 'lane-004',
@@ -87,7 +87,7 @@ const MOCK_ADMIN_LANES = [
     entered_at: '2026-06-12T08:00:00Z',
     fee_config_flag: false,
     is_stale: false, lender_id: null, lender_name: null,
-    prospect: { address: '22 River Ln', city: 'St. Petersburg', state: 'FL', county: 'Pinellas', owner_name: 'Carol White' },
+    property: { address: '22 River Ln', city: 'St. Petersburg', state: 'FL', county: 'Pinellas', owner_name: 'Carol White' },
   },
   {
     lane_id: 'lane-005',
@@ -101,7 +101,7 @@ const MOCK_ADMIN_LANES = [
     entered_at: '2026-06-13T11:00:00Z',
     fee_config_flag: false,
     is_stale: false, lender_id: null, lender_name: null,
-    prospect: { address: '99 Harbor Dr', city: 'Clearwater', state: 'FL', county: 'Pinellas', owner_name: 'David Lee' },
+    property: { address: '99 Harbor Dr', city: 'Clearwater', state: 'FL', county: 'Pinellas', owner_name: 'David Lee' },
   },
 ];
 
@@ -150,9 +150,12 @@ function safeJson(text) {
 // Lane endpoints (admin)
 // ---------------------------------------------------------------------------
 
-export function fetchAllLanes(token, opts = {}) {
-  if (USE_MOCK) return Promise.resolve({ lanes: MOCK_ADMIN_LANES, total: MOCK_ADMIN_LANES.length });
-  return adminFetch(token, '/api/lanes', opts);
+export function fetchAllLanes(token, params = {}, opts = {}) {
+  if (USE_MOCK) return Promise.resolve({ lanes: MOCK_ADMIN_LANES, total: MOCK_ADMIN_LANES.length, limit: 50, offset: 0 });
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v !== null && v !== undefined && v !== '') qs.set(k, v); });
+  const query = qs.toString() ? `?${qs}` : '';
+  return adminFetch(token, `/api/lanes${query}`, opts);
 }
 
 export function fetchAdminLane(token, laneId, opts = {}) {

@@ -5,13 +5,12 @@
  */
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { brokerGetMe, brokerLogout } from '../../api/broker.js';
-import { getBrokerToken } from '../../api/broker.js';
+import { brokerGetMe, brokerLogout, fetchBrokerStates, getBrokerToken } from '../../api/broker.js';
 
 // ---------------------------------------------------------------------------
 // DEV BYPASS — set to false when wiring real auth
 // ---------------------------------------------------------------------------
-const DEV_BYPASS = true;
+const DEV_BYPASS = false;
 const DEV_BROKER = { id: 'b-001', brokerId: 'b-001', name: 'Jane Broker', email: 'jane@example.com' };
 // ---------------------------------------------------------------------------
 
@@ -19,6 +18,7 @@ const BrokerContext = createContext(null);
 
 export function BrokerProvider({ children }) {
   const [broker, setBroker] = useState(DEV_BYPASS ? DEV_BROKER : null);
+  const [brokerStates, setBrokerStates] = useState(null);
   const [isLoading, setIsLoading] = useState(!DEV_BYPASS);
   const [error, setError] = useState(null);
 
@@ -27,8 +27,9 @@ export function BrokerProvider({ children }) {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await brokerGetMe();
-      setBroker(data);
+      const [meData, statesData] = await Promise.all([brokerGetMe(), fetchBrokerStates()]);
+      setBroker(meData);
+      setBrokerStates(statesData);
     } catch (err) {
       if (err?.status === 401) {
         brokerLogout();
@@ -57,7 +58,7 @@ export function BrokerProvider({ children }) {
   }, []);
 
   return (
-    <BrokerContext.Provider value={{ broker, isLoading, error, logout, refresh: loadBroker }}>
+    <BrokerContext.Provider value={{ broker, brokerStates, isLoading, error, logout, refresh: loadBroker }}>
       {children}
     </BrokerContext.Provider>
   );

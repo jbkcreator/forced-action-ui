@@ -30,7 +30,7 @@ const BASE = '/api/broker';
 // ---------------------------------------------------------------------------
 // Mock data (remove / set USE_MOCK=false before live-API integration PR)
 // ---------------------------------------------------------------------------
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 const MOCK_BROKER = { id: 'b-001', brokerId: 'b-001', name: 'Jane Broker', email: 'jane@example.com', role: 'broker' };
 
@@ -53,7 +53,7 @@ const MOCK_POOL_LANES = [
     entered_at: '2026-06-20T08:00:00Z',
     distress_score: 82,
     analysis_summary: 'High mortgage distress, 3 missed payments. Property in good condition — fast close likely.',
-    prospect: { address: '811 Cypress Blvd', city: 'Tampa', state: 'FL', county: 'Hillsborough', owner_name: 'Owner (visible after claim)', phone: null, email: null },
+    property: { address: '811 Cypress Blvd', city: 'Tampa', state: 'FL', county: 'Hillsborough', owner_name: 'Owner (visible after claim)', phone: null, email: null },
   },
   {
     lane_id: 'pool-002',
@@ -65,7 +65,7 @@ const MOCK_POOL_LANES = [
     entered_at: '2026-06-22T11:00:00Z',
     distress_score: 74,
     analysis_summary: 'Pre-foreclosure filing active. Owner responsive per prior outreach log. Strong payoff candidate.',
-    prospect: { address: '342 Harbor View Dr', city: 'St. Petersburg', state: 'FL', county: 'Pinellas', owner_name: 'Owner (visible after claim)', phone: null, email: null },
+    property: { address: '342 Harbor View Dr', city: 'St. Petersburg', state: 'FL', county: 'Pinellas', owner_name: 'Owner (visible after claim)', phone: null, email: null },
   },
   {
     lane_id: 'pool-003',
@@ -77,7 +77,7 @@ const MOCK_POOL_LANES = [
     entered_at: '2026-06-25T15:30:00Z',
     distress_score: 69,
     analysis_summary: 'Liens present, motivated seller signal detected. Recommend early contact.',
-    prospect: { address: '57 Palms Court', city: 'Clearwater', state: 'FL', county: 'Pinellas', owner_name: 'Owner (visible after claim)', phone: null, email: null },
+    property: { address: '57 Palms Court', city: 'Clearwater', state: 'FL', county: 'Pinellas', owner_name: 'Owner (visible after claim)', phone: null, email: null },
   },
 ];
 
@@ -103,8 +103,7 @@ const MOCK_LANES = [
     lender_id: null,
     lender_name: null,
     fee_config_flag: false,
-    prospect: {
-      prospect_id: 'p-001',
+    property: {
       address: '123 Main St',
       city: 'Tampa',
       state: 'FL',
@@ -129,8 +128,7 @@ const MOCK_LANES = [
     lender_id: null,
     lender_name: null,
     fee_config_flag: false,
-    prospect: {
-      prospect_id: 'p-002',
+    property: {
       address: '456 Oak Ave',
       city: 'Tampa',
       state: 'FL',
@@ -154,8 +152,7 @@ const MOCK_LANES = [
     lender_id: 'l-001',
     lender_name: 'Suncoast Funding Partners',
     fee_config_flag: false,
-    prospect: {
-      prospect_id: 'p-003',
+    property: {
       address: '789 Pine Rd',
       city: 'Brandon',
       state: 'FL',
@@ -282,7 +279,7 @@ export async function brokerResetPassword(token, newPassword) {
   return apiRequest(`${BASE}/reset-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, new_password: newPassword }),
+    body: JSON.stringify({ reset_token: token, new_password: newPassword }),
   });
 }
 
@@ -301,10 +298,13 @@ export async function brokerGetMe(opts = {}) {
 // Broker lane endpoints
 // ---------------------------------------------------------------------------
 
-export async function fetchBrokerLanes(opts = {}) {
-  if (USE_MOCK) return { lanes: MOCK_LANES, total: MOCK_LANES.length };
+export async function fetchBrokerLanes(params = {}, opts = {}) {
+  if (USE_MOCK) return { lanes: MOCK_LANES, total: MOCK_LANES.length, limit: 50, offset: 0 };
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v !== null && v !== undefined && v !== '') qs.set(k, v); });
+  const query = qs.toString() ? `?${qs}` : '';
   return withBrokerRefresh(() =>
-    apiRequest(`${BASE}/lanes`, { headers: brokerHeaders(), signal: opts.signal })
+    apiRequest(`${BASE}/lanes${query}`, { headers: brokerHeaders(), signal: opts.signal })
   );
 }
 
@@ -322,7 +322,7 @@ export async function fetchLane(laneId, opts = {}) {
 export async function fetchLaneTransitions(laneId, opts = {}) {
   if (USE_MOCK) return { transitions: MOCK_TRANSITIONS[laneId] || [] };
   return withBrokerRefresh(() =>
-    apiRequest(`/api/lanes/${laneId}/transitions`, { headers: brokerHeaders(), signal: opts.signal })
+    apiRequest(`${BASE}/lanes/${laneId}/transitions`, { headers: brokerHeaders(), signal: opts.signal })
   );
 }
 
@@ -381,10 +381,13 @@ export async function fetchCommissionSplits(opts = {}) {
 // Pool + claim (D3, D15)
 // ---------------------------------------------------------------------------
 
-export async function fetchPool(opts = {}) {
-  if (USE_MOCK) return { lanes: MOCK_POOL_LANES, total: MOCK_POOL_LANES.length };
+export async function fetchPool(params = {}, opts = {}) {
+  if (USE_MOCK) return { lanes: MOCK_POOL_LANES, total: MOCK_POOL_LANES.length, limit: 50, offset: 0 };
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v !== null && v !== undefined && v !== '') qs.set(k, v); });
+  const query = qs.toString() ? `?${qs}` : '';
   return withBrokerRefresh(() =>
-    apiRequest(`/api/lanes/pool`, { headers: brokerHeaders(), signal: opts.signal })
+    apiRequest(`/api/lanes/pool${query}`, { headers: brokerHeaders(), signal: opts.signal })
   );
 }
 
@@ -411,8 +414,8 @@ export async function claimLane(laneId, opts = {}) {
       lender_id: null,
       lender_name: null,
       fee_config_flag: false,
-      prospect: {
-        ...poolLane.prospect,
+      property: {
+        ...poolLane.property,
         owner_name: 'Revealed Owner Name',
         phone: '(813) 555-9999',
         email: 'owner@example.com',
@@ -431,6 +434,35 @@ export async function claimLane(laneId, opts = {}) {
 // ---------------------------------------------------------------------------
 // Lender picker (D12)
 // ---------------------------------------------------------------------------
+
+export async function fetchBrokerStates(opts = {}) {
+  if (USE_MOCK) {
+    return {
+      allowed_transitions: {
+        unassigned:      [],
+        assigned:        ['working', 'closed_lost'],
+        working:         ['quoted', 'closed_lost'],
+        quoted:          ['committed', 'lender_rejected', 'closed_lost'],
+        committed:       ['closed_won', 'closed_lost'],
+        lender_rejected: ['quoted', 'closed_lost'],
+        closed_won:      [],
+        closed_lost:     [],
+      },
+      work_states: ['unassigned', 'assigned', 'working', 'quoted', 'committed', 'lender_rejected', 'closed_won', 'closed_lost'],
+      reason_codes_by_state: {
+        working:         ['no_contact', 'qualified'],
+        quoted:          ['qualified', 'price'],
+        committed:       ['docs_received', 'qualified'],
+        lender_rejected: ['lender_declined'],
+        closed_won:      ['funded'],
+        closed_lost:     ['no_contact', 'not_interested', 'price', 'lender_declined', 'lost_other'],
+      },
+    };
+  }
+  return withBrokerRefresh(() =>
+    apiRequest(`${BASE}/states`, { headers: brokerHeaders(), signal: opts.signal })
+  );
+}
 
 export async function fetchClearedLenders(opts = {}) {
   if (USE_MOCK) {

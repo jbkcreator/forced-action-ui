@@ -83,7 +83,7 @@ export default function LaneDetailPage() {
     );
   }
 
-  const p = lane.prospect || {};
+  const p = lane.property || {};
 
   return (
     <div className="px-6 py-6 max-w-3xl">

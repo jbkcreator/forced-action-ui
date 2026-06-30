@@ -193,12 +193,14 @@ const SECTIONS = [
   },
 ];
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ open = true }) {
   return (
     <aside
-      className="w-48 shrink-0 flex flex-col py-3"
+      className="shrink-0 flex flex-col py-3 overflow-x-hidden overflow-y-auto"
       style={{
-        borderRight: '1px solid rgba(255,255,255,0.07)',
+        width: open ? '192px' : '0',
+        transition: 'width 0.2s ease',
+        borderRight: open ? '1px solid rgba(255,255,255,0.07)' : 'none',
         background: 'rgba(8,13,26,0.5)',
       }}
     >
@@ -206,12 +208,12 @@ export default function AdminSidebar() {
         <NavLink
           key={s.id}
           to={s.path}
-          className="flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all"
+          className="flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all whitespace-nowrap"
           style={({ isActive }) => ({
             color: isActive ? '#facc15' : '#94a3b8',
             borderLeft: isActive ? '2px solid #facc15' : '2px solid transparent',
             background: isActive ? 'rgba(250,204,21,0.06)' : 'transparent',
-            paddingLeft: isActive ? '14px' : '14px',
+            paddingLeft: '14px',
           })}
           onMouseEnter={e => {
             if (!e.currentTarget.style.borderLeft.includes('#facc15')) {

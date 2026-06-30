@@ -24,6 +24,7 @@ import { workStateLabel, workStateColors, LANE_OUTCOME_LABELS, LANE_OUTCOME_COLO
 import Modal from '../../ui/Modal.jsx';
 import LoadingSpinner from '../../ui/LoadingSpinner.jsx';
 import EmptyState from '../../ui/EmptyState.jsx';
+import LaneFilterBar, { LanePagination } from '../../ui/LaneFilterBar.jsx';
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -79,7 +80,7 @@ function Toast({ toast }) {
 const TABS = [
   { id: 'unassigned', label: 'Unassigned' },
   { id: 'stale',      label: 'Stale'      },
-  { id: 'all',        label: 'All Lanes'  },
+  { id: 'all',        label: 'Assigned'   },
   { id: 'by-broker',  label: 'By Broker'  },
   { id: 'lenders',    label: 'Cleared Lenders' },
 ];
@@ -223,15 +224,15 @@ function LaneRow({ lane, brokers, onAssign, onReassign, assignLoading, assigning
             onClick={() => navigate(`/admin/brokers-lanes/${lane.lane_id}`)}
             className="text-sm text-fa-text-primary hover:text-fa-primary text-left"
           >
-            {lane.prospect?.address || '—'}
+            {lane.property?.address || '—'}
           </button>
           {lane.is_stale && (
             <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-900/50 text-amber-300">STALE</span>
           )}
         </div>
-        <p className="text-xs text-fa-text-muted">{lane.prospect?.city}, {lane.prospect?.state} — {lane.prospect?.owner_name}</p>
+        <p className="text-xs text-fa-text-muted">{lane.property?.city}, {lane.property?.state} — {lane.property?.owner_name}</p>
       </td>
-      <td className="px-4 py-3"><CountyBadge county={lane.prospect?.county} /></td>
+      <td className="px-4 py-3"><CountyBadge county={lane.property?.county} /></td>
       <td className="px-4 py-3 text-xs text-fa-text-secondary">{lane.current_stage_display || lane.current_stage}</td>
       <td className="px-4 py-3"><WorkStateBadge state={lane.current_work_state} /></td>
       <td className="px-4 py-3"><OutcomeBadge outcome={lane.outcome} /></td>
@@ -272,9 +273,9 @@ function LanesTable({ lanes, brokers, onAssign, onReassign, assignLoading, assig
   if (lanes.length === 0) return <EmptyState message="No lanes found" />;
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-fa-border-default">
+    <div className="overflow-x-auto overflow-y-auto rounded-xl border border-fa-border-default" style={{ maxHeight: 'calc(100vh - 320px)' }}>
       <table className="w-full text-left">
-        <thead>
+        <thead className="sticky top-0 z-10 bg-fa-bg-base">
           <tr className="border-b border-fa-border-default">
             {['Prospect', 'County', 'Stage', 'Work state', 'Outcome', 'Lender', 'Broker'].map(h => (
               <th key={h} className="px-4 py-3 text-xs font-medium text-fa-text-muted">{h}</th>
@@ -613,11 +614,11 @@ function ByBrokerView({ token, brokers, brokersLoading, onToggleActive, toggling
                             onClick={() => navigate(`/admin/brokers-lanes/${lane.lane_id}`)}
                             className="text-sm text-fa-text-primary hover:text-fa-primary"
                           >
-                            {lane.prospect?.address || '—'}
+                            {lane.property?.address || '—'}
                           </button>
-                          <p className="text-xs text-fa-text-muted">{lane.prospect?.city}, {lane.prospect?.state}</p>
+                          <p className="text-xs text-fa-text-muted">{lane.property?.city}, {lane.property?.state}</p>
                         </td>
-                        <td className="px-4 py-2"><CountyBadge county={lane.prospect?.county} /></td>
+                        <td className="px-4 py-2"><CountyBadge county={lane.property?.county} /></td>
                         <td className="px-4 py-2 text-xs text-fa-text-muted">{lane.current_stage_display || lane.current_stage}</td>
                         <td className="px-4 py-2"><WorkStateBadge state={lane.current_work_state} /></td>
                         <td className="px-4 py-2"><OutcomeBadge outcome={lane.outcome} /></td>
@@ -638,11 +639,16 @@ function ByBrokerView({ token, brokers, brokersLoading, onToggleActive, toggling
 // Main section
 // ---------------------------------------------------------------------------
 
+const DEFAULT_ADMIN_FILTERS = { sort_by: 'entered_at', sort_dir: 'desc', open_only: true, limit: 50 };
+
 export default function BrokersLanesSection() {
   const { token } = useAdminContext();
   const [tab, setTab] = useState('unassigned');
   const [lanes, setLanes] = useState([]);
+  const [lanesTotal, setLanesTotal] = useState(null);
   const [lanesLoading, setLanesLoading] = useState(true);
+  const [laneFilters, setLaneFilters] = useState(DEFAULT_ADMIN_FILTERS);
+  const [laneOffset, setLaneOffset] = useState(0);
   const [brokers, setBrokers] = useState([]);
   const [brokersLoading, setBrokersLoading] = useState(true);
   const [assignLoading, setAssignLoading] = useState(false);
@@ -651,20 +657,27 @@ export default function BrokersLanesSection() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [reassignLaneId, setReassignLaneId] = useState(null);
   const [reassignLoading, setReassignLoading] = useState(false);
-  const [countyFilter, setCountyFilter] = useState('all');
   const { toast, showToast } = useToast();
 
-  const loadLanes = useCallback(async (signal) => {
+  const loadLanes = useCallback(async (signal, filters = laneFilters, offset = laneOffset) => {
     setLanesLoading(true);
     try {
-      const data = await fetchAllLanes(token, { signal });
+      // Map tab to server-side filter params
+      const tabParams = {};
+      if (tab === 'unassigned') tabParams.assigned = 'false';
+      if (tab === 'stale')      tabParams.stale    = 'true';
+      if (tab === 'all')        tabParams.assigned = 'true';
+
+      const data = await fetchAllLanes(token, { ...filters, ...tabParams, offset }, { signal });
       setLanes(data.lanes || []);
+      setLanesTotal(data.total ?? null);
     } catch (err) {
       if (err?.name !== 'AbortError') showToast('Failed to load lanes', 'error');
     } finally {
       setLanesLoading(false);
     }
-  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, tab]);
 
   const loadBrokers = useCallback(async (signal) => {
     setBrokersLoading(true);
@@ -680,10 +693,33 @@ export default function BrokersLanesSection() {
 
   useEffect(() => {
     const controller = new AbortController();
-    loadLanes(controller.signal);
+    loadLanes(controller.signal, DEFAULT_ADMIN_FILTERS, 0);
     loadBrokers(controller.signal);
     return () => controller.abort();
-  }, [loadLanes, loadBrokers]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadBrokers]);
+
+  // Re-fetch when filters, offset, or tab change
+  useEffect(() => {
+    const controller = new AbortController();
+    loadLanes(controller.signal, laneFilters, laneOffset);
+    return () => controller.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [laneFilters, laneOffset, tab]);
+
+  function handleTabChange(newTab) {
+    setTab(newTab);
+    setLaneOffset(0);
+    // Clear filters that don't apply on the unassigned tab
+    if (newTab === 'unassigned') {
+      setLaneFilters(prev => ({ ...prev, stage: '', work_state: '', broker_id: '' }));
+    }
+  }
+
+  function handleFilterChange(patch) {
+    setLaneFilters(prev => ({ ...prev, ...patch }));
+    setLaneOffset(0);
+  }
 
   async function handleAssign(laneId, brokerId) {
     setAssignLoading(true);
@@ -728,14 +764,7 @@ export default function BrokersLanesSection() {
     }
   }
 
-  const unassignedLanes = lanes.filter(l => !l.assigned_broker_id && l.outcome === 'open');
-  const staleLanes = lanes.filter(l => l.is_stale && l.outcome === 'open');
-  const countyOptions = [...new Set(lanes.map(l => l.prospect?.county).filter(Boolean))].sort();
-
-  function applyCounty(list) {
-    if (countyFilter === 'all') return list;
-    return list.filter(l => l.prospect?.county === countyFilter);
-  }
+  const brokerOptions = brokers.map(b => ({ value: b.broker_id, label: b.name }));
 
   return (
     <div className="px-6 py-6">
@@ -744,28 +773,18 @@ export default function BrokersLanesSection() {
       <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-base font-semibold text-fa-text-primary">Brokers & Loan Lanes</h2>
-            <p className="text-sm text-fa-text-muted mt-0.5">
-              {unassignedLanes.length} unassigned lane{unassignedLanes.length !== 1 ? 's' : ''} · {lanes.filter(l => l.outcome === 'open').length} open
-            </p>
+            {lanesTotal != null && (
+              <p className="text-sm text-fa-text-muted mt-0.5">
+                {lanesTotal.toLocaleString()} lane{lanesTotal !== 1 ? 's' : ''} matching current filters
+              </p>
+            )}
           </div>
-          <div className="flex items-center gap-3">
-            <select
-              value={countyFilter}
-              onChange={e => setCountyFilter(e.target.value)}
-              className="text-xs bg-fa-bg-card border border-fa-border-default rounded-lg px-3 py-2 text-fa-text-primary focus:outline-none focus:border-fa-primary"
-            >
-              <option value="all">All counties</option>
-              {countyOptions.map(c => (
-                <option key={c} value={c}>{c} County</option>
-              ))}
-            </select>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="text-xs bg-fa-primary text-fa-bg-base font-medium px-3 py-2 rounded-lg hover:opacity-90"
-            >
-              + Invite broker
-            </button>
-          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="text-xs bg-fa-primary text-fa-bg-base font-medium px-3 py-2 rounded-lg hover:opacity-90"
+          >
+            + Invite broker
+          </button>
         </div>
 
         {/* Tabs */}
@@ -773,7 +792,7 @@ export default function BrokersLanesSection() {
           {TABS.map(t => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
+              onClick={() => handleTabChange(t.id)}
               className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
               style={{
                 background: tab === t.id ? 'rgba(250,204,21,0.15)' : 'transparent',
@@ -782,51 +801,68 @@ export default function BrokersLanesSection() {
               }}
             >
               {t.label}
-              {t.id === 'unassigned' && unassignedLanes.length > 0 && (
-                <span className="ml-1.5 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{unassignedLanes.length}</span>
-              )}
-              {t.id === 'stale' && staleLanes.length > 0 && (
-                <span className="ml-1.5 bg-amber-500 text-fa-bg-base text-xs px-1.5 py-0.5 rounded-full">{staleLanes.length}</span>
+              {tab === t.id && lanesTotal != null && ['unassigned', 'stale', 'all'].includes(t.id) && (
+                <span className="ml-1.5 bg-fa-primary/20 text-fa-primary text-xs px-1.5 py-0.5 rounded-full">{lanesTotal.toLocaleString()}</span>
               )}
             </button>
           ))}
         </nav>
 
+        {/* Filter bar — shown for lanes tabs */}
+        {['unassigned', 'stale', 'all'].includes(tab) && (
+          <LaneFilterBar
+            filters={laneFilters}
+            onChange={handleFilterChange}
+            mode="admin"
+            brokerOptions={brokerOptions}
+            hiddenFilters={tab === 'unassigned' ? ['stage', 'work_state', 'broker_id'] : []}
+          />
+        )}
+
         {/* Tab content */}
         {tab === 'unassigned' && (
-          <LanesTable
-            lanes={applyCounty(unassignedLanes)}
-            brokers={brokers}
-            onAssign={handleAssign}
-            onReassign={setReassignLaneId}
-            assignLoading={assignLoading}
-            assigningLaneId={assigningLaneId}
-            loading={lanesLoading}
-          />
+          <>
+            <LanesTable
+              lanes={lanes}
+              brokers={brokers}
+              onAssign={handleAssign}
+              onReassign={setReassignLaneId}
+              assignLoading={assignLoading}
+              assigningLaneId={assigningLaneId}
+              loading={lanesLoading}
+            />
+            <LanePagination total={lanesTotal} limit={laneFilters.limit || 50} offset={laneOffset} onPageChange={setLaneOffset} />
+          </>
         )}
 
         {tab === 'stale' && (
-          <LanesTable
-            lanes={applyCounty(staleLanes)}
-            brokers={brokers}
-            onAssign={handleAssign}
-            onReassign={setReassignLaneId}
-            assignLoading={assignLoading}
-            assigningLaneId={assigningLaneId}
-            loading={lanesLoading}
-          />
+          <>
+            <LanesTable
+              lanes={lanes}
+              brokers={brokers}
+              onAssign={handleAssign}
+              onReassign={setReassignLaneId}
+              assignLoading={assignLoading}
+              assigningLaneId={assigningLaneId}
+              loading={lanesLoading}
+            />
+            <LanePagination total={lanesTotal} limit={laneFilters.limit || 50} offset={laneOffset} onPageChange={setLaneOffset} />
+          </>
         )}
 
         {tab === 'all' && (
-          <LanesTable
-            lanes={applyCounty(lanes)}
-            brokers={brokers}
-            onAssign={handleAssign}
-            onReassign={setReassignLaneId}
-            assignLoading={assignLoading}
-            assigningLaneId={assigningLaneId}
-            loading={lanesLoading}
-          />
+          <>
+            <LanesTable
+              lanes={lanes}
+              brokers={brokers}
+              onAssign={handleAssign}
+              onReassign={setReassignLaneId}
+              assignLoading={assignLoading}
+              assigningLaneId={assigningLaneId}
+              loading={lanesLoading}
+            />
+            <LanePagination total={lanesTotal} limit={laneFilters.limit || 50} offset={laneOffset} onPageChange={setLaneOffset} />
+          </>
         )}
 
         {tab === 'by-broker' && (

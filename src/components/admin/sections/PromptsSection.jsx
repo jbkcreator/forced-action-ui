@@ -211,7 +211,7 @@ export default function PromptsSection() {
   }, [token]);
 
   return (
-    <div className="flex h-full min-h-0" style={{ height: 'calc(100vh - 120px)' }}>
+    <div className="flex h-full min-h-0">
       {/* Left: graph list */}
       <div
         className="w-56 shrink-0 overflow-y-auto"
