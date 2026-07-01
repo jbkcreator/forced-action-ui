@@ -141,6 +141,27 @@ const SECTIONS = [
     ),
   },
   {
+    id: 'brokers-lanes',
+    label: 'Brokers & Loan Lanes',
+    path: '/admin/brokers-lanes',
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    id: 'commissions',
+    label: 'Commissions',
+    path: '/admin/commissions',
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v-1m0 9v1" />
+      </svg>
+    ),
+  },
+  {
     id: 'closer',
     label: 'Closer Cockpit',
     path: '/admin/closer',
@@ -172,12 +193,14 @@ const SECTIONS = [
   },
 ];
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ open = true }) {
   return (
     <aside
-      className="w-48 shrink-0 flex flex-col py-3"
+      className="shrink-0 flex flex-col py-3 overflow-x-hidden overflow-y-auto"
       style={{
-        borderRight: '1px solid rgba(255,255,255,0.07)',
+        width: open ? '192px' : '0',
+        transition: 'width 0.2s ease',
+        borderRight: open ? '1px solid rgba(255,255,255,0.07)' : 'none',
         background: 'rgba(8,13,26,0.5)',
       }}
     >
@@ -185,12 +208,12 @@ export default function AdminSidebar() {
         <NavLink
           key={s.id}
           to={s.path}
-          className="flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all"
+          className="flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all whitespace-nowrap"
           style={({ isActive }) => ({
             color: isActive ? '#facc15' : '#94a3b8',
             borderLeft: isActive ? '2px solid #facc15' : '2px solid transparent',
             background: isActive ? 'rgba(250,204,21,0.06)' : 'transparent',
-            paddingLeft: isActive ? '14px' : '14px',
+            paddingLeft: '14px',
           })}
           onMouseEnter={e => {
             if (!e.currentTarget.style.borderLeft.includes('#facc15')) {

@@ -8,13 +8,15 @@ import { fetchCounties } from '../api/admin';
 const TOKEN_KEY = 'admin_token';
 
 function AuthenticatedShell({ token, onLogout }) {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   return (
     <AdminContext.Provider value={{ token, onLogout }}>
       <div
-        className="min-h-screen flex flex-col"
+        className="h-screen flex flex-col"
         style={{ background: 'linear-gradient(135deg, #0a0f1e 0%, #0f172a 50%, #0a0f1e 100%)' }}
       >
-        {/* Sticky header — logo + sign out only */}
+        {/* Sticky header */}
         <header
           className="sticky top-0 z-50 w-full shrink-0"
           style={{
@@ -24,16 +26,30 @@ function AuthenticatedShell({ token, onLogout }) {
           }}
         >
           <div className="px-5 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm text-slate-900"
-                style={{ background: 'linear-gradient(135deg, #facc15, #f59e0b)' }}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSidebarOpen(v => !v)}
+                className="text-slate-500 hover:text-slate-300 transition-colors p-1 rounded"
+                title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
               >
-                FA
-              </div>
-              <div>
-                <p className="font-bold text-white leading-none text-sm">Forced Action</p>
-                <p className="text-[10px] text-slate-500 mt-0.5">Admin</p>
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  {sidebarOpen
+                    ? <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
+                    : <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
+                  }
+                </svg>
+              </button>
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm text-slate-900"
+                  style={{ background: 'linear-gradient(135deg, #facc15, #f59e0b)' }}
+                >
+                  FA
+                </div>
+                <div>
+                  <p className="font-bold text-white leading-none text-sm">Forced Action</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Admin</p>
+                </div>
               </div>
             </div>
             <button
@@ -47,7 +63,7 @@ function AuthenticatedShell({ token, onLogout }) {
 
         {/* Body: sidebar + section content */}
         <div className="flex flex-1 min-h-0">
-          <AdminSidebar />
+          <AdminSidebar open={sidebarOpen} />
           <main className="flex-1 min-w-0 overflow-y-auto">
             <Outlet />
           </main>
