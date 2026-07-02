@@ -219,6 +219,16 @@ export default function DashboardPage() {
     }
   }, [error, feedUuid]);
 
+  // Task 6.3 — churn-defense engagement listener. Fire DASHBOARD_VIEW once per
+  // mount (ref-guarded so filter/sort/page refetches don't inflate the count).
+  const viewLogged = useRef(false);
+  useEffect(() => {
+    if (isAuthReady && !viewLogged.current) {
+      viewLogged.current = true;
+      logBusinessEvent('DASHBOARD_VIEW', { feedUuid });
+    }
+  }, [isAuthReady, feedUuid]);
+
   const handleTopupSuccess = useCallback(() => {
     closeTopup();
     setTimeout(refetch, 2000);
@@ -727,7 +737,7 @@ export default function DashboardPage() {
                     <SearchBar value={searchInput} onChange={setSearchInput} />
                   </div>
                   <SortDropdown value={filters.sort} onChange={(v) => setFilter('sort', v)} />
-                  <ExportButton leads={leads} page={filters.page} />
+                  <ExportButton leads={leads} page={filters.page} feedUuid={feedUuid} />
                 </div>
                 <FilterBar
                   minScore={filters.minScore}
