@@ -1,4 +1,5 @@
 import Icon from '../ui/Icon';
+import { logBusinessEvent } from '../../api/phase2b';
 
 function escapeCsv(val) {
   const str = String(val ?? '');
@@ -8,9 +9,12 @@ function escapeCsv(val) {
   return str;
 }
 
-export default function ExportButton({ leads, page }) {
+export default function ExportButton({ leads, page, feedUuid }) {
   function handleExport() {
     if (!leads?.length) return;
+
+    // Task 6.3 — churn-defense engagement listener (fire-and-forget).
+    logBusinessEvent('LEAD_DOWNLOAD', { feedUuid, payload: { count: leads.length, page } });
 
     const headers = ['Address', 'City', 'State', 'ZIP', 'CDS Score', 'Lead Tier', 'Distress Types', 'Est. Job Value', 'Latest Incident'];
     const rows = leads.map((l) => [
