@@ -79,12 +79,13 @@ export default function SubscriberLoginPage() {
           </p>
         )}
 
-        {!isUuidMode && !magicLinkSent && (
+        {!isUuidMode && !(mode === 'magic' && magicLinkSent) && (
           <div className="flex gap-2 mb-6">
             <button
               type="button"
+              disabled={loading}
               onClick={() => { setMode('magic'); setError(''); }}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
                 mode === 'magic'
                   ? 'bg-fa-primary text-fa-bg-base'
                   : 'bg-fa-bg-card text-fa-text-secondary border border-fa-border-default'
@@ -94,8 +95,9 @@ export default function SubscriberLoginPage() {
             </button>
             <button
               type="button"
+              disabled={loading}
               onClick={() => { setMode('password'); setError(''); }}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
                 mode === 'password'
                   ? 'bg-fa-primary text-fa-bg-base'
                   : 'bg-fa-bg-card text-fa-text-secondary border border-fa-border-default'
