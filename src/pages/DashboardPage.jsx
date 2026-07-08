@@ -111,7 +111,7 @@ export default function DashboardPage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [lpZip, setLpZip] = useState('');
   const [lpOpen, setLpOpen] = useState(false);
-  const [dealCaptureOpen, setDealCaptureOpen] = useState(false);
+  const [dealCaptureLead, setDealCaptureLead] = useState(null);  // lead whose outcome is being reported
   const [premiumLead, setPremiumLead] = useState(null);   // lead obj for premium modal
   const [pitchLead, setPitchLead] = useState(null);       // lead obj for DFY-Lite pitch modal
   const handleOpenPitch = useCallback((lead) => setPitchLead(lead), []);
@@ -719,17 +719,6 @@ export default function DashboardPage() {
                 vertical={subscriber.vertical}
               />
 
-              {/* Phase 2B: Deal-Size Capture trigger */}
-              <div className="mb-4 flex items-center justify-end">
-                <button
-                  onClick={() => setDealCaptureOpen(true)}
-                  type="button"
-                  className="text-sm text-yellow-300 hover:text-yellow-200 underline underline-offset-2"
-                >
-                  I closed a deal &rarr;
-                </button>
-              </div>
-
               {/* Search, Filter, Sort, Export */}
               <div className="mb-6 space-y-3">
                 <div className="flex gap-3 items-center flex-wrap">
@@ -766,6 +755,7 @@ export default function DashboardPage() {
                         onToggleContacted={toggleContacted}
                         onOpenPremium={setPremiumLead}
                         onOpenPitch={handleOpenPitch}
+                        onReportOutcome={setDealCaptureLead}
                         urgencyViewers={zipActivity[lead.zip]?.active_viewers}
                         feedUuid={feedUuid}
                       />
@@ -949,19 +939,20 @@ export default function DashboardPage() {
           onClose={handleUnlockClose}
         />
 
-        {/* Phase 2B: Deal-Size Capture modal */}
-        {dealCaptureOpen && (
+        {/* Phase 2B: Deal-Size Capture modal — scoped to the lead it was opened from */}
+        {dealCaptureLead && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
             role="dialog"
             aria-modal="true"
-            onClick={(e) => { if (e.target === e.currentTarget) setDealCaptureOpen(false); }}
+            onClick={(e) => { if (e.target === e.currentTarget) setDealCaptureLead(null); }}
           >
             <div className="max-w-lg w-full">
               <DealCapture
                 feedUuid={feedUuid}
-                onCaptured={() => setTimeout(() => setDealCaptureOpen(false), 1500)}
-                onDismiss={() => setDealCaptureOpen(false)}
+                propertyId={dealCaptureLead.property_id}
+                onCaptured={() => setTimeout(() => setDealCaptureLead(null), 1500)}
+                onDismiss={() => setDealCaptureLead(null)}
               />
             </div>
           </div>
