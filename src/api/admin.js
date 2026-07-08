@@ -79,6 +79,14 @@ export function uploadVoterRegistry(token, file, countyId) {
   return adminFetch(token, '/api/admin/upload/voter-registry', { method: 'POST', body: form });
 }
 
+// B0-01 — founder-portfolio CSV import. Returns
+// { imported, updated, matched, unmatched:[...], errors:[...] }.
+export function importFounderPortfolio(token, file) {
+  const form = new FormData();
+  form.append('file', file);
+  return adminFetch(token, '/api/admin/import/founder-portfolio', { method: 'POST', body: form });
+}
+
 // ─── DLQ ─────────────────────────────────────────────────────────────────────
 export function fetchDlq(token, { limit = 100, offset = 0, reason, q } = {}, options = {}) {
   const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
