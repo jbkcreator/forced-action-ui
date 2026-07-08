@@ -30,10 +30,11 @@ Copy `.env.example` to `.env` and set:
 | Path | Page | Notes |
 |------|------|-------|
 | `/` | `LandingPage` | Public — founding counter, ZIP check, pricing, Stripe checkout |
-| `/login` | `SubscriberLoginPage` | Email + password login (fa061) |
+| `/login` | `SubscriberLoginPage` | Email magic-link (default) or password login (fa061) |
 | `/dashboard/:feedUuid/login` | `SubscriberLoginPage` | UUID-mode login — password only (fa061) |
 | `/forgot-password` | `SubscriberForgotPasswordPage` | Emailed reset link (fa061) |
 | `/reset-password/:token` | `SubscriberResetPasswordPage` | Set new password via token (fa061) |
+| `/auth/verify` | `MagicLinkVerifyPage` | Exchanges emailed `?token=` for a session (fa061 passwordless) |
 | `/dashboard/:feedUuid` | `DashboardPage` | Token-gated (fa061); redirects to login if no valid JWT |
 | `/success` | `SuccessPage` | Post-checkout; reads `?tier=&zips=` query params |
 | `/email-previews` | `EmailPreviewsPage` | Dev tool — preview transactional email templates |
@@ -71,7 +72,7 @@ All requests go through `src/api/client.js` (`apiRequest`, `api.get`, `api.post`
 - `closer.js` — Closer Cockpit endpoints: queue, prospect detail/conversation/calls, dial-time correlation, feedback, recording, escalation outcome. `USE_MOCK=true` flag at top for local dev (delete mock block before push).
 - `quora.js` — Quora Answers (S6): `fetchQuoraQueue`, `updateQuoraDraft`, `postQuoraAnswer`. Uses same `adminFetch` JWT pattern as `closer.js`.
 - `chat.js` — Concierge Chat (M5a): `createSession`, `sendMessage`, `streamTurn` (EventSource), `linkSession`, `escalateSession`.
-- `subscriber.js` — Subscriber feed auth (fa061): `subscriberLogin`, `subscriberForgotPassword`, `subscriberResetPassword`, `subHeaders`, `withSubRefresh`, `decodeSubToken`. Token stored in `localStorage.sub_access_token`.
+- `subscriber.js` — Subscriber feed auth (fa061 + magic-link): `subscriberLogin`, `subscriberRequestMagicLink`, `subscriberVerifyMagicLink`, `subscriberForgotPassword`, `subscriberResetPassword`, `subHeaders`, `withSubRefresh`, `decodeSubToken`. Token stored in `localStorage.sub_access_token`.
 
 ### Stripe Integration
 

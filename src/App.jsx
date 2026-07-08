@@ -20,6 +20,7 @@ import WLVerifyEmailPage from './pages/WLVerifyEmailPage';
 import SubscriberLoginPage from './pages/SubscriberLoginPage';
 import SubscriberForgotPasswordPage from './pages/SubscriberForgotPasswordPage';
 import SubscriberResetPasswordPage from './pages/SubscriberResetPasswordPage';
+import MagicLinkVerifyPage from './pages/MagicLinkVerifyPage';
 
 // Broker auth pages — eager (same reasoning as WL auth)
 import BrokerLoginPage from './pages/BrokerLoginPage';
@@ -91,6 +92,7 @@ export default function App() {
           <Route path="/login"                         element={withBoundary(<SubscriberLoginPage />)} />
           <Route path="/forgot-password"               element={withBoundary(<SubscriberForgotPasswordPage />)} />
           <Route path="/reset-password/:token"         element={withBoundary(<SubscriberResetPasswordPage />)} />
+          <Route path="/auth/verify"                   element={withBoundary(<MagicLinkVerifyPage />)} />
           {/* UUID-mode login: user clicks /dashboard/:uuid link, needs to enter password */}
           <Route path="/dashboard/:feedUuid/login"     element={withBoundary(<SubscriberLoginPage />)} />
 
