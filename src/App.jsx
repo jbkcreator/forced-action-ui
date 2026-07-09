@@ -1,6 +1,7 @@
-import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ThemeProvider from './theme/ThemeProvider';
+import { initMetaPixel, trackPageView } from './utils/metaPixel';
 import LandingPage from './pages/LandingPage';
 import DashboardPage from './pages/DashboardPage';
 import SuccessPage from './pages/SuccessPage';
@@ -80,10 +81,20 @@ function withBoundary(element) {
   return <ErrorBoundary>{element}</ErrorBoundary>;
 }
 
+function PixelRouteListener() {
+  const location = useLocation();
+  useEffect(() => {
+    initMetaPixel();
+    trackPageView();
+  }, [location.pathname]);
+  return null;
+}
+
 export default function App() {
   return (
     <ThemeProvider>
       <SkipLink />
+      <PixelRouteListener />
       <Suspense fallback={<RouteSkeleton />}>
         <Routes>
           <Route path="/" element={withBoundary(<LandingPage />)} />
