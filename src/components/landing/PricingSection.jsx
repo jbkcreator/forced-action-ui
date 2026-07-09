@@ -8,7 +8,7 @@ export default function PricingSection({ onCheckout, onStartFree }) {
         <span className="text-xs font-semibold uppercase tracking-[0.2em] text-yellow-400/70 mb-3 block">Pricing</span>
         <h2 className="text-3xl sm:text-4xl font-bold mb-3">Choose Your Plan</h2>
         <p className="text-slate-400 text-base max-w-xl mx-auto">
-          Founding members lock their rate forever — when spots fill, the price increases permanently. Cancel anytime.
+          Founding members lock their rate forever — when spots fill or founding pricing ends, the price increases permanently. Cancel anytime.
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
