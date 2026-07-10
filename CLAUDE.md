@@ -22,6 +22,7 @@ No test runner is configured. No linter/formatter is configured.
 Copy `.env.example` to `.env` and set:
 - `VITE_API_BASE_URL` — Backend base URL (empty string in dev; Vite proxy handles `/api/*` and `/webhooks/*` → `http://localhost:8000`)
 - `VITE_STRIPE_PUBLISHABLE_KEY` — Stripe publishable key
+- `VITE_META_PIXEL_ID` — Meta Pixel ID for client-side retargeting (`src/utils/metaPixel.js`); unset = pixel no-ops. Matches the `META_PIXEL_ID` already used by the backend's server-side CAPI integration.
 
 ## Architecture
 

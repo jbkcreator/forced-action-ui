@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { theme } from '../theme/ThemeProvider';
+import { trackPurchase } from '../utils/metaPixel';
 
 const CONFETTI_PIECES = [
   { left: '5%',  w: 8,  h: 8,  bg: 'rgba(250,204,21,0.25)', radius: '2px',  dur: '14s', delay: '0s',   rotate: '' },
@@ -24,15 +26,37 @@ const STEPS = [
 
 const TIER_LABELS = { starter: 'Starter', pro: 'Pro', dominator: 'Dominator' };
 const TIER_PRICES = { starter: '$499/mo', pro: '$899/mo', dominator: '$1,499/mo' };
+// Fallback only — used when amount_cents is absent (e.g. an old bookmarked
+// /success link from before that param existed). Real purchases get the
+// actual charged amount from Stripe via amount_cents below, which correctly
+// reflects founding-member and any other discounted pricing that this
+// flat map does not.
+const TIER_VALUES = { starter: 499, pro: 899, dominator: 1499 };
 
 export default function SuccessPage() {
   const [params] = useSearchParams();
   const feedUuid = params.get('feed_uuid');
   const tier = params.get('tier') || '';
   const zips = params.get('zips') || '';
+  const sessionId = params.get('session_id');
+  const amountCents = params.get('amount_cents');
   const tierLabel = TIER_LABELS[tier] || '';
   const tierPrice = TIER_PRICES[tier] || '';
   const zipList = zips ? zips.split(',').filter(Boolean) : [];
+
+  useEffect(() => {
+    if (!tier) return;
+    const guardKey = `fa_purchase_fired:${sessionId || `${feedUuid}:${tier}:${zips}`}`;
+    if (sessionStorage.getItem(guardKey)) return;
+    sessionStorage.setItem(guardKey, '1');
+    const parsedAmount = amountCents != null ? Number(amountCents) / 100 : null;
+    const value = Number.isFinite(parsedAmount) ? parsedAmount : TIER_VALUES[tier];
+    trackPurchase({
+      value,
+      currency: 'usd',
+      eventId: sessionId ? `sub_${sessionId}` : undefined,
+    });
+  }, [sessionId, feedUuid, tier, zips, amountCents]);
 
   return (
     <div className="min-h-screen text-white flex flex-col overflow-x-hidden" style={{

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useLanding } from './LandingContext';
 import { fetchSampleLeads } from '../../api/landing';
+import { fetchZipActivity } from '../../api/phase2b';
+import { trackViewContent } from '../../utils/metaPixel';
 import { fetchZipActivity, logBusinessEvent } from '../../api/phase2b';
 import Icon from '../ui/Icon';
 
@@ -28,6 +30,7 @@ export default function SampleLeads({ zip }) {
       .then(data => {
         setLeads(data.leads || []);
         if ((data.active_viewers ?? 0) > 0) setActiveViewers(data.active_viewers);
+        trackViewContent({ content_name: 'sample_leads', zip, vertical: selectedVertical });
         logBusinessEvent('SAMPLE_LEADS_VIEWED', { payload: { zip, vertical: selectedVertical } });
       })
       .catch(() => setLeads(null))
