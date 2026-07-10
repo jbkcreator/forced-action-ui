@@ -10,7 +10,7 @@
  *   subscriberVerifyMagicLink(token)  — exchanges the token for a session
  */
 
-import { apiRequest } from './client.js';
+import { apiRequest, api } from './client.js';
 
 const BASE = '/api/subscriber';
 
@@ -110,6 +110,20 @@ export async function subscriberResetPassword(token, newPassword) {
     method: 'POST',
     body: JSON.stringify({ token, new_password: newPassword }),
   });
+}
+
+/**
+ * One-time onboarding preference capture (gates first login — see
+ * OnboardingStep.jsx). feedUuid must match the authenticated token's feed.
+ */
+export function submitOnboarding(feedUuid, { propertyType, budgetBand }) {
+  return withSubRefresh(() =>
+    api.patch(
+      `${BASE}/onboarding/${feedUuid}`,
+      { preferred_property_type: propertyType, investment_budget_band: budgetBand },
+      { headers: subHeaders() },
+    )
+  );
 }
 
 // ---------------------------------------------------------------------------
