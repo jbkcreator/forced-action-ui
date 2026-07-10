@@ -329,6 +329,16 @@ export function fetchAttributionStats(token, { groupBy = 'conversion_type', date
   return adminFetch(token, `/api/admin/attribution/stats?${params.toString()}`, options);
 }
 
+// ─── Funnel Analytics (Part 3 traffic-capture) ────────────────────────────────
+// Stage counts: visits / sample_views / checkout_started / paid / rebilled.
+export function fetchFunnelCounts(token, { from, to } = {}, options = {}) {
+  const params = new URLSearchParams();
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  const qs = params.toString();
+  return adminFetch(token, `/api/analytics/funnel${qs ? '?' + qs : ''}`, options);
+}
+
 export function fetchAttributionConversions(token, filters = {}, options = {}) {
   const params = new URLSearchParams();
   const keys = [

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLanding } from './LandingContext';
 import { fetchSampleLeads } from '../../api/landing';
-import { fetchZipActivity } from '../../api/phase2b';
+import { fetchZipActivity, logBusinessEvent } from '../../api/phase2b';
 import Icon from '../ui/Icon';
 
 function tierClass(t) {
@@ -28,6 +28,7 @@ export default function SampleLeads({ zip }) {
       .then(data => {
         setLeads(data.leads || []);
         if ((data.active_viewers ?? 0) > 0) setActiveViewers(data.active_viewers);
+        logBusinessEvent('SAMPLE_LEADS_VIEWED', { payload: { zip, vertical: selectedVertical } });
       })
       .catch(() => setLeads(null))
       .finally(() => setLoading(false));
