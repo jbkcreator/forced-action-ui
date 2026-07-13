@@ -19,6 +19,7 @@ import {
   listLenders,
   createLender,
   setLenderStatus,
+  setLaneFeeConfig,
 } from '../../../api/loanLane.js';
 import { workStateLabel, workStateColors, LANE_OUTCOME_LABELS, LANE_OUTCOME_COLORS } from '../../../config/brokerStates.js';
 import Modal from '../../ui/Modal.jsx';
@@ -213,7 +214,17 @@ function CountyBadge({ county }) {
   );
 }
 
-function LaneRow({ lane, brokers, onAssign, onReassign, assignLoading, assigningLaneId, navigate }) {
+function FeeGateBadge({ on }) {
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+      on ? 'bg-emerald-900/50 text-emerald-300' : 'bg-slate-800 text-slate-400'
+    }`}>
+      {on ? 'Fees ON' : 'Fees OFF'}
+    </span>
+  );
+}
+
+function LaneRow({ lane, brokers, onAssign, onReassign, onFeeConfig, assignLoading, assigningLaneId, navigate }) {
   const isUnassigned = !lane.assigned_broker_id;
 
   return (
@@ -237,6 +248,19 @@ function LaneRow({ lane, brokers, onAssign, onReassign, assignLoading, assigning
       <td className="px-4 py-3"><WorkStateBadge state={lane.current_work_state} /></td>
       <td className="px-4 py-3"><OutcomeBadge outcome={lane.outcome} /></td>
       <td className="px-4 py-3 text-xs text-fa-text-secondary">{lane.lender_name || <span className="text-fa-text-muted">—</span>}</td>
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          <FeeGateBadge on={lane.fee_config_flag} />
+          <button
+            onClick={() => onFeeConfig(lane)}
+            className={`text-xs hover:underline ${
+              lane.fee_config_flag ? 'text-slate-400 hover:text-slate-300' : 'text-amber-400 hover:text-amber-300'
+            }`}
+          >
+            {lane.fee_config_flag ? 'Disable' : 'Enable…'}
+          </button>
+        </div>
+      </td>
       <td className="px-4 py-3">
         {isUnassigned ? (
           <select
@@ -266,7 +290,7 @@ function LaneRow({ lane, brokers, onAssign, onReassign, assignLoading, assigning
   );
 }
 
-function LanesTable({ lanes, brokers, onAssign, onReassign, assignLoading, assigningLaneId, loading }) {
+function LanesTable({ lanes, brokers, onAssign, onReassign, onFeeConfig, assignLoading, assigningLaneId, loading }) {
   const navigate = useNavigate();
 
   if (loading) return <div className="flex justify-center py-8"><LoadingSpinner /></div>;
@@ -277,7 +301,7 @@ function LanesTable({ lanes, brokers, onAssign, onReassign, assignLoading, assig
       <table className="w-full text-left">
         <thead className="sticky top-0 z-10 bg-fa-bg-base">
           <tr className="border-b border-fa-border-default">
-            {['Prospect', 'County', 'Stage', 'Work state', 'Outcome', 'Lender', 'Broker'].map(h => (
+            {['Prospect', 'County', 'Stage', 'Work state', 'Outcome', 'Lender', 'Fees', 'Broker'].map(h => (
               <th key={h} className="px-4 py-3 text-xs font-medium text-fa-text-muted">{h}</th>
             ))}
           </tr>
@@ -290,6 +314,7 @@ function LanesTable({ lanes, brokers, onAssign, onReassign, assignLoading, assig
               brokers={brokers}
               onAssign={onAssign}
               onReassign={onReassign}
+              onFeeConfig={onFeeConfig}
               assignLoading={assignLoading}
               assigningLaneId={assigningLaneId}
               navigate={navigate}
@@ -298,6 +323,76 @@ function LanesTable({ lanes, brokers, onAssign, onReassign, assignLoading, assig
         </tbody>
       </table>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// RESPA fee-gate modal (per-lane fee_config_flag)
+// ---------------------------------------------------------------------------
+
+const RESPA_UI_WARNING =
+  'Referral fees on consumer-purpose mortgage business are prohibited by RESPA §8 ' +
+  '(12 U.S.C. §2607) — per-violation fines and treble-damage civil liability. ' +
+  'Switching this back off later does NOT undo fees already charged. Enable only ' +
+  'for a deal counsel has confirmed in writing to be exempt (e.g. business-purpose) ' +
+  'with cleared fee terms.';
+
+function FeeConfigModal({ lane, onClose, onConfirm, loading }) {
+  const [acknowledged, setAcknowledged] = useState(false);
+  const enabling = !!lane && !lane.fee_config_flag;
+
+  useEffect(() => {
+    setAcknowledged(false);
+  }, [lane]);
+
+  if (!lane) return null;
+
+  return (
+    <Modal isOpen onClose={onClose} title={enabling ? 'Enable fee surfaces — RESPA gate' : 'Disable fee surfaces'}>
+      <p className="text-sm text-fa-text-secondary mb-3">
+        {lane.property?.address} — {lane.property?.city}, {lane.property?.state}
+      </p>
+      {enabling ? (
+        <>
+          <div className="rounded-lg border border-red-800 bg-red-950/40 px-4 py-3 mb-4">
+            <p className="text-xs font-bold text-red-300 mb-1">RESPA §8 WARNING</p>
+            <p className="text-xs text-red-200/90">{RESPA_UI_WARNING}</p>
+          </div>
+          <label className="flex items-start gap-2 mb-4 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acknowledged}
+              onChange={e => setAcknowledged(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span className="text-xs text-fa-text-secondary">
+              I confirm counsel has signed off in writing that this deal is RESPA-exempt and its fee terms are cleared.
+            </span>
+          </label>
+        </>
+      ) : (
+        <p className="text-xs text-fa-text-muted mb-4">
+          Commission dollar amounts for this lane will be hidden again. This does not undo fees already charged.
+        </p>
+      )}
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={onClose}
+          className="text-sm px-4 py-2 rounded-lg border border-fa-border-default text-fa-text-secondary hover:bg-fa-bg-card"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => onConfirm(acknowledged)}
+          disabled={loading || (enabling && !acknowledged)}
+          className={`text-sm px-4 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
+            enabling ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-fa-bg-card border border-fa-border-default text-fa-text-primary hover:bg-fa-bg-base'
+          }`}
+        >
+          {loading ? 'Saving…' : enabling ? 'Enable fees' : 'Disable fees'}
+        </button>
+      </div>
+    </Modal>
   );
 }
 
@@ -657,6 +752,8 @@ export default function BrokersLanesSection() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [reassignLaneId, setReassignLaneId] = useState(null);
   const [reassignLoading, setReassignLoading] = useState(false);
+  const [feeLane, setFeeLane] = useState(null);
+  const [feeLoading, setFeeLoading] = useState(false);
   const { toast, showToast } = useToast();
 
   const loadLanes = useCallback(async (signal, filters = laneFilters, offset = laneOffset) => {
@@ -749,6 +846,22 @@ export default function BrokersLanesSection() {
     }
   }
 
+  async function handleFeeConfig(acknowledged) {
+    if (!feeLane) return;
+    const enabled = !feeLane.fee_config_flag;
+    setFeeLoading(true);
+    try {
+      await setLaneFeeConfig(token, feeLane.lane_id, { enabled, acknowledgeRespa: acknowledged });
+      showToast(enabled ? 'Fee surfaces enabled for lane' : 'Fee surfaces disabled for lane');
+      setFeeLane(null);
+      loadLanes();
+    } catch (err) {
+      showToast(err?.detail || 'Failed to update fee gate', 'error');
+    } finally {
+      setFeeLoading(false);
+    }
+  }
+
   async function handleReassign(brokerId) {
     if (!reassignLaneId) return;
     setReassignLoading(true);
@@ -827,6 +940,7 @@ export default function BrokersLanesSection() {
               brokers={brokers}
               onAssign={handleAssign}
               onReassign={setReassignLaneId}
+              onFeeConfig={setFeeLane}
               assignLoading={assignLoading}
               assigningLaneId={assigningLaneId}
               loading={lanesLoading}
@@ -842,6 +956,7 @@ export default function BrokersLanesSection() {
               brokers={brokers}
               onAssign={handleAssign}
               onReassign={setReassignLaneId}
+              onFeeConfig={setFeeLane}
               assignLoading={assignLoading}
               assigningLaneId={assigningLaneId}
               loading={lanesLoading}
@@ -857,6 +972,7 @@ export default function BrokersLanesSection() {
               brokers={brokers}
               onAssign={handleAssign}
               onReassign={setReassignLaneId}
+              onFeeConfig={setFeeLane}
               assignLoading={assignLoading}
               assigningLaneId={assigningLaneId}
               loading={lanesLoading}
@@ -886,6 +1002,13 @@ export default function BrokersLanesSection() {
         onReassign={handleReassign}
         loading={reassignLoading}
         brokers={brokers}
+      />
+
+      <FeeConfigModal
+        lane={feeLane}
+        onClose={() => setFeeLane(null)}
+        onConfirm={handleFeeConfig}
+        loading={feeLoading}
       />
 
       <CreateBrokerModal
