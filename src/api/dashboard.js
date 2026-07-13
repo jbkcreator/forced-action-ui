@@ -56,6 +56,10 @@ export function fetchLeadPackHistory(feedUuid) {
   return api.get(`/api/lead-pack-history/${feedUuid}`);
 }
 
+export function fetchSubscriptionUpsellOffer({ feedUuid }) {
+  return api.get('/api/upsell/subscription-offer', { feed_uuid: feedUuid });
+}
+
 export function unlockHotLead(feedUuid, leadId) {
   return api.post('/api/hot-lead-unlock', {
     feed_uuid: feedUuid,

@@ -4,8 +4,11 @@ import useApi from '../hooks/useApi';
 import useFeedFilters from '../hooks/useFeedFilters';
 import useContacted from '../hooks/useContacted';
 import useStripePayment from '../hooks/useStripePayment';
+import useStripeCheckout from '../hooks/useStripeCheckout';
 import useZipActivityMap from '../hooks/useZipActivityMap';
-import { fetchFeed, createPortalSession, logEvent, unlockHotLead, unlockLead, createLeadPackCheckout } from '../api/dashboard';
+import { fetchFeed, createPortalSession, logEvent, unlockHotLead, unlockLead, createLeadPackCheckout, fetchSubscriptionUpsellOffer } from '../api/dashboard';
+import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
+import SubscribeInsteadModal from '../components/dashboard/SubscribeInsteadModal';
 import { logBusinessEvent } from '../api/phase2b';
 import PaymentSheetModal from '../components/common/PaymentSheetModal';
 import Navbar from '../components/layout/Navbar';
@@ -111,6 +114,10 @@ export default function DashboardPage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [lpZip, setLpZip] = useState('');
   const [lpOpen, setLpOpen] = useState(false);
+  const [upsellOffer, setUpsellOffer] = useState(null);
+  const [upsellOpen, setUpsellOpen] = useState(false);
+  const stripeCheckout = useStripeCheckout();
+  const [dealCaptureOpen, setDealCaptureOpen] = useState(false);
   const [dealCaptureLead, setDealCaptureLead] = useState(null);  // lead whose outcome is being reported
   const [premiumLead, setPremiumLead] = useState(null);   // lead obj for premium modal
   const [pitchLead, setPitchLead] = useState(null);       // lead obj for DFY-Lite pitch modal
@@ -411,13 +418,64 @@ export default function DashboardPage() {
     }
   }, [feedUuid]);
 
-  const handleOpenLpModal = useCallback((zip) => {
-    if (!zip || zip.length < 5) { alert('Enter a valid 5-digit ZIP code.'); return; }
+  const openLeadPackModal = useCallback((zip) => {
     setLpZip(zip);
     setLpOpen(true);
     stripePayment.reset();
     logEvent('lead_pack_modal_open', feedUuid);
   }, [feedUuid, stripePayment]);
+
+  const handleOpenLpModal = useCallback(async (zip) => {
+    if (!zip || zip.length < 5) { alert('Enter a valid 5-digit ZIP code.'); return; }
+
+    if (subscriber.tier === 'free') {
+      try {
+        const offer = await fetchSubscriptionUpsellOffer({ feedUuid });
+        if (offer?.eligible) {
+          setLpZip(zip);
+          setUpsellOffer(offer);
+          setUpsellOpen(true);
+          logBusinessEvent('lead_pack_upsell_shown', {
+            feedUuid,
+            payload: { zip_code: zip, vertical: subscriber.vertical },
+          });
+          return;
+        }
+      } catch {
+        // Offer lookup is best-effort — fall through to the normal lead pack flow.
+      }
+    }
+
+    openLeadPackModal(zip);
+  }, [feedUuid, subscriber, openLeadPackModal]);
+
+  const handleUpsellClose = useCallback(() => {
+    setUpsellOpen(false);
+  }, []);
+
+  const handleUpsellDecline = useCallback(() => {
+    setUpsellOpen(false);
+    logBusinessEvent('lead_pack_upsell_declined', {
+      feedUuid,
+      payload: { zip_code: lpZip, vertical: subscriber.vertical },
+    });
+    openLeadPackModal(lpZip);
+  }, [feedUuid, lpZip, subscriber, openLeadPackModal]);
+
+  const handleUpsellAccept = useCallback(() => {
+    logBusinessEvent('lead_pack_upsell_accepted', {
+      feedUuid,
+      payload: { zip_code: lpZip, vertical: subscriber.vertical },
+    });
+    setUpsellOpen(false);
+    stripeCheckout.openCheckout({
+      tier: 'starter',
+      vertical: subscriber.vertical,
+      countyId: subscriber.county_id || 'hillsborough',
+      zipCodes: [lpZip],
+      email: subscriber.email,
+    });
+  }, [feedUuid, lpZip, subscriber, stripeCheckout]);
 
   const handleStartLeadPackPayment = useCallback(async () => {
     try {
@@ -865,6 +923,24 @@ export default function DashboardPage() {
           processing={stripePayment.processing}
           onStartPayment={handleStartLeadPackPayment}
           onConfirmPayment={handleConfirmLeadPackPayment}
+        />
+
+        <SubscribeInsteadModal
+          isOpen={upsellOpen}
+          offer={upsellOffer}
+          zipCode={lpZip}
+          vertical={subscriber.vertical}
+          onAccept={handleUpsellAccept}
+          onDecline={handleUpsellDecline}
+          onClose={handleUpsellClose}
+        />
+
+        <StripeCheckoutModal
+          isOpen={stripeCheckout.isOpen}
+          onClose={stripeCheckout.closeCheckout}
+          loading={stripeCheckout.loading}
+          error={stripeCheckout.checkoutError}
+          embeddedRef={stripeCheckout.embeddedRef}
         />
 
         {/* Stage 5: Bundle offer modal — opens on ?bundle=<type>&variant=<a|b> deep link */}
