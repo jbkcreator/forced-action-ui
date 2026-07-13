@@ -189,8 +189,6 @@ export function LandingProvider({ children }) {
     const affParam = searchParams.get('aff');
     if (affParam) persistAffiliateRef(affParam);
 
-    if (!hasUrlParams && attribution) return;
-
     const referralCode =
       searchParams.get('referral_code') || searchParams.get('ref') || null;
     const captured = {
@@ -203,15 +201,20 @@ export function LandingProvider({ children }) {
       attributionToken: searchParams.get('token') || null,
     };
 
-    setAttribution(captured);
-    persistAttribution(captured);
-
+    // Funnel analytics: count every landing visit, not just new-attribution
+    // visits — fired unconditionally, ahead of the attribution-dedup gate
+    // below (that gate governs attribution bookkeeping, not visit counting).
     api
       .post('/api/business-event', {
         event_type: 'LANDING_PAGE_VIEWED',
         payload: { ...captured, county_id: countyId },
       })
       .catch(() => {});
+
+    if (!hasUrlParams && attribution) return;
+
+    setAttribution(captured);
+    persistAttribution(captured);
 
     if (captured.attributionToken && !tokenResolving) {
       setTokenResolving(true);

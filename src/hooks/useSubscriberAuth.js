@@ -8,6 +8,7 @@ import { useState, useCallback } from 'react';
 import {
   subscriberLogin as apiLogin,
   subscriberLogout as apiLogout,
+  subscriberVerifyMagicLink as apiVerifyMagicLink,
   decodeSubToken,
 } from '../api/subscriber.js';
 import { logBusinessEvent } from '../api/phase2b';
@@ -23,6 +24,13 @@ export default function useSubscriberAuth() {
     return data;
   }, []);
 
+  const verifyMagicLink = useCallback(async (token) => {
+    const data = await apiVerifyMagicLink(token);
+    setSession(decodeSubToken());
+    logBusinessEvent('SUBSCRIBER_LOGIN_MAGIC_LINK', { feedUuid: data?.feed_uuid });
+    return data;
+  }, []);
+
   const logout = useCallback(() => {
     apiLogout();
     setSession(null);
@@ -32,6 +40,7 @@ export default function useSubscriberAuth() {
     session,                          // null | { sub, feed_uuid, exp }
     isAuthenticated: !!session,
     login,
+    verifyMagicLink,
     logout,
   };
 }

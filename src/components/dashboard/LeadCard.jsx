@@ -14,7 +14,7 @@ function formatTagLabel(s) {
   return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-function LeadCard({ lead, index, onUnlockHotLead, contacted, onToggleContacted, onOpenPremium, onOpenPitch, urgencyViewers, feedUuid }) {
+function LeadCard({ lead, index, onUnlockHotLead, contacted, onToggleContacted, onOpenPremium, onOpenPitch, onReportOutcome, urgencyViewers, feedUuid }) {
   const [expanded, setExpanded] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const holdStatus = useLeadHold(lead.property_id, feedUuid, lead.property_id != null);
@@ -47,6 +47,11 @@ function LeadCard({ lead, index, onUnlockHotLead, contacted, onToggleContacted, 
     e.stopPropagation();
     onOpenPitch?.(lead);
   }, [lead, onOpenPitch]);
+
+  const handleReportOutcome = useCallback((e) => {
+    e.stopPropagation();
+    onReportOutcome?.(lead);
+  }, [lead, onReportOutcome]);
 
   return (
     <div
@@ -190,6 +195,15 @@ function LeadCard({ lead, index, onUnlockHotLead, contacted, onToggleContacted, 
                 Generate Pitch
               </button>
             )}
+            {onReportOutcome && (
+              <button
+                onClick={handleReportOutcome}
+                className="text-xs px-3 py-1.5 rounded-lg font-medium bg-emerald-400/10 text-emerald-300 border border-emerald-400/25 hover:bg-emerald-400/20 transition"
+                title="Report the outcome of this lead"
+              >
+                I closed this →
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -222,6 +236,7 @@ function areEqual(prev, next) {
     prev.onToggleContacted === next.onToggleContacted &&
     prev.onOpenPremium === next.onOpenPremium &&
     prev.onOpenPitch === next.onOpenPitch &&
+    prev.onReportOutcome === next.onReportOutcome &&
     prev.onUnlockHotLead === next.onUnlockHotLead
   );
 }

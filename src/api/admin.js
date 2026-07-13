@@ -79,6 +79,14 @@ export function uploadVoterRegistry(token, file, countyId) {
   return adminFetch(token, '/api/admin/upload/voter-registry', { method: 'POST', body: form });
 }
 
+// B0-01 — founder-portfolio CSV import. Returns
+// { imported, updated, matched, unmatched:[...], errors:[...] }.
+export function importFounderPortfolio(token, file) {
+  const form = new FormData();
+  form.append('file', file);
+  return adminFetch(token, '/api/admin/import/founder-portfolio', { method: 'POST', body: form });
+}
+
 // ─── DLQ ─────────────────────────────────────────────────────────────────────
 export function fetchDlq(token, { limit = 100, offset = 0, reason, q } = {}, options = {}) {
   const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
@@ -319,6 +327,16 @@ export function fetchAttributionStats(token, { groupBy = 'conversion_type', date
   if (dateFrom) params.set('date_from', dateFrom);
   if (dateTo) params.set('date_to', dateTo);
   return adminFetch(token, `/api/admin/attribution/stats?${params.toString()}`, options);
+}
+
+// ─── Funnel Analytics (Part 3 traffic-capture) ────────────────────────────────
+// Stage counts: visits / sample_views / checkout_started / paid / rebilled.
+export function fetchFunnelCounts(token, { from, to } = {}, options = {}) {
+  const params = new URLSearchParams();
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  const qs = params.toString();
+  return adminFetch(token, `/api/analytics/funnel${qs ? '?' + qs : ''}`, options);
 }
 
 export function fetchAttributionConversions(token, filters = {}, options = {}) {

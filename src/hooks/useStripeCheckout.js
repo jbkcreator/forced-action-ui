@@ -3,6 +3,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { createCheckout } from '../api/landing';
 import { createFreeSignup } from '../api/phase2b';
 import { getAttribution } from '../utils/attribution';
+import { trackInitiateCheckout } from '../utils/metaPixel';
 
 // Module-level variable — populated on first checkout open, not on module
 // evaluation. This keeps Stripe (~100 KB) out of the initial bundle: the SDK
@@ -64,10 +65,13 @@ export default function useStripeCheckout() {
     }
 
     try {
-      const { client_secret } = await createCheckout({
+      const { client_secret, session_id, amount_total_cents } = await createCheckout({
         tier, vertical, countyId, zipCodes, email, consentAcceptance: consent,
         attribution: getAttribution(),
       });
+      checkoutCtxRef.current.sessionId = session_id || null;
+      checkoutCtxRef.current.amountTotalCents = amount_total_cents ?? null;
+      trackInitiateCheckout({ content_name: tier });
       const stripe = await getStripePromise();
 
       embeddedRef.current = await stripe.initEmbeddedCheckout({
@@ -84,6 +88,16 @@ export default function useStripeCheckout() {
             // which county the subscriber signed up for.
             if (checkoutCtxRef.current.countyId) {
               params.set('county_id', checkoutCtxRef.current.countyId);
+            }
+            // Meta Pixel Purchase dedup — matches the server-side CAPI
+            // event_id (sub_<session_id>) built in stripe_webhooks.py.
+            if (checkoutCtxRef.current.sessionId) {
+              params.set('session_id', checkoutCtxRef.current.sessionId);
+            }
+            // Real charged amount (from Stripe, not a guessed tier price) —
+            // accounts for founding-member and any other discounted pricing.
+            if (checkoutCtxRef.current.amountTotalCents != null) {
+              params.set('amount_cents', String(checkoutCtxRef.current.amountTotalCents));
             }
           }
           window.location.href = `/success?${params.toString()}`;

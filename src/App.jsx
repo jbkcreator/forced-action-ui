@@ -1,6 +1,7 @@
-import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ThemeProvider from './theme/ThemeProvider';
+import { initMetaPixel, trackPageView } from './utils/metaPixel';
 import LandingPage from './pages/LandingPage';
 import DashboardPage from './pages/DashboardPage';
 import SuccessPage from './pages/SuccessPage';
@@ -20,6 +21,7 @@ import WLVerifyEmailPage from './pages/WLVerifyEmailPage';
 import SubscriberLoginPage from './pages/SubscriberLoginPage';
 import SubscriberForgotPasswordPage from './pages/SubscriberForgotPasswordPage';
 import SubscriberResetPasswordPage from './pages/SubscriberResetPasswordPage';
+import MagicLinkVerifyPage from './pages/MagicLinkVerifyPage';
 
 // Broker auth pages — eager (same reasoning as WL auth)
 import BrokerLoginPage from './pages/BrokerLoginPage';
@@ -79,10 +81,20 @@ function withBoundary(element) {
   return <ErrorBoundary>{element}</ErrorBoundary>;
 }
 
+function PixelRouteListener() {
+  const location = useLocation();
+  useEffect(() => {
+    initMetaPixel();
+    trackPageView();
+  }, [location.pathname]);
+  return null;
+}
+
 export default function App() {
   return (
     <ThemeProvider>
       <SkipLink />
+      <PixelRouteListener />
       <Suspense fallback={<RouteSkeleton />}>
         <Routes>
           <Route path="/" element={withBoundary(<LandingPage />)} />
@@ -91,6 +103,7 @@ export default function App() {
           <Route path="/login"                         element={withBoundary(<SubscriberLoginPage />)} />
           <Route path="/forgot-password"               element={withBoundary(<SubscriberForgotPasswordPage />)} />
           <Route path="/reset-password/:token"         element={withBoundary(<SubscriberResetPasswordPage />)} />
+          <Route path="/auth/verify"                   element={withBoundary(<MagicLinkVerifyPage />)} />
           {/* UUID-mode login: user clicks /dashboard/:uuid link, needs to enter password */}
           <Route path="/dashboard/:feedUuid/login"     element={withBoundary(<SubscriberLoginPage />)} />
 

@@ -1,9 +1,13 @@
 /**
- * Subscriber feed authentication API (fa061).
+ * Subscriber feed authentication API (fa061 + magic-link).
  *
  * Token stored in localStorage under 'sub_access_token'.
  * Feed UUID kept in localStorage under 'sub_feed_uuid' after login so the
  * dashboard can reconstruct the correct route after a page reload.
+ *
+ * Magic-link (passwordless) endpoints:
+ *   subscriberRequestMagicLink(email) — emails a one-time login link
+ *   subscriberVerifyMagicLink(token)  — exchanges the token for a session
  */
 
 import { apiRequest } from './client.js';
@@ -73,6 +77,22 @@ export async function subscriberLogin({ email, feedUuid, password }) {
   const data = await apiRequest(`${BASE}/login`, {
     method: 'POST',
     body: JSON.stringify(body),
+  });
+  _storeSession(data);
+  return data;
+}
+
+export async function subscriberRequestMagicLink(email) {
+  return apiRequest(`${BASE}/magic-link/request`, {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function subscriberVerifyMagicLink(token) {
+  const data = await apiRequest(`${BASE}/magic-link/verify`, {
+    method: 'POST',
+    body: JSON.stringify({ token }),
   });
   _storeSession(data);
   return data;
