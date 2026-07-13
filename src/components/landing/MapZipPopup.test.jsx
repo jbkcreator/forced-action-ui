@@ -58,4 +58,10 @@ describe('MapZipPopup', () => {
     render(<MapZipPopup zip={graceZip} onClose={vi.fn()} />);
     expect(screen.queryByText(/on waitlist/i)).not.toBeInTheDocument();
   });
+
+  it('omits lead count when backend suppresses it as null (taken/grace/zero — ADR 0029)', () => {
+    const suppressedZip = { zip: '33615', status: 'available', lead_count: null, active_viewers: 0 };
+    render(<MapZipPopup zip={suppressedZip} onClose={vi.fn()} />);
+    expect(screen.queryByText(/leads available/i)).not.toBeInTheDocument();
+  });
 });

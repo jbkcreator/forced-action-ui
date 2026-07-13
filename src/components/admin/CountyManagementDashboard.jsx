@@ -66,7 +66,7 @@ function Field({ label, hint, children }) {
 }
 
 // ─── Add / Edit County Form ───────────────────────────────────────────────────
-function CountyForm({ initial = {}, onSave, onCancel, saving }) {
+export function CountyForm({ initial = {}, onSave, onCancel, saving }) {
   const [form, setForm] = useState({
     county_id: initial.county_id || '',
     display_name: initial.display_name || '',
@@ -76,15 +76,36 @@ function CountyForm({ initial = {}, onSave, onCancel, saving }) {
     bankruptcy_division: initial.bankruptcy_division || '',
     city_filer_keywords: (initial.city_filer_keywords || []).join(', '),
     code_lien_type_map: JSON.stringify(initial.code_lien_type_map || {}, null, 2),
+    founding_price_deadline_at: initial.founding_price_deadline_at
+      ? initial.founding_price_deadline_at.slice(0, 16)
+      : '',
   });
+  const [testimonials, setTestimonials] = useState(
+    (initial.landing_featured_testimonials?.length
+      ? initial.landing_featured_testimonials
+      : [{}]
+    ).map(t => ({ quote: t.quote || '', name: t.name || '', company: t.company || '' }))
+  );
   const isEdit = Boolean(initial.county_id);
 
   function set(k, v) { setForm(p => ({ ...p, [k]: v })); }
+  function setTestimonial(i, k, v) {
+    setTestimonials(rows => rows.map((row, idx) => (idx === i ? { ...row, [k]: v } : row)));
+  }
+  function addTestimonial() {
+    setTestimonials(rows => [...rows, { quote: '', name: '', company: '' }]);
+  }
+  function removeTestimonial(i) {
+    setTestimonials(rows => rows.filter((_, idx) => idx !== i));
+  }
 
   function handleSubmit(e) {
     e.preventDefault();
     let code_lien_type_map = {};
     try { code_lien_type_map = JSON.parse(form.code_lien_type_map || '{}'); } catch {}
+    const landing_featured_testimonials = testimonials
+      .map(t => ({ quote: t.quote.trim(), name: t.name.trim() || undefined, company: t.company.trim() || undefined }))
+      .filter(t => t.quote);
     onSave({
       county_id: form.county_id.trim().toLowerCase().replace(/\s+/g, '_'),
       display_name: form.display_name.trim(),
@@ -94,6 +115,10 @@ function CountyForm({ initial = {}, onSave, onCancel, saving }) {
       bankruptcy_division: form.bankruptcy_division.trim() || null,
       city_filer_keywords: form.city_filer_keywords.split(',').map(s => s.trim()).filter(Boolean),
       code_lien_type_map,
+      landing_featured_testimonials,
+      founding_price_deadline_at: form.founding_price_deadline_at
+        ? new Date(form.founding_price_deadline_at).toISOString()
+        : null,
     });
   }
 
@@ -145,6 +170,62 @@ function CountyForm({ initial = {}, onSave, onCancel, saving }) {
           onChange={e => set('code_lien_type_map', e.target.value)}
           spellCheck={false}
           rows={6}
+        />
+      </Field>
+
+      <p className="text-xs font-semibold text-slate-400 pt-2">Landing Page (Task 8)</p>
+
+      <div>
+        <label className="block text-xs text-slate-500 mb-1">Featured Testimonials</label>
+        <p className="text-xs text-slate-600 mb-2 leading-snug">
+          Rendered as a carousel on the landing page. Rows with a blank quote are dropped on save.
+        </p>
+        <div className="space-y-3">
+          {testimonials.map((t, i) => (
+            <div key={i} className="rounded-lg p-3 space-y-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">Testimonial {i + 1}</span>
+                <button
+                  type="button"
+                  aria-label={`Remove testimonial ${i + 1}`}
+                  onClick={() => removeTestimonial(i)}
+                  className="text-xs text-red-400 hover:text-red-300"
+                >
+                  Remove
+                </button>
+              </div>
+              <textarea
+                aria-label={`Testimonial ${i + 1} quote`}
+                className={inputCls + ' resize-y text-xs'}
+                style={{ ...inputStyle, minHeight: '50px' }}
+                value={t.quote}
+                onChange={e => setTestimonial(i, 'quote', e.target.value)}
+                placeholder="We closed two jobs in the first week."
+                rows={2}
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <input aria-label={`Testimonial ${i + 1} name`} className={inputCls} style={inputStyle}
+                  value={t.name} onChange={e => setTestimonial(i, 'name', e.target.value)} placeholder="Sarah M." />
+                <input aria-label={`Testimonial ${i + 1} company`} className={inputCls} style={inputStyle}
+                  value={t.company} onChange={e => setTestimonial(i, 'company', e.target.value)} placeholder="Tampa Roofing Co." />
+              </div>
+            </div>
+          ))}
+        </div>
+        <button type="button" onClick={addTestimonial} className={btnGhost + ' mt-2'}>
+          + Add Testimonial
+        </button>
+      </div>
+
+      <Field label="Founding Price Deadline" hint="After this time, new checkouts get regular pricing. Leave blank for spots-only gating.">
+        <input
+          id="founding_price_deadline_at"
+          aria-label="Founding price deadline"
+          type="datetime-local"
+          className={inputCls}
+          style={inputStyle}
+          value={form.founding_price_deadline_at}
+          onChange={e => set('founding_price_deadline_at', e.target.value)}
         />
       </Field>
 

@@ -10,6 +10,8 @@ import HowItWorks from '../components/landing/HowItWorks';
 import FirstSessionWall from '../components/landing/FirstSessionWall';
 import ZipChecker from '../components/landing/ZipChecker';
 import PricingSection from '../components/landing/PricingSection';
+import FeaturedTestimonial from '../components/landing/FeaturedTestimonial';
+import ZipScarcityCounter from '../components/landing/ZipScarcityCounter';
 import FAQ from '../components/landing/FAQ';
 import SocialProofWall from '../components/landing/SocialProofWall';
 import StickyHeaderCTA from '../components/landing/StickyHeaderCTA';
@@ -153,6 +155,7 @@ function LandingContent() {
               </div>
 
               <div className="max-w-6xl mx-auto px-6">
+                <ZipScarcityCounter territoryAvailability={landingData?.territory_availability} />
                 <Suspense fallback={<div className="h-64 bg-fa-bg-card rounded-xl animate-pulse" />}>
                   <ZipTerritoryMap
                     highlightZip={lastCheckedZip}
@@ -197,6 +200,7 @@ function LandingContent() {
               {ctaMode === 'signup' && (
                 <div id="pricing" ref={pricingRef}>
                   <PricingSection onCheckout={handleCheckout} onStartFree={handleStartFree} />
+                  <FeaturedTestimonial testimonials={landingData?.featured_testimonials} />
                 </div>
               )}
             </>

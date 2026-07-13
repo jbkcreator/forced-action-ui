@@ -154,7 +154,7 @@ export default function PricingCard({ tier, isPopular, onCheckout }) {
                 color: '#94a3b8',
               }}
             >
-              Founding spots sold out — regular pricing
+              {spots.deadline_passed ? 'Founding pricing has ended — regular pricing' : 'Founding spots sold out — regular pricing'}
             </span>
           )}
         </div>
