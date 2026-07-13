@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useLanding } from './LandingContext';
 import { fetchSampleLeads } from '../../api/landing';
-import { fetchZipActivity } from '../../api/phase2b';
-import { trackViewContent } from '../../utils/metaPixel';
 import { fetchZipActivity, logBusinessEvent } from '../../api/phase2b';
+import { trackViewContent } from '../../utils/metaPixel';
 import Icon from '../ui/Icon';
 
 function tierClass(t) {
