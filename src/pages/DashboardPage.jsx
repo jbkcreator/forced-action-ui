@@ -24,6 +24,7 @@ import BlurredStackSection from '../components/dashboard/BlurredStackSection';
 import FreeTierUpgradeCard from '../components/dashboard/FreeTierUpgradeCard';
 import DashboardHeroBanner from '../components/dashboard/DashboardHeroBanner';
 import OnboardingChecklist from '../components/dashboard/OnboardingChecklist';
+import OnboardingStep from '../components/dashboard/OnboardingStep';
 import MonetizationWall from '../components/dashboard/MonetizationWall';
 import DealCapture from '../components/dashboard/DealCapture';
 import PremiumCreditsModal from '../components/dashboard/PremiumCreditsModal';
@@ -575,6 +576,10 @@ export default function DashboardPage() {
         <main id="main-content" className="max-w-6xl mx-auto px-6 py-8">
           {loading && <LeadCardSkeletonList count={5} />}
           {error && <ErrorState />}
+
+          {!loading && !error && subscriber?.id && subscriber.onboarding_completed === false && (
+            <OnboardingStep feedUuid={feedUuid} onComplete={refetch} />
+          )}
 
           {!loading && !error && (
             <>

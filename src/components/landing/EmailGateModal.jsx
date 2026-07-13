@@ -11,6 +11,7 @@ export default function EmailGateModal({
   submitLabel = 'Continue',
   submitting = false,
   sourceFlow = 'free_signup',
+  successEmail = null,
 }) {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -57,6 +58,24 @@ export default function EmailGateModal({
       >
         <ModalClose onClick={handleClose} />
 
+        {successEmail ? (
+          <>
+            <h2 className="text-xl font-bold mb-1">Check your email</h2>
+            <p className="text-slate-400 text-sm mb-2">
+              We sent a sign-in link to <span className="text-white">{successEmail}</span>.
+            </p>
+            <p className="text-slate-400 text-sm mb-6">
+              Open it on this device to sign in and reach your dashboard.
+            </p>
+            <button
+              onClick={handleClose}
+              className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-bold py-3 rounded-xl transition"
+            >
+              Got it
+            </button>
+          </>
+        ) : (
+          <>
         <h2 className="text-xl font-bold mb-1">{title}</h2>
         <p className="text-slate-400 text-sm mb-6">
           {description}
@@ -111,6 +130,8 @@ export default function EmailGateModal({
             Go to your dashboard
           </a>
         </p>
+          </>
+        )}
       </div>
     </Modal>
   );

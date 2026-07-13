@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef, lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { LandingProvider, useLanding } from '../components/landing/LandingContext';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
@@ -28,7 +27,6 @@ const ZipTerritoryMap = lazy(() => import('../components/landing/ZipTerritoryMap
 const ConciergeChat   = lazy(() => import('../components/concierge/ConciergeChat'));
 
 function LandingContent() {
-  const navigate = useNavigate();
   const { selectedVertical, countyId, landingData, attribution } = useLanding();
   const ctaMode = landingData?.cta_mode ?? 'signup'; // default signup for backward compat
   // emailGate.flow: 'paid' (goes to ZIP collector → Stripe) or 'free' (goes to /api/free-signup → dashboard)
@@ -39,6 +37,7 @@ function LandingContent() {
   const [lastCheckedZip, setLastCheckedZip] = useState('');
   const [waitlistOpen, setWaitlistOpen] = useState(false);
   const [freeSigningUp, setFreeSigningUp] = useState(false);
+  const [freeSignupSuccessEmail, setFreeSignupSuccessEmail] = useState(null);
   const { isOpen, loading, checkoutError, openCheckout, closeCheckout, embeddedRef } = useStripeCheckout();
   const pricingRef = useRef(null);
 
@@ -55,7 +54,10 @@ function LandingContent() {
 
   // Step 2: Email + consent collected
   //   - paid flow → ZIP collector grid → Stripe
-  //   - free flow → /api/free-signup (no intent, welcome email fires) → /dashboard/{uuid}
+  //   - free flow → /api/free-signup (welcome + magic-link email fires) → "check your email"
+  //     screen. The user isn't authenticated yet, so we must NOT navigate to the
+  //     dashboard here — that page requires a session and would bounce them to a
+  //     password login they were never given. The magic link is what signs them in.
   const handleEmailProceed = useCallback(async (email, consent, phone) => {
     setUserEmail(email);
     setUserConsent(consent);
@@ -78,11 +80,12 @@ function LandingContent() {
           attributionToken: attribution?.attributionToken || null,
           affiliateRef: attribution?.affiliateRef || null,
         });
-        setEmailGate({ open: false, tier: null, flow: 'paid' });
+        setFreeSigningUp(false);
         if (resp?.feed_uuid) {
-          navigate(`/dashboard/${resp.feed_uuid}`);
+          setFreeSignupSuccessEmail(email);
         } else {
           alert('Signup succeeded but feed link missing. Check your email.');
+          setEmailGate({ open: false, tier: null, flow: 'paid' });
         }
       } catch (err) {
         setFreeSigningUp(false);
@@ -93,7 +96,7 @@ function LandingContent() {
 
     setEmailGate({ open: false, tier: null, flow: 'paid' });
     setZipCollector({ open: true, tier: emailGate.tier });
-  }, [emailGate.flow, emailGate.tier, selectedVertical, countyId, attribution, navigate]);
+  }, [emailGate.flow, emailGate.tier, selectedVertical, countyId, attribution]);
 
   // Step 3: ZIPs collected → launch Stripe checkout. fa017: pass attribution
   // so the pre-checkout free-signup persists signup_source/utm_* on the row.
@@ -216,7 +219,10 @@ function LandingContent() {
 
         <EmailGateModal
           isOpen={emailGate.open}
-          onClose={() => setEmailGate({ open: false, tier: null, flow: 'paid' })}
+          onClose={() => {
+            setEmailGate({ open: false, tier: null, flow: 'paid' });
+            setFreeSignupSuccessEmail(null);
+          }}
           onProceed={handleEmailProceed}
           submitting={freeSigningUp && emailGate.flow === 'free'}
           submitLabel={emailGate.flow === 'free' ? 'Start Free' : 'Continue'}
@@ -225,6 +231,7 @@ function LandingContent() {
           description={emailGate.flow === 'free'
             ? "We'll set up your free dashboard with blurred leads in your county. Unlock the ones you want for $4 each."
             : "We'll use this to set up your account and send your lead feed access."}
+          successEmail={freeSignupSuccessEmail}
         />
 
         <ZipCollectorModal
