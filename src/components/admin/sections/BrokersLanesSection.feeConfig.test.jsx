@@ -108,4 +108,20 @@ describe('BrokersLanesSection — RESPA fee gate modal', () => {
     await waitFor(() => expect(setLaneFeeConfig).toHaveBeenCalledTimes(1));
     expect(setLaneFeeConfig).toHaveBeenCalledWith('tok', 'lane-2', { enabled: false, acknowledgeRespa: false });
   });
+
+  it('shows an error toast and keeps the modal open when the backend rejects the enable', async () => {
+    fetchAllLanes.mockResolvedValue({ lanes: [makeLane({ fee_config_flag: false })], total: 1 });
+    setLaneFeeConfig.mockRejectedValue({ detail: 'Deal is not confirmed RESPA-exempt' });
+    renderSection();
+    await waitFor(() => screen.getByText('123 Main St'));
+
+    await userEvent.click(screen.getByRole('button', { name: /enable…/i }));
+    await userEvent.click(screen.getByRole('checkbox'));
+    await userEvent.click(screen.getByRole('button', { name: /enable fees/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Deal is not confirmed RESPA-exempt');
+    // The gate must not silently close on a rejected promotion — the admin still needs to act.
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /enable fees/i })).toBeEnabled();
+  });
 });
