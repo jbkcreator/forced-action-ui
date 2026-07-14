@@ -31,6 +31,10 @@ export function createFreeSignup({
   // email is deferred. Accepted values: 'upgrade' (paid plan), 'unlock'
   // ($4 lead unlock), or null (true free signup → send welcome now).
   intent = null,
+  // Annual-at-signup A/B (fa-annual-at-signup): the arm this visitor was
+  // already bucketed into client-side (utils/experiments.js) before a
+  // subscriber_id existed, so the backend can persist it against the new row.
+  annualTestArm = null,
 }) {
   return api.post('/api/free-signup', {
     email,
@@ -48,6 +52,7 @@ export function createFreeSignup({
     attribution_token: attributionToken,
     affiliate_ref: affiliateRef,
     intent,
+    annual_test_arm: annualTestArm,
   });
 }
 

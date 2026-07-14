@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { DEFAULT_VERTICAL, DEFAULT_COUNTY_ID } from '../../config/constants';
 import { api } from '../../api/client';
-import { fetchPricing, fetchLandingData } from '../../api/landing';
+import { fetchPricing, fetchLandingData, fetchAnnualSignupConfig } from '../../api/landing';
 
 const LandingContext = createContext();
 
@@ -172,6 +172,24 @@ export function LandingProvider({ children }) {
     return () => { cancelled = true; };
   }, []);
 
+  // ── Annual-at-signup A/B traffic split (toggleable via backend env var) ──
+  const [annualSignupTrafficPct, setAnnualSignupTrafficPct] = useState(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAnnualSignupConfig()
+      .then((res) => {
+        if (!cancelled && typeof res?.traffic_pct === 'number') {
+          setAnnualSignupTrafficPct(res.traffic_pct);
+        }
+      })
+      .catch(() => {
+        // getAnnualSignupArm() falls back to its own safe default if this
+        // never resolves — never blocks pricing from rendering.
+      });
+    return () => { cancelled = true; };
+  }, []);
+
   // ── Attribution capture ───────────────────────────────────────────────────
   useEffect(() => {
     const hasUrlParams =
@@ -255,8 +273,9 @@ export function LandingProvider({ children }) {
       tokenResolving,
       pricing,
       pricingLoading,
+      annualSignupTrafficPct,
     }),
-    [selectedVertical, countyId, landingData, landingDataLoading, attribution, tokenResolving, pricing, pricingLoading],
+    [selectedVertical, countyId, landingData, landingDataLoading, attribution, tokenResolving, pricing, pricingLoading, annualSignupTrafficPct],
   );
 
   return <LandingContext.Provider value={value}>{children}</LandingContext.Provider>;

@@ -1,7 +1,13 @@
 import PricingCard from './PricingCard';
+import AnnualPricingCard from './AnnualPricingCard';
 import Icon from '../ui/Icon';
+import { useLanding } from './LandingContext';
+import { getAnnualSignupArm } from '../../utils/experiments';
 
 export default function PricingSection({ onCheckout, onStartFree }) {
+  const { annualSignupTrafficPct } = useLanding();
+  const showAnnualCard = getAnnualSignupArm(annualSignupTrafficPct) === 'variant';
+
   return (
     <section className="max-w-6xl mx-auto px-6 py-20">
       <div className="text-center mb-14">
@@ -11,10 +17,11 @@ export default function PricingSection({ onCheckout, onStartFree }) {
           Founding members lock their rate forever — when spots fill or founding pricing ends, the price increases permanently. Cancel anytime.
         </p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+      <div className={`grid grid-cols-1 gap-6 lg:gap-8 ${showAnnualCard ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
         <PricingCard tier="starter" onCheckout={onCheckout} />
         <PricingCard tier="pro" isPopular onCheckout={onCheckout} />
         <PricingCard tier="dominator" onCheckout={onCheckout} />
+        {showAnnualCard && <AnnualPricingCard onCheckout={onCheckout} />}
       </div>
 
       {/* Free signup option */}
