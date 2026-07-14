@@ -6,6 +6,7 @@
  *   GET  /api/lanes/{laneId}                    lane detail + transitions
  *   GET  /api/lanes/{laneId}/transitions
  *   POST /api/admin/lanes/{laneId}/assign-broker
+ *   POST /api/admin/lanes/{laneId}/fee-config     flip the RESPA fee gate (fee_config_flag)
  *   GET  /api/admin/brokers                     list brokers + lane counts
  *   GET  /api/admin/brokers/{brokerId}/lanes    by-broker lane lens
  *   POST /api/admin/brokers                     create/invite broker
@@ -177,6 +178,17 @@ export function assignBroker(token, laneId, brokerId, opts = {}) {
   return adminFetch(token, `/api/admin/lanes/${laneId}/assign-broker`, {
     method: 'POST',
     body: JSON.stringify({ broker_id: brokerId }),
+    ...opts,
+  });
+}
+
+// Flip the lane's RESPA fee gate. Enabling requires acknowledgeRespa=true —
+// the backend refuses (422) otherwise. Disabling never needs acknowledgement.
+export function setLaneFeeConfig(token, laneId, { enabled, acknowledgeRespa = false }, opts = {}) {
+  if (USE_MOCK) return Promise.resolve({ lane_id: laneId, previous: !enabled, enabled });
+  return adminFetch(token, `/api/admin/lanes/${laneId}/fee-config`, {
+    method: 'POST',
+    body: JSON.stringify({ enabled, acknowledge_respa: acknowledgeRespa }),
     ...opts,
   });
 }
