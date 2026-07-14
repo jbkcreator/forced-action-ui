@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { DEFAULT_VERTICAL, DEFAULT_COUNTY_ID } from '../../config/constants';
 import { api } from '../../api/client';
 import { fetchPricing, fetchLandingData, fetchAnnualSignupConfig } from '../../api/landing';
+import { DEFAULT_TRAFFIC_PCT } from '../../utils/experiments';
 
 const LandingContext = createContext();
 
@@ -179,13 +180,14 @@ export function LandingProvider({ children }) {
     let cancelled = false;
     fetchAnnualSignupConfig()
       .then((res) => {
-        if (!cancelled && typeof res?.traffic_pct === 'number') {
-          setAnnualSignupTrafficPct(res.traffic_pct);
-        }
+        if (cancelled) return;
+        setAnnualSignupTrafficPct(typeof res?.traffic_pct === 'number' ? res.traffic_pct : DEFAULT_TRAFFIC_PCT);
       })
       .catch(() => {
-        // getAnnualSignupArm() falls back to its own safe default if this
-        // never resolves — never blocks pricing from rendering.
+        // getAnnualSignupArm() treats `undefined` as "not decided yet" and
+        // never caches off it — so a failed fetch must explicitly resolve to
+        // the safe default here, or the arm would just never get decided.
+        if (!cancelled) setAnnualSignupTrafficPct(DEFAULT_TRAFFIC_PCT);
       });
     return () => { cancelled = true; };
   }, []);
