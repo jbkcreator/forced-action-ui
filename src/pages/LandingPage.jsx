@@ -20,6 +20,7 @@ import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
 import WaitlistForm from '../components/landing/WaitlistForm';
 import useStripeCheckout from '../hooks/useStripeCheckout';
 import { createFreeSignup, logBusinessEvent } from '../api/phase2b';
+import { getAnnualSignupArm } from '../utils/experiments';
 
 // Lazy-loaded: leaflet (~120 KB) and react-markdown (~75 KB) are excluded from
 // the main chunk and only fetched when these components actually render.
@@ -27,7 +28,7 @@ const ZipTerritoryMap = lazy(() => import('../components/landing/ZipTerritoryMap
 const ConciergeChat   = lazy(() => import('../components/concierge/ConciergeChat'));
 
 function LandingContent() {
-  const { selectedVertical, countyId, landingData, attribution } = useLanding();
+  const { selectedVertical, countyId, landingData, attribution, annualSignupTrafficPct } = useLanding();
   const ctaMode = landingData?.cta_mode ?? 'signup'; // default signup for backward compat
   // emailGate.flow: 'paid' (goes to ZIP collector → Stripe) or 'free' (goes to /api/free-signup → dashboard)
   const [emailGate, setEmailGate] = useState({ open: false, tier: null, flow: 'paid' });
@@ -79,6 +80,7 @@ function LandingContent() {
           referralCode: attribution?.referralCode || null,
           attributionToken: attribution?.attributionToken || null,
           affiliateRef: attribution?.affiliateRef || null,
+          annualTestArm: getAnnualSignupArm(annualSignupTrafficPct),
         });
         setFreeSigningUp(false);
         if (resp?.feed_uuid) {
@@ -96,7 +98,7 @@ function LandingContent() {
 
     setEmailGate({ open: false, tier: null, flow: 'paid' });
     setZipCollector({ open: true, tier: emailGate.tier });
-  }, [emailGate.flow, emailGate.tier, selectedVertical, countyId, attribution]);
+  }, [emailGate.flow, emailGate.tier, selectedVertical, countyId, attribution, annualSignupTrafficPct]);
 
   // Step 3: ZIPs collected → launch Stripe checkout. fa017: pass attribution
   // so the pre-checkout free-signup persists signup_source/utm_* on the row.
@@ -110,8 +112,9 @@ function LandingContent() {
       email: userEmail,
       consent: userConsent,
       attribution,
+      annualSignupTrafficPct,
     });
-  }, [zipCollector.tier, selectedVertical, countyId, openCheckout, userEmail, userConsent, attribution]);
+  }, [zipCollector.tier, selectedVertical, countyId, openCheckout, userEmail, userConsent, attribution, annualSignupTrafficPct]);
 
   return (
     <div className="gradient-bg min-h-screen text-white" style={{ scrollBehavior: 'smooth' }}>
