@@ -3,8 +3,9 @@ import Modal from '../ui/Modal';
 import { ModalClose } from '../ui/Modal';
 
 export const TCPA_CONSENT_TEXT =
-  'I agree to receive recurring automated marketing calls and text messages from Forced Action at the phone number provided. ' +
-  'Consent is not a condition of purchase. Msg & data rates may apply. Reply STOP to opt out.';
+  'I agree to receive recurring automated marketing calls and text messages, including calls that use an automated or ' +
+  'AI-generated voice, from Forced Action at the phone number provided. Consent is not a condition of purchase. ' +
+  'Msg & data rates may apply. Reply STOP to opt out.';
 
 const SCROLL_THRESHOLD = 20; // pixels from bottom
 
@@ -31,8 +32,15 @@ const SCROLL_THRESHOLD = 20; // pixels from bottom
  *     tcpa_accepted: bool,
  *     tcpa_consent_text: "..." | null,
  *     tcpa_consent_version: "2026.06" | null,
+ *     voice_consent_accepted: bool,
+ *     voice_consent_text: "..." | null,
+ *     voice_consent_version: "2026.06" | null,
  *     user_agent: "..."
  *   }
+ *
+ * The TCPA checkbox text covers both marketing calls/texts and automated/
+ * AI-generated voice calls (B0-06 PEWC), so tcpa_accepted and
+ * voice_consent_accepted are always the same value from one checkbox.
  */
 export default function TermsConsentGate({
   sourceFlow = 'waitlist',
@@ -40,7 +48,7 @@ export default function TermsConsentGate({
   phoneProvided = false,
   termsVersion = '2026.06',
   privacyVersion = '2026.06',
-  tcpaVersion = '2026.06.1',
+  tcpaVersion = '2026.07',
   onAccept,
   onDecline,
 }) {
@@ -113,6 +121,9 @@ export default function TermsConsentGate({
       tcpa_accepted: tcpaAccepted,
       tcpa_consent_text: tcpaAccepted ? TCPA_CONSENT_TEXT : null,
       tcpa_consent_version: tcpaAccepted ? tcpaVersion : null,
+      voice_consent_accepted: tcpaAccepted,
+      voice_consent_text: tcpaAccepted ? TCPA_CONSENT_TEXT : null,
+      voice_consent_version: tcpaAccepted ? tcpaVersion : null,
       user_agent: navigator.userAgent,
     });
   }, [termsAccepted, tcpaAccepted, onAccept, termsVersion, privacyVersion, computedHash, modalOpenedAt, modalScrolledToEndAt, scrolledToBottom, tcpaVersion]);
