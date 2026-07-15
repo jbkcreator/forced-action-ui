@@ -1,12 +1,18 @@
 import { useEffect, useRef } from 'react';
 import Modal from '../ui/Modal';
+import { formatCentsAsPrice } from '../../utils/format';
 
 function capitalize(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 }
 
-export default function LeadPackModal({ isOpen, onClose, zip, vertical, step, error, processing, onStartPayment, onConfirmPayment }) {
+export default function LeadPackModal({ isOpen, onClose, zip, vertical, segment, amount, currency, step, error, processing, onStartPayment, onConfirmPayment }) {
   const mountRef = useRef(null);
+  // ADR 0032 — segment packs are premium-priced in Stripe (Josh sets $), never
+  // hardcoded here. Falls back to the standard $99 copy when no segment price is known.
+  const price = segment ? formatCentsAsPrice(amount, currency) : null;
+  const payLabel = price ? `Pay ${price} — Get My Leads` : 'Pay $99 — Get My Leads';
+  const payButtonLabel = price ? `Pay ${price}` : 'Pay $99';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -33,7 +39,7 @@ export default function LeadPackModal({ isOpen, onClose, zip, vertical, step, er
                 onClick={onStartPayment}
                 className="w-full py-3.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-900 font-bold transition-all duration-200 shadow-lg shadow-yellow-400/20"
               >
-                Pay $99 — Get My Leads
+                {payLabel}
               </button>
               <button onClick={onClose} className="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 font-medium transition-all duration-200">
                 Cancel
@@ -58,7 +64,7 @@ export default function LeadPackModal({ isOpen, onClose, zip, vertical, step, er
                 disabled={processing}
                 className="w-full py-3.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-slate-900 font-bold transition-all duration-200 shadow-lg shadow-yellow-400/20 disabled:opacity-50"
               >
-                {processing ? 'Processing...' : 'Pay $99'}
+                {processing ? 'Processing...' : payButtonLabel}
               </button>
               <button onClick={onClose} className="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 font-medium transition-all duration-200">
                 Cancel

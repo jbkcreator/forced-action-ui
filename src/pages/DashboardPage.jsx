@@ -6,7 +6,7 @@ import useContacted from '../hooks/useContacted';
 import useStripePayment from '../hooks/useStripePayment';
 import useStripeCheckout from '../hooks/useStripeCheckout';
 import useZipActivityMap from '../hooks/useZipActivityMap';
-import { fetchFeed, createPortalSession, logEvent, unlockHotLead, unlockLead, createLeadPackCheckout, fetchSubscriptionUpsellOffer } from '../api/dashboard';
+import { fetchFeed, createPortalSession, logEvent, unlockHotLead, unlockLead, createLeadPackCheckout, fetchSubscriptionUpsellOffer, fetchInsuranceDistressAvailability } from '../api/dashboard';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
 import SubscribeInsteadModal from '../components/dashboard/SubscribeInsteadModal';
 import { logBusinessEvent } from '../api/phase2b';
@@ -18,6 +18,7 @@ import ReactivateBanner from '../components/dashboard/ReactivateBanner';
 import DisputeBanner from '../components/dashboard/DisputeBanner';
 import CancelModal from '../components/dashboard/CancelModal';
 import LeadPackSection from '../components/dashboard/LeadPackSection';
+import InsuranceDistressPackCard from '../components/dashboard/InsuranceDistressPackCard';
 import LeadPackModal from '../components/dashboard/LeadPackModal';
 import LeadPackHistory from '../components/dashboard/LeadPackHistory';
 import BlurredStackSection from '../components/dashboard/BlurredStackSection';
@@ -114,6 +115,7 @@ export default function DashboardPage() {
   const { isContacted, toggleContacted } = useContacted();
   const [cancelOpen, setCancelOpen] = useState(false);
   const [lpZip, setLpZip] = useState('');
+  const [lpSegment, setLpSegment] = useState(null);
   const [lpOpen, setLpOpen] = useState(false);
   const [upsellOffer, setUpsellOffer] = useState(null);
   const [upsellOpen, setUpsellOpen] = useState(false);
@@ -226,6 +228,12 @@ export default function DashboardPage() {
       window.location.replace(`/dashboard/${feedUuid}/login`);
     }
   }, [error, feedUuid]);
+
+  // ADR 0032 — insurance-distress segment pack availability for the feed's pack card.
+  const { data: insuranceDistressAvailability } = useApi(
+    () => fetchInsuranceDistressAvailability(feedUuid),
+    [feedUuid],
+  );
 
   // Task 6.3 — churn-defense engagement listener. Fire DASHBOARD_VIEW once per
   // mount (ref-guarded so filter/sort/page refetches don't inflate the count).
@@ -419,12 +427,17 @@ export default function DashboardPage() {
     }
   }, [feedUuid]);
 
-  const openLeadPackModal = useCallback((zip) => {
+  const openLeadPackModal = useCallback((zip, segment = null) => {
     setLpZip(zip);
+    setLpSegment(segment);
     setLpOpen(true);
     stripePayment.reset();
     logEvent('lead_pack_modal_open', feedUuid);
   }, [feedUuid, stripePayment]);
+
+  const handleBuyInsuranceDistressPack = useCallback((zip) => {
+    openLeadPackModal(zip, 'insurance_distress');
+  }, [openLeadPackModal]);
 
   const handleOpenLpModal = useCallback(async (zip) => {
     if (!zip || zip.length < 5) { alert('Enter a valid 5-digit ZIP code.'); return; }
@@ -485,6 +498,7 @@ export default function DashboardPage() {
         zipCode: lpZip,
         vertical: subscriber.vertical,
         countyId: subscriber.county_id || 'hillsborough',
+        segment: lpSegment,
       });
       const paymentElement = await stripePayment.initPayment(client_secret, publishable_key);
       setTimeout(() => {
@@ -496,7 +510,7 @@ export default function DashboardPage() {
       alert(msg);
       if (err.detail?.error === 'zip_already_owned') { setLpOpen(false); }
     }
-  }, [feedUuid, lpZip, subscriber, stripePayment]);
+  }, [feedUuid, lpZip, lpSegment, subscriber, stripePayment]);
 
   const handleConfirmLeadPackPayment = useCallback(async () => {
     await stripePayment.confirmPayment();
@@ -874,6 +888,14 @@ export default function DashboardPage() {
                   onPurchase={handleBundlePurchaseSuccess}
                 />
               )}
+              {!isPaused && (
+                <InsuranceDistressPackCard
+                  zips={insuranceDistressAvailability?.zips}
+                  amount={insuranceDistressAvailability?.amount}
+                  currency={insuranceDistressAvailability?.currency}
+                  onBuy={handleBuyInsuranceDistressPack}
+                />
+              )}
               {!isPaused && <LeadPackSection onOpenModal={handleOpenLpModal} />}
 
               {/* Stage 6: Save / Pause CTA — dashboard entry into the 60-day pause flow.
@@ -923,6 +945,9 @@ export default function DashboardPage() {
           onClose={handleCloseLpModal}
           zip={lpZip}
           vertical={subscriber.vertical}
+          segment={lpSegment}
+          amount={lpSegment ? insuranceDistressAvailability?.amount : null}
+          currency={lpSegment ? insuranceDistressAvailability?.currency : null}
           step={stripePayment.step}
           error={stripePayment.error}
           processing={stripePayment.processing}
