@@ -28,6 +28,7 @@ import {
   createPaymentIntent,
   logBusinessEvent,
 } from '../../api/phase2b';
+import { unlockHotLead } from '../../api/dashboard';
 import PaymentSheetModal from '../common/PaymentSheetModal';
 import LandingAttribution from './LandingAttribution';
 import Icon from '../ui/Icon';
@@ -79,6 +80,17 @@ const DEFAULT_ROI = {
 
 const UNLOCK_PRICE_CENTS = 400;                 // $4.00 — mid-range of v9 $2.50–$7 band
 const UNLOCK_PRICE = `$${(UNLOCK_PRICE_CENTS / 100).toFixed(2).replace(/\.00$/, '')}`;
+
+// D4: retarget Gold+ leads to the hot-lead unlock. /api/proof-leads doesn't
+// carry `is_hot` yet (Fix B only landed on the dashboard feed) — this
+// tier-string check is the stopgap; swap to lead.is_hot once it's added here.
+const HOT_LEAD_TIERS = new Set(['Gold', 'Platinum', 'Ultra Platinum']);
+function isHotLead(lead) {
+	return HOT_LEAD_TIERS.has(lead?.lead_tier);
+}
+// Anon side has no public flash-scarcity window field yet (Step 2 defer) —
+// always the full $150 rate here, never the $99 reduced rate.
+const HOT_LEAD_PRICE = '$150';
 
 function fmt(ms) {
 	if (ms <= 0) return '0:00';
@@ -161,6 +173,7 @@ function RevealedLead({ lead }) {
 }
 
 function BlurredLead({ lead, onUnlock }) {
+	const price = isHotLead(lead) ? HOT_LEAD_PRICE : UNLOCK_PRICE;
 	const maskedAddress = lead.address
 		? lead.address.replace(/^\d+\s+[A-Za-z]+/, '••• ••••••')
 		: '••• •••••• St';
@@ -195,7 +208,7 @@ function BlurredLead({ lead, onUnlock }) {
 					className="cta-primary text-xs px-4 py-1.5"
 					type="button"
 				>
-					Unlock {UNLOCK_PRICE}
+					Unlock {price}
 				</button>
 			</div>
 		</div>
@@ -297,8 +310,28 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 			setFlow(f => ({ ...f, state: 'email', lead, err: null }));
 			return;
 		}
-		// Have feed_uuid already → jump straight to payment intent creation.
-		runPaymentIntentFlow(lead, flow.feedUuid);
+		// Have feed_uuid already → jump straight to payment/checkout creation.
+		runUnlockFlow(lead, flow.feedUuid);
+	};
+
+	// D4: Gold+ leads route to the hot-lead unlock (Stripe-hosted Checkout
+	// Session); everything else keeps the existing $4 embedded PaymentSheet flow.
+	const runUnlockFlow = (lead, feedUuid) =>
+		isHotLead(lead) ? runHotLeadUnlockFlow(lead, feedUuid) : runPaymentIntentFlow(lead, feedUuid);
+
+	const runHotLeadUnlockFlow = async (lead, feedUuid) => {
+		setFlow(f => ({ ...f, state: 'creating_intent', lead, feedUuid, err: null }));
+		logBusinessEvent('PAYMENT_STARTED', {
+			feedUuid,
+			payload: { product: 'hot_lead_unlock', property_id: lead?.property_id },
+		});
+		try {
+			const result = await unlockHotLead(feedUuid, lead.property_id);
+			window.location.href = result.checkout_url;
+		} catch (e) {
+			setFlow(f => ({ ...f, state: 'idle', err: e?.detail?.message || e?.message || 'Could not start payment' }));
+			onRequestUnlock?.(lead);
+		}
 	};
 
 	const runPaymentIntentFlow = async (lead, feedUuid) => {
@@ -373,7 +406,7 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 				intent: 'unlock',
 			});
 			const feedUuid = result.feed_uuid;
-			await runPaymentIntentFlow(flow.lead, feedUuid);
+			await runUnlockFlow(flow.lead, feedUuid);
 		} catch (e) {
 			setFlow(f => ({ ...f, state: 'email', err: e?.detail?.message || e?.message || 'Signup failed' }));
 		}
@@ -573,7 +606,7 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 							>
 								{flow.state === 'signing_up' ? 'Creating account…'
 									: flow.state === 'creating_intent' ? 'Preparing payment…'
-									: `Continue to pay ${UNLOCK_PRICE}`}
+									: `Continue to pay ${isHotLead(flow.lead) ? HOT_LEAD_PRICE : UNLOCK_PRICE}`}
 							</button>
 						</div>
 					</form>
