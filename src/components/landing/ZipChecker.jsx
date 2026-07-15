@@ -5,6 +5,28 @@ import { checkZip as apiCheckZip } from '../../api/landing';
 import SampleLeads from './SampleLeads';
 import WaitlistForm from './WaitlistForm';
 
+const TIER_LABELS = { starter: 'Starter', pro: 'Pro', dominator: 'Dominator', annual_lock: 'Annual' };
+
+function PricingStrip({ pricing }) {
+  if (!pricing) return null;
+  const entries = Object.entries(pricing).filter(([, p]) => p.founding_amount != null || p.regular_amount != null);
+  if (!entries.length) return null;
+
+  return (
+    <p className="mt-2 text-xs text-slate-400">
+      {entries.map(([tier, p], i) => {
+        const amount = p.founding_amount ?? p.regular_amount;
+        return (
+          <span key={tier}>
+            {i > 0 && ' · '}
+            {TIER_LABELS[tier] || tier} ${amount != null ? amount.toLocaleString() : '—'}/mo
+          </span>
+        );
+      })}
+    </p>
+  );
+}
+
 export default function ZipChecker({ onZipChecked, countyId: externalCountyId, onZipTaken }) {
   const { selectedVertical, countyId: contextCountyId, landingData } = useLanding();
   const countyId = externalCountyId || contextCountyId;
@@ -31,9 +53,9 @@ export default function ZipChecker({ onZipChecked, countyId: externalCountyId, o
       if (data.status === 'invalid') {
         setResult({ status: 'invalid', message: `✗ ZIP ${trimmed} is not in our ${countyName} service area.` });
       } else if (data.status === 'available') {
-        setResult({ status: 'available', message: `✓ ZIP ${trimmed} is available for ${label} — lock it in when you subscribe.` });
+        setResult({ status: 'available', message: `✓ ZIP ${trimmed} is available for ${label} — lock it in when you subscribe.`, pricing: data.pricing });
       } else if (data.status === 'grace') {
-        setResult({ status: 'grace', message: `⏳ ZIP ${trimmed} is opening soon for ${label} — subscribe now to claim it.` });
+        setResult({ status: 'grace', message: `⏳ ZIP ${trimmed} is opening soon for ${label} — subscribe now to claim it.`, pricing: data.pricing });
       } else if (data.status === 'taken') {
         setResult({ status: 'taken', message: `✗ ZIP ${trimmed} is taken for ${label} by another subscriber.`, zip: trimmed });
         if (onZipTaken) onZipTaken(trimmed);
@@ -84,6 +106,7 @@ export default function ZipChecker({ onZipChecked, countyId: externalCountyId, o
           {result && (
             <div className={`mt-5 rounded-xl border px-5 py-4 text-sm font-medium max-w-xl mx-auto ${statusClass}`}>
               {result.message}
+              <PricingStrip pricing={result.pricing} />
             </div>
           )}
         </div>
