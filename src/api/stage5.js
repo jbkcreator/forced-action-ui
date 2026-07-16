@@ -52,6 +52,16 @@ export function acceptAnnual({ feedUuid }) {
 }
 
 
+// ─── Founder prepay portal (B0-04) ──────────────────────────────────────────
+// GET /api/founders/prepay-eligibility?feed_uuid=
+//   returns { eligible, rate_locked_at, escalated_at, founding_price_id,
+//     has_active_subscription }
+// Prepaying itself reuses acceptAnnual() above — same /api/annual/accept call.
+export function fetchFounderPrepayEligibility(feedUuid) {
+  return api.get('/api/founders/prepay-eligibility', { feed_uuid: feedUuid });
+}
+
+
 // ─── Social Proof Wall (public) ─────────────────────────────────────────────
 // GET /api/proof-wall?limit=N
 //   returns { items: [{ deal_outcome_id, deal_size_bucket, label,
