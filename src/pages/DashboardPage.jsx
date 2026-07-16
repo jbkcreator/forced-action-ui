@@ -410,6 +410,10 @@ export default function DashboardPage() {
     setCancelOpen(false);
   }, [feedUuid]);
 
+  const handleCancelDismiss = useCallback(() => {
+    setCancelOpen(false);
+  }, []);
+
   const handleReactivate = useCallback(async () => {
     try {
       const { url } = await createPortalSession(feedUuid);
@@ -909,6 +913,11 @@ export default function DashboardPage() {
           isOpen={cancelOpen}
           onClose={handleCancelAbort}
           onConfirm={handleCancelConfirm}
+          onDismiss={handleCancelDismiss}
+          feedUuid={feedUuid}
+          tier={subscriber?.tier}
+          isPaused={isPaused}
+          onRetentionAccepted={refetch}
         />
 
         <PauseModal
