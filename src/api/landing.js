@@ -4,13 +4,6 @@ export function fetchPricing() {
   return api.get('/api/pricing');
 }
 
-// Annual-at-signup A/B traffic split — deliberately not part of fetchPricing
-// (which is cached 24h server-side); this is fetched fresh each page load so
-// toggling ANNUAL_SIGNUP_TEST_TRAFFIC_PCT server-side takes effect quickly.
-export function fetchAnnualSignupConfig() {
-  return api.get('/api/experiments/annual-signup');
-}
-
 export function fetchLandingData(countyId) {
   return api.get('/api/landing-data', { county_id: countyId });
 }

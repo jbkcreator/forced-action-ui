@@ -2,8 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { DEFAULT_VERTICAL, DEFAULT_COUNTY_ID } from '../../config/constants';
 import { api } from '../../api/client';
-import { fetchPricing, fetchLandingData, fetchAnnualSignupConfig } from '../../api/landing';
-import { DEFAULT_TRAFFIC_PCT } from '../../utils/experiments';
+import { fetchPricing, fetchLandingData } from '../../api/landing';
 
 const LandingContext = createContext();
 
@@ -173,25 +172,6 @@ export function LandingProvider({ children }) {
     return () => { cancelled = true; };
   }, []);
 
-  // ── Annual-at-signup A/B traffic split (toggleable via backend env var) ──
-  const [annualSignupTrafficPct, setAnnualSignupTrafficPct] = useState(undefined);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchAnnualSignupConfig()
-      .then((res) => {
-        if (cancelled) return;
-        setAnnualSignupTrafficPct(typeof res?.traffic_pct === 'number' ? res.traffic_pct : DEFAULT_TRAFFIC_PCT);
-      })
-      .catch(() => {
-        // getAnnualSignupArm() treats `undefined` as "not decided yet" and
-        // never caches off it — so a failed fetch must explicitly resolve to
-        // the safe default here, or the arm would just never get decided.
-        if (!cancelled) setAnnualSignupTrafficPct(DEFAULT_TRAFFIC_PCT);
-      });
-    return () => { cancelled = true; };
-  }, []);
-
   // ── Attribution capture ───────────────────────────────────────────────────
   useEffect(() => {
     const hasUrlParams =
@@ -275,9 +255,8 @@ export function LandingProvider({ children }) {
       tokenResolving,
       pricing,
       pricingLoading,
-      annualSignupTrafficPct,
     }),
-    [selectedVertical, countyId, landingData, landingDataLoading, attribution, tokenResolving, pricing, pricingLoading, annualSignupTrafficPct],
+    [selectedVertical, countyId, landingData, landingDataLoading, attribution, tokenResolving, pricing, pricingLoading],
   );
 
   return <LandingContext.Provider value={value}>{children}</LandingContext.Provider>;
