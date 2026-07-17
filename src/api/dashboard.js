@@ -38,14 +38,20 @@ export function logEvent(event, feedUuid) {
   return api.post('/api/log-event', { event, feed_uuid: feedUuid }).catch(() => {});
 }
 
-export function createLeadPackCheckout({ feedUuid, zipCode, vertical, countyId }) {
+export function createLeadPackCheckout({ feedUuid, zipCode, vertical, countyId, segment }) {
   return api.post('/api/lead-pack/checkout', {
     feed_uuid: feedUuid,
     zip_code: zipCode,
     vertical,
     county_id: countyId,
+    segment: segment || undefined,
     attribution: getAttribution(),
   });
+}
+
+// ADR 0032 — insurance-distress segment pack availability for the feed's pack card.
+export function fetchInsuranceDistressAvailability(feedUuid) {
+  return api.get('/api/insurance-distress/availability', { feed_uuid: feedUuid }).catch(() => null);
 }
 
 export function fetchLeadPack(purchaseId) {

@@ -22,3 +22,12 @@ export function formatShortDate(isoString) {
     day: 'numeric',
   });
 }
+
+export function formatCentsAsPrice(amountCents, currency = 'usd') {
+  if (amountCents == null) return null;
+  return (amountCents / 100).toLocaleString('en-US', {
+    style: 'currency',
+    currency: currency.toUpperCase(),
+    minimumFractionDigits: 0,
+  });
+}
