@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import useSubscriberAuth from '../hooks/useSubscriberAuth.js';
+import { getPostSignupRoute } from '../utils/postSignupRoute.js';
 
 const AUTO_REDIRECT_MS = 1500;
 
@@ -21,6 +22,7 @@ export default function MagicLinkVerifyPage() {
   const [status, setStatus] = useState('verifying'); // verifying | success | error
   const [message, setMessage] = useState('');
   const [feedUuid, setFeedUuid] = useState(null);
+  const [vertical, setVertical] = useState(null);
   // Guard against React StrictMode's double-invocation of effects in dev,
   // which would fire the verify request twice — the token is single-use, so
   // the second call would hit an already-consumed token and surface a false
@@ -41,6 +43,7 @@ export default function MagicLinkVerifyPage() {
       .then(data => {
         setStatus('success');
         setFeedUuid(data.feed_uuid);
+        setVertical(data.vertical || null);
       })
       .catch(err => {
         setStatus('error');
@@ -51,10 +54,10 @@ export default function MagicLinkVerifyPage() {
   useEffect(() => {
     if (status !== 'success' || !feedUuid) return;
     const timer = setTimeout(() => {
-      navigate(`/dashboard/${feedUuid}`);
+      navigate(getPostSignupRoute({ vertical, feedUuid }));
     }, AUTO_REDIRECT_MS);
     return () => clearTimeout(timer);
-  }, [status, feedUuid, navigate]);
+  }, [status, feedUuid, vertical, navigate]);
 
   return (
     <div className="min-h-screen bg-fa-bg-base flex items-center justify-center p-4">
@@ -69,7 +72,7 @@ export default function MagicLinkVerifyPage() {
           <p className="text-fa-text-muted mb-6">Redirecting you to your feed…</p>
           <button
             type="button"
-            onClick={() => navigate(`/dashboard/${feedUuid}`)}
+            onClick={() => navigate(getPostSignupRoute({ vertical, feedUuid }))}
             className="inline-block bg-fa-primary text-fa-bg-base font-bold px-6 py-2.5 rounded-lg hover:opacity-90"
           >
             Continue to feed
