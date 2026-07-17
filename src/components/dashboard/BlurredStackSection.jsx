@@ -5,7 +5,8 @@ function formatTagLabel(s) {
   return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function BlurredCard({ lead, onUnlock }) {
+function BlurredCard({ lead, onUnlockLead, onUnlockHotLead }) {
+  const isHotCta = lead.is_hot && !!onUnlockHotLead;
   const tier = lead.lead_tier || '';
   const tierColor =
     tier === 'Ultra Platinum' ? 'text-purple-400'
@@ -68,7 +69,7 @@ function BlurredCard({ lead, onUnlock }) {
         </div>
         <button
           type="button"
-          onClick={() => onUnlock?.({
+          onClick={() => (isHotCta ? onUnlockHotLead : onUnlockLead)?.({
             property_id: lead.property_id,
             address: lead.address_masked,
             lead_tier: lead.lead_tier,
@@ -76,21 +77,21 @@ function BlurredCard({ lead, onUnlock }) {
           })}
           className="shrink-0 text-sm font-semibold px-4 py-2 rounded-lg bg-yellow-400 text-slate-900 hover:bg-yellow-300 transition"
         >
-          Unlock $4
+          {isHotCta ? 'Unlock $150' : 'Unlock $4'}
         </button>
       </div>
     </div>
   );
 }
 
-function BlurredStackSection({ blurred, onUnlockBlurred }) {
+function BlurredStackSection({ blurred, onUnlockLead, onUnlockHotLead }) {
   if (!blurred || blurred.length === 0) return null;
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold tracking-tight">Available to Unlock</h2>
         <span className="text-slate-400 text-xs font-medium">
-          {blurred.length} blurred lead{blurred.length !== 1 ? 's' : ''} · $4 each
+          {blurred.length} blurred lead{blurred.length !== 1 ? 's' : ''} · hot leads $150, rest $4
         </span>
       </div>
       <div className="space-y-3">
@@ -98,7 +99,8 @@ function BlurredStackSection({ blurred, onUnlockBlurred }) {
           <BlurredCard
             key={lead.property_id}
             lead={lead}
-            onUnlock={onUnlockBlurred}
+            onUnlockLead={onUnlockLead}
+            onUnlockHotLead={onUnlockHotLead}
           />
         ))}
       </div>

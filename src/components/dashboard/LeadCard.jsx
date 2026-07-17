@@ -14,7 +14,7 @@ function formatTagLabel(s) {
   return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
-function LeadCard({ lead, index, onUnlockHotLead, contacted, onToggleContacted, onOpenPremium, onOpenPitch, onReportOutcome, urgencyViewers, feedUuid }) {
+function LeadCard({ lead, index, onUnlockLead, onUnlockHotLead, contacted, onToggleContacted, onOpenPremium, onOpenPitch, onReportOutcome, urgencyViewers, activeWindow, feedUuid }) {
   const [expanded, setExpanded] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const holdStatus = useLeadHold(lead.property_id, feedUuid, lead.property_id != null);
@@ -32,6 +32,9 @@ function LeadCard({ lead, index, onUnlockHotLead, contacted, onToggleContacted, 
                     tier === 'Platinum' ? '#fbbf24' :
                     tier === 'Gold' ? '#f59e0b' : '#64748b';
   const delay = Math.min(index * 0.05, 0.5);
+
+  const showHotLeadCta = (lead.is_hot || !!activeWindow) && !!onUnlockHotLead;
+  const windowMinutesLeft = activeWindow ? Math.round((activeWindow.expires_in_seconds || 0) / 60) : 0;
 
   const handleToggle = useCallback((e) => {
     e.stopPropagation();
@@ -208,17 +211,21 @@ function LeadCard({ lead, index, onUnlockHotLead, contacted, onToggleContacted, 
         </div>
       </div>
 
-      {!lead.unlocked && feedUuid && onUnlockHotLead && (
+      {!lead.unlocked && feedUuid && (onUnlockHotLead || onUnlockLead) && (
         <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between gap-3">
           <div className="text-xs text-slate-400">
             <span className="text-slate-300 font-medium">Owner contact hidden.</span> Unlock to reveal phone, email, and owner name.
+            {showHotLeadCta && activeWindow && windowMinutesLeft > 0 && ` Reduced rate active for ~${windowMinutesLeft}m.`}
           </div>
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onUnlockHotLead(lead); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              showHotLeadCta ? onUnlockHotLead(lead) : onUnlockLead(lead);
+            }}
             className="shrink-0 text-sm font-semibold px-4 py-2 rounded-lg bg-yellow-400 text-slate-900 hover:bg-yellow-300 transition"
           >
-            Unlock $4
+            {showHotLeadCta ? `Unlock ${activeWindow ? '$99' : '$150'}` : 'Unlock $4'}
           </button>
         </div>
       )}
@@ -232,11 +239,13 @@ function areEqual(prev, next) {
     prev.index === next.index &&
     prev.contacted === next.contacted &&
     prev.urgencyViewers === next.urgencyViewers &&
+    prev.activeWindow === next.activeWindow &&
     prev.feedUuid === next.feedUuid &&
     prev.onToggleContacted === next.onToggleContacted &&
     prev.onOpenPremium === next.onOpenPremium &&
     prev.onOpenPitch === next.onOpenPitch &&
     prev.onReportOutcome === next.onReportOutcome &&
+    prev.onUnlockLead === next.onUnlockLead &&
     prev.onUnlockHotLead === next.onUnlockHotLead
   );
 }
