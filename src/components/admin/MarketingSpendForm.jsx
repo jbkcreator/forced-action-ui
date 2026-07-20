@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createMarketingSpend, fetchMarketingSpend } from '../../api/admin';
 
 const CHANNELS = [
-  { value: 'facebook', label: 'Facebook / Meta' },
+  { value: 'meta', label: 'Meta (Facebook + Instagram)' },
   { value: 'google', label: 'Google' },
   { value: 'dbpr_email', label: 'DBPR Email (Instantly)' },
 ];
