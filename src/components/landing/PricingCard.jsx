@@ -2,8 +2,14 @@ import { useEffect, useState } from 'react';
 import { fetchFoundingSpots } from '../../api/landing';
 import { useLanding } from './LandingContext';
 
-export default function PricingCard({ tier, isPopular, onCheckout }) {
-  const { selectedVertical, countyId, pricing } = useLanding();
+export default function PricingCard({ tier, isPopular, onCheckout, vertical, countyId, pricing }) {
+  // Landing page: reads vertical/countyId/pricing from LandingContext. Callers
+  // outside a LandingProvider (e.g. the dashboard's free-tier upgrade flow)
+  // pass these as props instead — props win when supplied.
+  const landing = useLanding();
+  const selectedVertical = vertical ?? landing?.selectedVertical;
+  const resolvedCountyId = countyId ?? landing?.countyId;
+  const resolvedPricing = pricing ?? landing?.pricing;
 
   // Direct fetch instead of usePolling so we can verify in the Network tab.
   // Logs at every step so a silent failure becomes visible.
@@ -13,8 +19,8 @@ export default function PricingCard({ tier, isPopular, onCheckout }) {
   useEffect(() => {
     let cancelled = false;
     // eslint-disable-next-line no-console
-    console.log(`[PricingCard:${tier}] fetching /api/founding-spots`, { tier, vertical: selectedVertical, countyId });
-    fetchFoundingSpots(tier, selectedVertical, countyId)
+    console.log(`[PricingCard:${tier}] fetching /api/founding-spots`, { tier, vertical: selectedVertical, countyId: resolvedCountyId });
+    fetchFoundingSpots(tier, selectedVertical, resolvedCountyId)
       .then((res) => {
         if (cancelled) return;
         // eslint-disable-next-line no-console
@@ -29,9 +35,9 @@ export default function PricingCard({ tier, isPopular, onCheckout }) {
         setSpotsError(err);
       });
     return () => { cancelled = true; };
-  }, [tier, selectedVertical, countyId]);
+  }, [tier, selectedVertical, resolvedCountyId]);
 
-  const tierPricing = pricing?.[tier];
+  const tierPricing = resolvedPricing?.[tier];
   if (!tierPricing) return null;
 
   const { founding_amount: foundingAmount, regular_amount: regularAmount, label, features } = tierPricing;

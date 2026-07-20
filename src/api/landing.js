@@ -46,7 +46,10 @@ export function submitWaitlist({ zipCode, vertical, countyId, name, email, phone
   });
 }
 
-export function createCheckout({ tier, vertical, countyId, zipCodes, email, interval = 'monthly', consentAcceptance = null, attribution = null }) {
+export function createCheckout({
+  tier, vertical, countyId, zipCodes, email, interval = 'monthly', consentAcceptance = null, attribution = null,
+  alreadyHasDashboardAccess = false, successReturnPath = null,
+}) {
   return api.post('/api/checkout', {
     tier,
     vertical,
@@ -56,5 +59,7 @@ export function createCheckout({ tier, vertical, countyId, zipCodes, email, inte
     interval,
     consent_acceptance: consentAcceptance,
     attribution,
+    already_has_dashboard_access: alreadyHasDashboardAccess,
+    success_return_path: successReturnPath,
   });
 }

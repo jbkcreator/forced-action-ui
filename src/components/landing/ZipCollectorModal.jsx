@@ -3,9 +3,15 @@ import Modal, { ModalClose } from '../ui/Modal';
 import { useLanding } from './LandingContext';
 import { fetchZipAvailability } from '../../api/landing';
 
-export default function ZipCollectorModal({ isOpen, onClose, tier, initialZip, onProceed }) {
-  const { selectedVertical, countyId, pricing } = useLanding();
-  const limit = pricing?.[tier]?.zip_limit || 3;
+export default function ZipCollectorModal({ isOpen, onClose, tier, initialZip, onProceed, vertical, countyId, pricing }) {
+  // Landing page: reads vertical/countyId/pricing from LandingContext. Callers
+  // outside a LandingProvider (e.g. the dashboard's free-tier upgrade flow)
+  // pass these as props instead — props win when supplied.
+  const landing = useLanding();
+  const selectedVertical = vertical ?? landing?.selectedVertical;
+  const resolvedCountyId = countyId ?? landing?.countyId;
+  const resolvedPricing = pricing ?? landing?.pricing;
+  const limit = resolvedPricing?.[tier]?.zip_limit || 3;
   const [selected, setSelected] = useState(initialZip ? [initialZip] : []);
   const [allZips, setAllZips] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -19,7 +25,7 @@ export default function ZipCollectorModal({ isOpen, onClose, tier, initialZip, o
     setLoading(true);
     setError(null);
 
-    fetchZipAvailability(selectedVertical, countyId)
+    fetchZipAvailability(selectedVertical, resolvedCountyId)
       .then((data) => {
         if (!cancelled) {
           setAllZips(data.zips || []);
@@ -34,7 +40,7 @@ export default function ZipCollectorModal({ isOpen, onClose, tier, initialZip, o
       });
 
     return () => { cancelled = true; };
-  }, [isOpen, selectedVertical, countyId]);
+  }, [isOpen, selectedVertical, resolvedCountyId]);
 
   // Reset selection when modal opens with a new tier
   useEffect(() => {
