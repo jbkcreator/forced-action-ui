@@ -30,7 +30,7 @@ export default function useStripeCheckout() {
   // metadata AND the success_url so /success?feed_uuid=... lets the user
   // bounce straight to their dashboard.
   const openCheckout = useCallback(async ({
-    tier, vertical, countyId, zipCodes, email, consent = null, attribution = null,
+    tier, vertical, countyId, zipCodes, email, interval = 'monthly', consent = null, attribution = null,
   }) => {
     checkoutCtxRef.current = { tier, zipCodes, countyId };
     setIsOpen(true);
@@ -66,7 +66,7 @@ export default function useStripeCheckout() {
 
     try {
       const { client_secret, session_id, amount_total_cents } = await createCheckout({
-        tier, vertical, countyId, zipCodes, email, consentAcceptance: consent,
+        tier, vertical, countyId, zipCodes, email, interval, consentAcceptance: consent,
         attribution: getAttribution(),
       });
       checkoutCtxRef.current.sessionId = session_id || null;

@@ -46,13 +46,14 @@ export function submitWaitlist({ zipCode, vertical, countyId, name, email, phone
   });
 }
 
-export function createCheckout({ tier, vertical, countyId, zipCodes, email, consentAcceptance = null, attribution = null }) {
+export function createCheckout({ tier, vertical, countyId, zipCodes, email, interval = 'monthly', consentAcceptance = null, attribution = null }) {
   return api.post('/api/checkout', {
     tier,
     vertical,
     county_id: countyId,
     zip_codes: zipCodes,
     email,
+    interval,
     consent_acceptance: consentAcceptance,
     attribution,
   });
