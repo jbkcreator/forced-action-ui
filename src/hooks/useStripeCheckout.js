@@ -3,7 +3,6 @@ import { loadStripe } from '@stripe/stripe-js';
 import { createCheckout } from '../api/landing';
 import { createFreeSignup } from '../api/phase2b';
 import { getAttribution } from '../utils/attribution';
-import { getAnnualSignupArm } from '../utils/experiments';
 import { trackInitiateCheckout } from '../utils/metaPixel';
 
 // Module-level variable — populated on first checkout open, not on module
@@ -32,7 +31,6 @@ export default function useStripeCheckout() {
   // bounce straight to their dashboard.
   const openCheckout = useCallback(async ({
     tier, vertical, countyId, zipCodes, email, consent = null, attribution = null,
-    annualSignupTrafficPct,
     // Dashboard-originated upgrades (subscriber already has a session): skip
     // the marketing /success page, tell the backend not to send a magic-link
     // welcome, and let the caller decide what "done" means (e.g. refetch the
@@ -64,7 +62,6 @@ export default function useStripeCheckout() {
         // checkout webhook fires. Avoids "Welcome!" landing in their inbox
         // before they've actually paid.
         intent: 'upgrade',
-        annualTestArm: getAnnualSignupArm(annualSignupTrafficPct),
       });
       feedUuid = signup?.feed_uuid || null;
       checkoutCtxRef.current.feedUuid = feedUuid;

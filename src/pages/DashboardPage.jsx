@@ -6,7 +6,7 @@ import useContacted from '../hooks/useContacted';
 import useStripePayment from '../hooks/useStripePayment';
 import useStripeCheckout from '../hooks/useStripeCheckout';
 import useZipActivityMap from '../hooks/useZipActivityMap';
-import { fetchFeed, createPortalSession, logEvent, unlockHotLead, unlockLead, createLeadPackCheckout, fetchSubscriptionUpsellOffer } from '../api/dashboard';
+import { fetchFeed, createPortalSession, logEvent, unlockHotLead, unlockLead, createLeadPackCheckout, fetchSubscriptionUpsellOffer, fetchInsuranceDistressAvailability } from '../api/dashboard';
 import { fetchPricing } from '../api/landing';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
 import ZipCollectorModal from '../components/landing/ZipCollectorModal';
@@ -21,6 +21,7 @@ import ReactivateBanner from '../components/dashboard/ReactivateBanner';
 import DisputeBanner from '../components/dashboard/DisputeBanner';
 import CancelModal from '../components/dashboard/CancelModal';
 import LeadPackSection from '../components/dashboard/LeadPackSection';
+import InsuranceDistressPackCard from '../components/dashboard/InsuranceDistressPackCard';
 import LeadPackModal from '../components/dashboard/LeadPackModal';
 import LeadPackHistory from '../components/dashboard/LeadPackHistory';
 import BlurredStackSection from '../components/dashboard/BlurredStackSection';
@@ -117,6 +118,7 @@ export default function DashboardPage() {
   const { isContacted, toggleContacted } = useContacted();
   const [cancelOpen, setCancelOpen] = useState(false);
   const [lpZip, setLpZip] = useState('');
+  const [lpSegment, setLpSegment] = useState(null);
   const [lpOpen, setLpOpen] = useState(false);
   const [upsellOffer, setUpsellOffer] = useState(null);
   const [upsellOpen, setUpsellOpen] = useState(false);
@@ -236,6 +238,12 @@ export default function DashboardPage() {
     }
   }, [error, feedUuid]);
 
+  // ADR 0032 — insurance-distress segment pack availability for the feed's pack card.
+  const { data: insuranceDistressAvailability } = useApi(
+    () => fetchInsuranceDistressAvailability(feedUuid),
+    [feedUuid],
+  );
+
   // Task 6.3 — churn-defense engagement listener. Fire DASHBOARD_VIEW once per
   // mount (ref-guarded so filter/sort/page refetches don't inflate the count).
   const viewLogged = useRef(false);
@@ -351,17 +359,32 @@ export default function DashboardPage() {
   );
   const zipActivity = useZipActivityMap(visibleZips, subscriber.vertical);
 
+  // Per-ZIP active Flash Scarcity Window — drives the in-feed hot-lead CTA's
+  // reduced ($99) rate + countdown (Step 2, dashboard in-feed only per D6).
+  const activeWindowByZip = useMemo(() => {
+    const map = {};
+    for (const w of subscriber.flash_scarcity_windows || []) {
+      map[w.zip_code] = w;
+    }
+    return map;
+  }, [subscriber.flash_scarcity_windows]);
+
   const handlePageChange = useCallback((page) => {
     setPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [setPage]);
 
-  const handleUnlockHotLead = useCallback(async (lead) => {
-    if (!lead?.property_id) return;
-    logBusinessEvent('LEAD_UNLOCK_CLICKED', {
+  // Shared LEAD_UNLOCK_CLICKED/PAYMENT_STARTED shape for both unlock flows below.
+  const logUnlockEvent = useCallback((eventName, lead, extra) => {
+    logBusinessEvent(eventName, {
       feedUuid,
-      payload: { property_id: lead.property_id, source: 'dashboard' },
+      payload: { property_id: lead.property_id, ...extra },
     });
+  }, [feedUuid]);
+
+  const handleUnlockLead = useCallback(async (lead) => {
+    if (!lead?.property_id) return;
+    logUnlockEvent('LEAD_UNLOCK_CLICKED', lead, { source: 'dashboard' });
     try {
       const resp = await unlockLead({
         feedUuid,
@@ -369,10 +392,7 @@ export default function DashboardPage() {
         leadTier: lead.lead_tier,
         zip: lead.zip,
       });
-      logBusinessEvent('PAYMENT_STARTED', {
-        feedUuid,
-        payload: { product: 'lead_unlock', property_id: lead.property_id },
-      });
+      logUnlockEvent('PAYMENT_STARTED', lead, { product: 'lead_unlock' });
       setUnlockState({
         open: true,
         lead,
@@ -387,7 +407,23 @@ export default function DashboardPage() {
         alert(detail?.message || 'Unable to start unlock. Please try again.');
       }
     }
-  }, [feedUuid]);
+  }, [feedUuid, logUnlockEvent]);
+
+  // Hot-lead unlock ($150/$99) — a Stripe-hosted Checkout Session, unlike the
+  // $4 lead_unlock's embedded PaymentSheet flow, so this redirects instead of
+  // opening the modal.
+  const handleUnlockHotLead = useCallback(async (lead) => {
+    if (!lead?.property_id) return;
+    logUnlockEvent('LEAD_UNLOCK_CLICKED', lead, { source: 'dashboard', product: 'hot_lead_unlock' });
+    try {
+      const resp = await unlockHotLead(feedUuid, lead.property_id);
+      logUnlockEvent('PAYMENT_STARTED', lead, { product: 'hot_lead_unlock' });
+      window.location.href = resp.checkout_url;
+    } catch (err) {
+      const detail = err?.detail;
+      alert(detail?.message || detail?.detail || 'Unable to start unlock. Please try again.');
+    }
+  }, [feedUuid, logUnlockEvent]);
 
   const handleUnlockSuccess = useCallback(() => {
     logBusinessEvent('PAYMENT_SUCCEEDED', {
@@ -419,6 +455,10 @@ export default function DashboardPage() {
     setCancelOpen(false);
   }, [feedUuid]);
 
+  const handleCancelDismiss = useCallback(() => {
+    setCancelOpen(false);
+  }, []);
+
   const handleReactivate = useCallback(async () => {
     try {
       const { url } = await createPortalSession(feedUuid);
@@ -428,12 +468,17 @@ export default function DashboardPage() {
     }
   }, [feedUuid]);
 
-  const openLeadPackModal = useCallback((zip) => {
+  const openLeadPackModal = useCallback((zip, segment = null) => {
     setLpZip(zip);
+    setLpSegment(segment);
     setLpOpen(true);
     stripePayment.reset();
     logEvent('lead_pack_modal_open', feedUuid);
   }, [feedUuid, stripePayment]);
+
+  const handleBuyInsuranceDistressPack = useCallback((zip) => {
+    openLeadPackModal(zip, 'insurance_distress');
+  }, [openLeadPackModal]);
 
   const handleOpenLpModal = useCallback(async (zip) => {
     if (!zip || zip.length < 5) { alert('Enter a valid 5-digit ZIP code.'); return; }
@@ -494,6 +539,7 @@ export default function DashboardPage() {
         zipCode: lpZip,
         vertical: subscriber.vertical,
         countyId: subscriber.county_id || 'hillsborough',
+        segment: lpSegment,
       });
       const paymentElement = await stripePayment.initPayment(client_secret, publishable_key);
       setTimeout(() => {
@@ -505,7 +551,7 @@ export default function DashboardPage() {
       alert(msg);
       if (err.detail?.error === 'zip_already_owned') { setLpOpen(false); }
     }
-  }, [feedUuid, lpZip, subscriber, stripePayment]);
+  }, [feedUuid, lpZip, lpSegment, subscriber, stripePayment]);
 
   const handleConfirmLeadPackPayment = useCallback(async () => {
     await stripePayment.confirmPayment();
@@ -880,6 +926,7 @@ export default function DashboardPage() {
                         key={lead.property_id}
                         lead={lead}
                         index={i}
+                        onUnlockLead={handleUnlockLead}
                         onUnlockHotLead={handleUnlockHotLead}
                         contacted={isContacted(lead.property_id)}
                         onToggleContacted={toggleContacted}
@@ -887,6 +934,7 @@ export default function DashboardPage() {
                         onOpenPitch={handleOpenPitch}
                         onReportOutcome={setDealCaptureLead}
                         urgencyViewers={zipActivity[lead.zip]?.active_viewers}
+                        activeWindow={activeWindowByZip[lead.zip]}
                         feedUuid={feedUuid}
                       />
                     ))}
@@ -911,7 +959,8 @@ export default function DashboardPage() {
               {data?.blurred_stack?.length > 0 && (
                 <BlurredStackSection
                   blurred={data.blurred_stack}
-                  onUnlockBlurred={handleUnlockHotLead}
+                  onUnlockLead={handleUnlockLead}
+                  onUnlockHotLead={handleUnlockHotLead}
                 />
               )}
 
@@ -939,6 +988,14 @@ export default function DashboardPage() {
                   lockedZips={lockedZips}
                   stormStatus={hasStormLeads ? 'active' : 'unknown'}
                   onPurchase={handleBundlePurchaseSuccess}
+                />
+              )}
+              {!isPaused && (
+                <InsuranceDistressPackCard
+                  zips={insuranceDistressAvailability?.zips}
+                  amount={insuranceDistressAvailability?.amount}
+                  currency={insuranceDistressAvailability?.currency}
+                  onBuy={handleBuyInsuranceDistressPack}
                 />
               )}
               {!isPaused && <LeadPackSection onOpenModal={handleOpenLpModal} />}
@@ -976,6 +1033,11 @@ export default function DashboardPage() {
           isOpen={cancelOpen}
           onClose={handleCancelAbort}
           onConfirm={handleCancelConfirm}
+          onDismiss={handleCancelDismiss}
+          feedUuid={feedUuid}
+          tier={subscriber?.tier}
+          isPaused={isPaused}
+          onRetentionAccepted={refetch}
         />
 
         <PauseModal
@@ -990,6 +1052,9 @@ export default function DashboardPage() {
           onClose={handleCloseLpModal}
           zip={lpZip}
           vertical={subscriber.vertical}
+          segment={lpSegment}
+          amount={lpSegment ? insuranceDistressAvailability?.amount : null}
+          currency={lpSegment ? insuranceDistressAvailability?.currency : null}
           step={stripePayment.step}
           error={stripePayment.error}
           processing={stripePayment.processing}

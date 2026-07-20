@@ -39,7 +39,9 @@ const Stage5SandboxPage = lazy(() => import('./pages/Stage5SandboxPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ProofWallPage = lazy(() => import('./pages/ProofWallPage'));
 const PartnerUpgradePage = lazy(() => import('./pages/PartnerUpgradePage'));
+const FounderPrepayPortalPage = lazy(() => import('./pages/FounderPrepayPortalPage'));
 const CountyLanding = lazy(() => import('./pages/CountyLanding'));
+const DealSubmitPage = lazy(() => import('./pages/DealSubmitPage'));
 
 // Admin section pages
 const DataSection      = lazy(() => import('./components/admin/sections/DataSection'));
@@ -108,8 +110,10 @@ export default function App() {
           <Route path="/dashboard/:feedUuid/login"     element={withBoundary(<SubscriberLoginPage />)} />
 
           <Route path="/dashboard/:feedUuid" element={withBoundary(<DashboardPage />)} />
+          <Route path="/deals/submit" element={withBoundary(<DealSubmitPage />)} />
           <Route path="/dashboard/:feedUuid/settings" element={withBoundary(<SettingsPage />)} />
           <Route path="/dashboard/:feedUuid/partner" element={withBoundary(<PartnerUpgradePage />)} />
+          <Route path="/founders/:feedUuid/prepay" element={withBoundary(<FounderPrepayPortalPage />)} />
           <Route path="/wins" element={withBoundary(<ProofWallPage />)} />
           <Route path="/email-previews" element={withBoundary(<EmailPreviewsPage />)} />
           <Route path="/admin" element={withBoundary(<AdminPage />)}>
