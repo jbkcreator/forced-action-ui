@@ -42,8 +42,8 @@ function LandingContent() {
   const pricingRef = useRef(null);
 
   // Step 1: User clicks a paid plan → open email gate first
-  const handleCheckout = useCallback((tier) => {
-    setEmailGate({ open: true, tier, flow: 'paid' });
+  const handleCheckout = useCallback((tier, interval = 'monthly') => {
+    setEmailGate({ open: true, tier, interval, flow: 'paid' });
   }, []);
 
   // Free-tier entry: Start Free button → open email gate in 'free' flow
@@ -95,8 +95,8 @@ function LandingContent() {
     }
 
     setEmailGate({ open: false, tier: null, flow: 'paid' });
-    setZipCollector({ open: true, tier: emailGate.tier });
-  }, [emailGate.flow, emailGate.tier, selectedVertical, countyId, attribution]);
+    setZipCollector({ open: true, tier: emailGate.tier, interval: emailGate.interval });
+  }, [emailGate.flow, emailGate.tier, emailGate.interval, selectedVertical, countyId, attribution]);
 
   // Step 3: ZIPs collected → launch Stripe checkout. fa017: pass attribution
   // so the pre-checkout free-signup persists signup_source/utm_* on the row.
@@ -108,10 +108,11 @@ function LandingContent() {
       countyId,
       zipCodes: zips,
       email: userEmail,
+      interval: zipCollector.interval || 'monthly',
       consent: userConsent,
       attribution,
     });
-  }, [zipCollector.tier, selectedVertical, countyId, openCheckout, userEmail, userConsent, attribution]);
+  }, [zipCollector.tier, zipCollector.interval, selectedVertical, countyId, openCheckout, userEmail, userConsent, attribution]);
 
   return (
     <div className="gradient-bg min-h-screen text-white" style={{ scrollBehavior: 'smooth' }}>
