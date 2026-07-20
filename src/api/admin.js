@@ -320,6 +320,25 @@ export function fetchRevenueLeak(token, { countyId, limit = 30 } = {}, options =
   return adminFetch(token, `/api/admin/revenue-leak?${params.toString()}`, options);
 }
 
+// ─── Marketing Spend / CAC-Payback (Block 4) ─────────────────────────────────
+
+export function createMarketingSpend(token, body, options = {}) {
+  return adminFetch(token, '/api/admin/marketing-spend', { method: 'POST', body, ...options });
+}
+
+export function fetchMarketingSpend(token, { from, to } = {}, options = {}) {
+  const params = new URLSearchParams();
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  const qs = params.toString();
+  return adminFetch(token, `/api/admin/marketing-spend${qs ? '?' + qs : ''}`, options);
+}
+
+export function fetchCacPayback(token, { from, to }, options = {}) {
+  const params = new URLSearchParams({ from, to });
+  return adminFetch(token, `/api/admin/cac-payback?${params.toString()}`, options);
+}
+
 // ─── Attribution (Stage 8) ────────────────────────────────────────────────────
 
 export function fetchAttributionStats(token, { groupBy = 'conversion_type', dateFrom, dateTo } = {}, options = {}) {

@@ -121,6 +121,16 @@ const SECTIONS = [
     ),
   },
   {
+    id: 'marketing-spend',
+    label: 'Marketing Spend',
+    path: '/admin/marketing-spend',
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path d="M12 8v8m-4-5v5m8-8v8M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
     id: 'scrapers',
     label: 'Scrapers',
     path: '/admin/scrapers',
