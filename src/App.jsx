@@ -54,6 +54,7 @@ const IcpChannelSection    = lazy(() => import('./components/admin/sections/IcpC
 const SupplierIntelSection = lazy(() => import('./components/admin/sections/SupplierIntelSection'));
 const EmailCampaignsSection = lazy(() => import('./components/admin/sections/EmailCampaignsSection'));
 const RoasSection           = lazy(() => import('./components/admin/sections/RoasSection'));
+const MarketingSpendSection = lazy(() => import('./components/admin/sections/MarketingSpendSection'));
 const CloserSection         = lazy(() => import('./components/admin/sections/CloserSection'));
 const BrokersLanesSection   = lazy(() => import('./components/admin/sections/BrokersLanesSection'));
 const CommissionsSection    = lazy(() => import('./components/admin/sections/CommissionsSection'));
@@ -130,6 +131,7 @@ export default function App() {
             <Route path="supplier-intel"    element={withBoundary(<SupplierIntelSection />)} />
             <Route path="email-campaigns"   element={withBoundary(<EmailCampaignsSection />)} />
             <Route path="roas"              element={withBoundary(<RoasSection />)} />
+            <Route path="marketing-spend"   element={withBoundary(<MarketingSpendSection />)} />
             <Route path="closer"            element={withBoundary(<CloserSection />)} />
             <Route path="scrapers"          element={withBoundary(<ScrapersSection />)} />
             <Route path="dfy-lite"          element={withBoundary(<DfyLiteSection />)} />

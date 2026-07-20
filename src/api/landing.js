@@ -47,7 +47,7 @@ export function submitWaitlist({ zipCode, vertical, countyId, name, email, phone
 }
 
 export function createCheckout({
-  tier, vertical, countyId, zipCodes, email, consentAcceptance = null, attribution = null,
+  tier, vertical, countyId, zipCodes, email, interval = 'monthly', consentAcceptance = null, attribution = null,
   alreadyHasDashboardAccess = false, successReturnPath = null,
 }) {
   return api.post('/api/checkout', {
@@ -56,6 +56,7 @@ export function createCheckout({
     county_id: countyId,
     zip_codes: zipCodes,
     email,
+    interval,
     consent_acceptance: consentAcceptance,
     attribution,
     already_has_dashboard_access: alreadyHasDashboardAccess,

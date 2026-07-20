@@ -1,5 +1,6 @@
 import PricingCard from './PricingCard';
 import AnnualPricingCard from './AnnualPricingCard';
+import FounderPricingCard from './FounderPricingCard';
 import Icon from '../ui/Icon';
 
 export default function PricingSection({ onCheckout, onStartFree }) {
@@ -18,6 +19,10 @@ export default function PricingSection({ onCheckout, onStartFree }) {
         <PricingCard tier="dominator" onCheckout={onCheckout} />
         <AnnualPricingCard onCheckout={onCheckout} />
       </div>
+
+      {/* Founder — premium tier, separate from the main grid (renders only when
+          the backend surfaces pricing.founder). */}
+      <FounderPricingCard onCheckout={onCheckout} />
 
       {/* Free signup option */}
       {onStartFree && (
