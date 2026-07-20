@@ -7,7 +7,10 @@ import useStripePayment from '../hooks/useStripePayment';
 import useStripeCheckout from '../hooks/useStripeCheckout';
 import useZipActivityMap from '../hooks/useZipActivityMap';
 import { fetchFeed, createPortalSession, logEvent, unlockHotLead, unlockLead, createLeadPackCheckout, fetchSubscriptionUpsellOffer } from '../api/dashboard';
+import { fetchPricing } from '../api/landing';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
+import ZipCollectorModal from '../components/landing/ZipCollectorModal';
+import TierSelectModal from '../components/dashboard/TierSelectModal';
 import SubscribeInsteadModal from '../components/dashboard/SubscribeInsteadModal';
 import { logBusinessEvent } from '../api/phase2b';
 import PaymentSheetModal from '../components/common/PaymentSheetModal';
@@ -118,6 +121,12 @@ export default function DashboardPage() {
   const [upsellOffer, setUpsellOffer] = useState(null);
   const [upsellOpen, setUpsellOpen] = useState(false);
   const stripeCheckout = useStripeCheckout();
+  // Free-tier "Lock Territory / Subscribe" flow: tiers -> zips -> embedded Stripe checkout.
+  const [subscribeStep, setSubscribeStep] = useState('closed'); // 'closed' | 'tiers' | 'zips'
+  const [subscribeTier, setSubscribeTier] = useState(null);
+  const [subscribePricing, setSubscribePricing] = useState(null);
+  const [subscribePricingLoading, setSubscribePricingLoading] = useState(false);
+  const [subscribePricingError, setSubscribePricingError] = useState(null);
   const [dealCaptureOpen, setDealCaptureOpen] = useState(false);
   const [dealCaptureLead, setDealCaptureLead] = useState(null);  // lead whose outcome is being reported
   const [premiumLead, setPremiumLead] = useState(null);   // lead obj for premium modal
@@ -521,14 +530,72 @@ export default function DashboardPage() {
     stripePayment.reset();
   }, [stripePayment]);
 
+  // Free-tier subscribers have no existing Stripe subscription to manage —
+  // the billing portal is the wrong tool for them (see PENDING_TASKS T-B1-01
+  // discussion). Route them through the same tier -> ZIP -> embedded-checkout
+  // flow the landing page uses instead. Already-paying subscribers changing
+  // plans (e.g. Starter -> Pro via UpgradeBanner) keep the portal, which is
+  // the correct flow for updating an existing subscription.
   const handleUpgrade = useCallback(async () => {
+    if (subscriber.tier === 'free') {
+      setSubscribeStep('tiers');
+      if (!subscribePricing) {
+        setSubscribePricingLoading(true);
+        setSubscribePricingError(null);
+        try {
+          const res = await fetchPricing();
+          setSubscribePricing(res?.pricing || null);
+        } catch {
+          setSubscribePricingError('Could not load plans. Please try again.');
+        } finally {
+          setSubscribePricingLoading(false);
+        }
+      }
+      return;
+    }
     try {
       const { url } = await createPortalSession(feedUuid);
       window.location.href = url;
     } catch {
       alert('Unable to open the billing portal.');
     }
-  }, [feedUuid]);
+  }, [feedUuid, subscriber, subscribePricing]);
+
+  const handleSubscribeTierSelect = useCallback((tier) => {
+    setSubscribeTier(tier);
+    setSubscribeStep('zips');
+  }, []);
+
+  const handleSubscribeClose = useCallback(() => {
+    setSubscribeStep('closed');
+    setSubscribeTier(null);
+  }, []);
+
+  const handleSubscribeZipsProceed = useCallback((zips) => {
+    setSubscribeStep('closed');
+    stripeCheckout.openCheckout({
+      tier: subscribeTier,
+      vertical: subscriber.vertical,
+      countyId: subscriber.county_id || 'hillsborough',
+      zipCodes: zips,
+      email: subscriber.email,
+      // Already authenticated in the dashboard — skip the marketing /success
+      // page and the magic-link welcome email; just close the embedded
+      // checkout and refresh the feed in place so the new tier + leads show up.
+      alreadyHasDashboardAccess: true,
+      successReturnPath: `/dashboard/${feedUuid}?upgraded=1`,
+      onComplete: () => {
+        stripeCheckout.closeCheckout();
+        logBusinessEvent('PAYMENT_SUCCEEDED', {
+          feedUuid,
+          payload: { product: 'subscription_upgrade', tier: subscribeTier, zip_codes: zips },
+        });
+        // Webhook lands a beat after the embedded checkout reports done; refetch twice.
+        setTimeout(refetch, 1500);
+        setTimeout(refetch, 4500);
+      },
+    });
+  }, [subscribeTier, subscriber, stripeCheckout, feedUuid, refetch]);
 
   const handleBundlePurchaseSuccess = useCallback(({ bundleType, zipCode }) => {
     logBusinessEvent('PAYMENT_SUCCEEDED', {
@@ -946,6 +1013,27 @@ export default function DashboardPage() {
           loading={stripeCheckout.loading}
           error={stripeCheckout.checkoutError}
           embeddedRef={stripeCheckout.embeddedRef}
+        />
+
+        <TierSelectModal
+          isOpen={subscribeStep === 'tiers'}
+          onClose={handleSubscribeClose}
+          vertical={subscriber.vertical}
+          countyId={subscriber.county_id || 'hillsborough'}
+          pricing={subscribePricing}
+          loading={subscribePricingLoading}
+          error={subscribePricingError}
+          onSelectTier={handleSubscribeTierSelect}
+        />
+
+        <ZipCollectorModal
+          isOpen={subscribeStep === 'zips'}
+          onClose={handleSubscribeClose}
+          tier={subscribeTier || 'starter'}
+          vertical={subscriber.vertical}
+          countyId={subscriber.county_id || 'hillsborough'}
+          pricing={subscribePricing}
+          onProceed={handleSubscribeZipsProceed}
         />
 
         {/* Stage 5: Bundle offer modal — opens on ?bundle=<type>&variant=<a|b> deep link */}

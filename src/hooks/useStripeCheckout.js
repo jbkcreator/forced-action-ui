@@ -33,6 +33,13 @@ export default function useStripeCheckout() {
   const openCheckout = useCallback(async ({
     tier, vertical, countyId, zipCodes, email, consent = null, attribution = null,
     annualSignupTrafficPct,
+    // Dashboard-originated upgrades (subscriber already has a session): skip
+    // the marketing /success page, tell the backend not to send a magic-link
+    // welcome, and let the caller decide what "done" means (e.g. refetch the
+    // dashboard in place) instead of the default redirect.
+    alreadyHasDashboardAccess = false,
+    successReturnPath = null,
+    onComplete: onCompleteOverride = null,
   }) => {
     checkoutCtxRef.current = { tier, zipCodes, countyId };
     setIsOpen(true);
@@ -71,6 +78,8 @@ export default function useStripeCheckout() {
       const { client_secret, session_id, amount_total_cents } = await createCheckout({
         tier, vertical, countyId, zipCodes, email, consentAcceptance: consent,
         attribution: getAttribution(),
+        alreadyHasDashboardAccess,
+        successReturnPath,
       });
       checkoutCtxRef.current.sessionId = session_id || null;
       checkoutCtxRef.current.amountTotalCents = amount_total_cents ?? null;
@@ -80,6 +89,10 @@ export default function useStripeCheckout() {
       embeddedRef.current = await stripe.initEmbeddedCheckout({
         clientSecret: client_secret,
         onComplete() {
+          if (onCompleteOverride) {
+            onCompleteOverride({ ...checkoutCtxRef.current });
+            return;
+          }
           const params = new URLSearchParams();
           if (checkoutCtxRef.current) {
             params.set('tier', checkoutCtxRef.current.tier);
