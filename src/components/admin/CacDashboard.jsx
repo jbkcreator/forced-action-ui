@@ -4,7 +4,7 @@ import { fetchCacPayback } from '../../api/admin';
 const AUTO_CHANNELS = new Set(['quora', 'affiliate']);
 
 const CHANNEL_LABELS = {
-  meta: 'Meta (Facebook + Instagram)',
+  meta: 'Meta',
   google: 'Google',
   dbpr_email: 'DBPR Email (Instantly)',
   quora: 'Quora',
