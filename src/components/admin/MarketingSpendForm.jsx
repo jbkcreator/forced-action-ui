@@ -6,6 +6,7 @@ const CHANNELS = [
   { value: 'google', label: 'Google' },
   { value: 'dbpr_email', label: 'DBPR Email (Instantly)' },
 ];
+const CHANNEL_LABELS = Object.fromEntries(CHANNELS.map(c => [c.value, c.label]));
 
 const CARD = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' };
 const INPUT_STYLE = {
@@ -153,7 +154,7 @@ export default function MarketingSpendForm({ token }) {
               <tbody>
                 {rows.map((row, i) => (
                   <tr key={row.id} style={{ borderBottom: i < rows.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-                    <td className="px-4 py-3 text-slate-300">{row.channel}</td>
+                    <td className="px-4 py-3 text-slate-300">{CHANNEL_LABELS[row.channel] ?? row.channel}</td>
                     <td className="px-4 py-3 text-slate-300">{row.campaign_key ?? '—'}</td>
                     <td className="px-4 py-3 text-slate-300 whitespace-nowrap">{row.period_start} → {row.period_end}</td>
                     <td className="px-4 py-3 text-slate-200">{fmtDollars(row.amount)}</td>

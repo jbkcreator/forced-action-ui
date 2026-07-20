@@ -3,6 +3,24 @@ import { fetchCacPayback } from '../../api/admin';
 
 const AUTO_CHANNELS = new Set(['quora', 'affiliate']);
 
+const CHANNEL_LABELS = {
+  facebook: 'Facebook / Meta',
+  google: 'Google',
+  dbpr_email: 'DBPR Email (Instantly)',
+  quora: 'Quora',
+  affiliate: 'Affiliate',
+  referral: 'Referral',
+  cora_sms: 'Cora SMS',
+  missed_call: 'Missed Call',
+  landing_page: 'Landing Page (organic)',
+  direct: 'Direct',
+  unattributed: 'Unattributed',
+};
+
+function channelLabel(channel) {
+  return CHANNEL_LABELS[channel] ?? channel;
+}
+
 const CARD = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' };
 const INPUT_STYLE = {
   background: 'rgba(255,255,255,0.05)',
@@ -112,7 +130,7 @@ export default function CacDashboard({ token }) {
                   {rows.map((row, i) => (
                     <tr key={row.channel} style={{ borderBottom: i < rows.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
                       <td className="px-4 py-3 text-slate-300">
-                        {row.channel}
+                        {channelLabel(row.channel)}
                         {AUTO_CHANNELS.has(row.channel) && <span className="ml-1.5 text-yellow-400 text-[10px] align-middle">(auto)</span>}
                       </td>
                       <td className="px-4 py-3 text-slate-300">{row.new_customers}</td>
