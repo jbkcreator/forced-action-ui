@@ -44,6 +44,7 @@ const CountyLanding = lazy(() => import('./pages/CountyLanding'));
 const DealSubmitPage = lazy(() => import('./pages/DealSubmitPage'));
 
 // Admin section pages
+const OperatorDashboardSection = lazy(() => import('./components/admin/sections/OperatorDashboardSection'));
 const DataSection      = lazy(() => import('./components/admin/sections/DataSection'));
 const RevenueSection   = lazy(() => import('./components/admin/sections/RevenueSection'));
 const MessagingSection = lazy(() => import('./components/admin/sections/MessagingSection'));
@@ -119,6 +120,7 @@ export default function App() {
           <Route path="/email-previews" element={withBoundary(<EmailPreviewsPage />)} />
           <Route path="/admin" element={withBoundary(<AdminPage />)}>
             <Route index element={<Navigate to="data" replace />} />
+            <Route path="operator"  element={withBoundary(<OperatorDashboardSection />)} />
             <Route path="data"      element={withBoundary(<DataSection />)} />
             <Route path="revenue"   element={withBoundary(<RevenueSection />)} />
             <Route path="messaging" element={withBoundary(<MessagingSection />)} />

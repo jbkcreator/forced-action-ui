@@ -564,3 +564,12 @@ export function fetchDfyLiteOrders(token, { status, subscriberId, page = 1, page
   if (subscriberId) params.set('subscriber_id', subscriberId);
   return adminFetch(token, `/api/admin/dfy-lite/orders?${params}`, options);
 }
+
+// ─── Operator Dashboard (T-B8-02) ────────────────────────────────────────────
+// GET /api/admin/operator-dashboard/summary?from=&to= — T-B8-01, live as of
+// feat/t-b8-01-operator-dashboard-aggregation. `from`/`to` accept plain
+// YYYY-MM-DD (backend parses via datetime.fromisoformat).
+export function fetchOperatorDashboard(token, { from, to } = {}, options = {}) {
+  const params = new URLSearchParams({ from, to });
+  return adminFetch(token, `/api/admin/operator-dashboard/summary?${params.toString()}`, options);
+}
