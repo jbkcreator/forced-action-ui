@@ -92,3 +92,33 @@ describe('ActionQueueDashboard — error state', () => {
     await waitFor(() => screen.getByText(/network error/i));
   });
 });
+
+describe('ActionQueueDashboard — severity dot', () => {
+  it('renders an accessible severity dot, not the raw severity string', async () => {
+    fetchActionQueue.mockResolvedValue(queueResponse({ approvals: [APPROVAL_ROW] }));
+    render(<ActionQueueDashboard token={TOKEN} />);
+    await waitFor(() => screen.getByText(/feature_killed: tracerfy match_rate/i));
+    expect(screen.getByLabelText(/severity: red/i)).toBeInTheDocument();
+  });
+});
+
+describe('ActionQueueDashboard — filter props (?lane / ?category)', () => {
+  it('shows only the requested lane when lane filter is set', async () => {
+    fetchActionQueue.mockResolvedValue(
+      queueResponse({ approvals: [APPROVAL_ROW], failures: [FAILURE_ROW] })
+    );
+    render(<ActionQueueDashboard token={TOKEN} lane="failures" />);
+    await waitFor(() => screen.getByText(/zero_records: court_docket/i));
+    expect(screen.queryByText(/feature_killed: tracerfy match_rate/i)).not.toBeInTheDocument();
+  });
+
+  it('shows only rows matching the category filter', async () => {
+    const opsRow = { ...APPROVAL_ROW, id: 2, category: 'ops', lane: 'failures', title: 'auto_paused: enrichment' };
+    fetchActionQueue.mockResolvedValue(
+      queueResponse({ failures: [FAILURE_ROW, opsRow] })
+    );
+    render(<ActionQueueDashboard token={TOKEN} lane="failures" category="source" />);
+    await waitFor(() => screen.getByText(/zero_records: court_docket/i));
+    expect(screen.queryByText(/auto_paused: enrichment/i)).not.toBeInTheDocument();
+  });
+});
