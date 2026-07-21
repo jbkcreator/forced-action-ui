@@ -2,6 +2,19 @@ import { NavLink } from 'react-router-dom';
 
 const SECTIONS = [
   {
+    id: 'operator',
+    label: 'At-a-Glance',
+    path: '/admin/operator',
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <rect x="3" y="3" width="7" height="9" rx="1" />
+        <rect x="14" y="3" width="7" height="5" rx="1" />
+        <rect x="14" y="12" width="7" height="9" rx="1" />
+        <rect x="3" y="16" width="7" height="5" rx="1" />
+      </svg>
+    ),
+  },
+  {
     id: 'data',
     label: 'Data & Setup',
     path: '/admin/data',
