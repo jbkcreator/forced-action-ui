@@ -1,20 +1,22 @@
 /**
- * DealCapture — one-tap deal outcome reporting for subscribers.
+ * DealCapture — one-tap deal outcome reporting for subscribers (Block 13).
  *
- * Four buckets (<$10K / $10-25K / $25K+ / Skip). Optional dollar amount +
- * days-to-close. Authenticates by feed_uuid — works from an SMS-link click
- * without requiring a login.
+ * Three outcome states on the delivered-lead card:
+ *   - closed  → the deal closed. Optional amount + days-to-close.
+ *   - dead    → the lead went nowhere. A reason is REQUIRED. Reasons split into
+ *               lead-fault (feeds lead scoring) and buyer-side (score-protected).
+ *   - pending → still working it. Recorded, but fires no win/loss learning.
  *
- * On submit, POSTs to /api/deal-capture and triggers:
- *   - deal_outcomes row insert
- *   - revenue signal score re-compute
- *   - annual push trigger re-evaluation ($10K+ deals fire the charter offer)
- *   - learning card deal-pattern feed
+ * Authenticates by feed_uuid — works from an SMS-link click without a login.
+ *
+ * On submit, POSTs to /api/deal-capture, which writes the DealOutcome row and
+ * (for closed) returns the share-ready win graphic. Recalculation (scoring /
+ * loss autopsy) is fanned out asynchronously server-side.
  *
  * Props:
  *   feedUuid      — subscriber's feed UUID
  *   propertyId    — optional, which lead produced the deal
- *   onCaptured    — callback(result) once the deal is recorded
+ *   onCaptured    — callback(result) once the outcome is recorded
  *   onDismiss     — callback() when user closes without reporting
  */
 import { useState } from 'react';
@@ -24,12 +26,26 @@ import Icon from '../ui/Icon';
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 
-const BUCKETS = [
-  { key: '5_10k',    label: '< $10K',    detail: 'Under $10,000' },
-  { key: '10_25k',   label: '$10 – 25K', detail: '$10K to $25K' },
-  { key: '25k_plus', label: '$25K+',     detail: 'Over $25,000' },
-  { key: 'skip',     label: 'Skip',      detail: 'Prefer not to say' },
+const OUTCOMES = [
+  { key: 'closed',  label: 'Closed',  detail: 'Won the deal',     icon: 'check-circle' },
+  { key: 'dead',    label: 'Dead',    detail: 'Went nowhere',     icon: 'x' },
+  { key: 'pending', label: 'Pending', detail: 'Still working it',  icon: 'clock' },
 ];
+
+// Mirrors backend src/services/outcome_reasons.py. Lead-fault reasons feed the
+// lead score; buyer-side reasons are score-protected (logged, not scored).
+const DEAD_REASONS = [
+  { key: 'bad_contact_info',     label: 'Bad contact info',       group: 'The lead' },
+  { key: 'already_sold_listed',  label: 'Already sold / listed',  group: 'The lead' },
+  { key: 'owner_not_distressed', label: 'Owner not distressed',   group: 'The lead' },
+  { key: 'wrong_owner',          label: 'Wrong owner',            group: 'The lead' },
+  { key: 'no_conversation',      label: "Couldn't reach them",    group: 'On my side' },
+  { key: 'declined',             label: 'They declined',          group: 'On my side' },
+  { key: 'too_busy',             label: 'Too busy right now',     group: 'On my side' },
+  { key: 'budget',               label: "Budget / couldn't fund", group: 'On my side' },
+];
+
+const REASON_GROUPS = ['The lead', 'On my side'];
 
 
 export default function DealCapture({
@@ -38,20 +54,24 @@ export default function DealCapture({
   onCaptured,
   onDismiss,
 }) {
-  const [selected, setSelected] = useState(null);
-  const [showDetails, setShowDetails] = useState(false);
+  const [outcome, setOutcome] = useState(null);
+  const [deadReason, setDeadReason] = useState(null);
   const [amount, setAmount] = useState('');
   const [daysToClose, setDaysToClose] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [done, setDone] = useState(false);
-  // Stage 5: capture endpoint now returns graphic_url + annual_offered
   const [result, setResult] = useState(null);
   const [shareCopied, setShareCopied] = useState(false);
 
   if (!feedUuid) return null;
 
-  const canSubmit = selected !== null && !submitting && !done;
+  // dead requires a reason before submit is allowed.
+  const canSubmit =
+    outcome !== null &&
+    !submitting &&
+    !done &&
+    (outcome !== 'dead' || deadReason !== null);
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -60,16 +80,18 @@ export default function DealCapture({
     try {
       const res = await captureDeal({
         feedUuid,
-        bucket: selected,
-        dealAmount: amount ? parseFloat(amount) : null,
-        daysToClose: daysToClose ? parseInt(daysToClose, 10) : null,
+        outcomeState: outcome,
+        deadReason: outcome === 'dead' ? deadReason : null,
+        dealAmount: outcome === 'closed' && amount ? parseFloat(amount) : null,
+        daysToClose:
+          outcome === 'closed' && daysToClose ? parseInt(daysToClose, 10) : null,
         propertyId,
       });
       setResult(res);
       setDone(true);
       onCaptured?.(res);
     } catch (err) {
-      setError(err?.message || 'Could not record deal. Try again?');
+      setError(err?.message || 'Could not record outcome. Try again?');
     } finally {
       setSubmitting(false);
     }
@@ -83,7 +105,7 @@ export default function DealCapture({
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
     } catch {
-      // Fallback: select the URL in the input below
+      /* Fallback: user can long-press the image */
     }
   };
 
@@ -109,12 +131,18 @@ export default function DealCapture({
     const graphicUrl = result?.graphic_url
       ? `${API_BASE}${result.graphic_url}`
       : null;
+    const headline =
+      outcome === 'closed'
+        ? 'Deal logged — nice work.'
+        : outcome === 'pending'
+          ? "Marked pending — we'll keep it open."
+          : 'Logged — thanks for the signal.';
     return (
       <section className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-5 text-center">
         <Icon name="check-circle" size={32} className="mx-auto text-emerald-400" />
-        <h3 className="text-white font-semibold mt-2">Deal logged — nice work.</h3>
+        <h3 className="text-white font-semibold mt-2">{headline}</h3>
         <p className="text-slate-300 text-sm mt-1">
-          We're tracking your wins so we can show you better leads.
+          We use every outcome to tune the leads we surface next.
         </p>
 
         {graphicUrl && (
@@ -180,39 +208,40 @@ export default function DealCapture({
       )}
 
       <h3 id="deal-capture-heading" className="text-white font-semibold text-base">
-        Did this lead close into a deal?
+        What happened with this lead?
       </h3>
       <p className="text-slate-400 text-xs mt-1">
         One tap — we use this to tune the leads we surface next.
       </p>
 
-      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
-        {BUCKETS.map(b => (
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        {OUTCOMES.map(o => (
           <button
-            key={b.key}
+            key={o.key}
             type="button"
             onClick={() => {
-              setSelected(b.key);
-              setShowDetails(b.key !== 'skip');
+              setOutcome(o.key);
+              if (o.key !== 'dead') setDeadReason(null);
             }}
             className={
-              'rounded-lg px-3 py-3 text-left border transition-colors ' +
-              (selected === b.key
+              'rounded-lg px-3 py-3 text-center border transition-colors ' +
+              (outcome === o.key
                 ? 'bg-yellow-400/20 border-yellow-400/60 text-white'
                 : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10')
             }
-            aria-pressed={selected === b.key}
+            aria-pressed={outcome === o.key}
           >
-            <div className="font-semibold text-sm">{b.label}</div>
-            <div className="text-xs text-slate-400 mt-0.5">{b.detail}</div>
+            <Icon name={o.icon} size={18} className="mx-auto" />
+            <div className="font-semibold text-sm mt-1">{o.label}</div>
+            <div className="text-xs text-slate-400 mt-0.5">{o.detail}</div>
           </button>
         ))}
       </div>
 
-      {showDetails && (
+      {outcome === 'closed' && (
         <div className="mt-4 space-y-3">
           <label className="block">
-            <span className="text-xs text-slate-400">Exact amount (optional)</span>
+            <span className="text-xs text-slate-400">Deal amount (optional)</span>
             <input
               type="number"
               inputMode="numeric"
@@ -240,9 +269,46 @@ export default function DealCapture({
         </div>
       )}
 
-      {error && (
-        <p className="mt-3 text-red-400 text-xs">{error}</p>
+      {outcome === 'dead' && (
+        <fieldset className="mt-4">
+          <legend className="text-xs text-slate-400">
+            Why? <span className="text-red-400">(required)</span>
+          </legend>
+          <div className="mt-2 space-y-3">
+            {REASON_GROUPS.map(group => (
+              <div key={group}>
+                <p className="text-[11px] uppercase tracking-wide text-slate-500">{group}</p>
+                <div className="mt-1 grid grid-cols-2 gap-2">
+                  {DEAD_REASONS.filter(r => r.group === group).map(r => (
+                    <button
+                      key={r.key}
+                      type="button"
+                      onClick={() => setDeadReason(r.key)}
+                      className={
+                        'rounded-lg px-3 py-2 text-left text-sm border transition-colors ' +
+                        (deadReason === r.key
+                          ? 'bg-yellow-400/20 border-yellow-400/60 text-white'
+                          : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10')
+                      }
+                      aria-pressed={deadReason === r.key}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </fieldset>
       )}
+
+      {outcome === 'pending' && (
+        <p className="mt-4 text-slate-400 text-xs">
+          We'll leave this lead open and won't score it until you close or kill it.
+        </p>
+      )}
+
+      {error && <p className="mt-3 text-red-400 text-xs">{error}</p>}
 
       <div className="mt-4 flex items-center justify-end gap-3">
         {onDismiss && (
