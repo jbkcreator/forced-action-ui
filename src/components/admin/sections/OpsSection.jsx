@@ -3,6 +3,7 @@ import DlqDashboard from '../DlqDashboard';
 import EnrichmentHealthDashboard from '../EnrichmentHealthDashboard';
 import GateMetricsDashboard from '../GateMetricsDashboard';
 import FunnelDashboard from '../FunnelDashboard';
+import InboundVelocityDashboard from '../InboundVelocityDashboard';
 import SectionLayout from './SectionLayout';
 
 const TABS = [
@@ -11,6 +12,7 @@ const TABS = [
   { id: 'gates',      label: 'Gate Monitoring',  Component: GateMetricsDashboard },
   { id: 'enrichment', label: 'Provider Health',  Component: EnrichmentHealthDashboard },
   { id: 'funnel',     label: 'Funnel',           Component: FunnelDashboard },
+  { id: 'inbound',    label: 'Inbound Velocity', Component: InboundVelocityDashboard },
 ];
 
 export default function OpsSection() {
