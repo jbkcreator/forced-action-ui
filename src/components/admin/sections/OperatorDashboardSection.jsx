@@ -36,11 +36,11 @@ function fmtPercent(rate) {
   return `${(rate * 100).toFixed(0)}%`;
 }
 
-// T-B8-03 (action queue) not yet shipped — cards render non-clickable until
-// its route + filter param are confirmed (see plan doc Q1).
+// T-B8-03 action queue lives at /admin/action-queue and filters by ?lane / ?category.
+// These two KPI cards deep-link into the matching pre-filtered lane.
 const QUEUE_LINKS = {
-  // source_failures: '/admin/queue?filter=source_failures',
-  // cora_approvals_waiting: '/admin/queue',
+  cora_approvals_waiting: '/admin/action-queue?lane=approvals&category=legal',
+  source_failures: '/admin/action-queue?lane=failures&category=source',
 };
 
 const ICON_PROPS = { width: 16, height: 16, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 1.8 };

@@ -65,6 +65,7 @@ const DfyLiteSection        = lazy(() => import('./components/admin/sections/Dfy
 const QuoraSection          = lazy(() => import('./components/admin/sections/QuoraSection'));
 const PromptsSection        = lazy(() => import('./components/admin/sections/PromptsSection'));
 const LeadDeliverySection   = lazy(() => import('./components/admin/sections/LeadDeliverySection'));
+const ActionQueueSection    = lazy(() => import('./components/admin/sections/ActionQueueSection'));
 const SubscriberDetailPage = lazy(() => import('./pages/SubscriberDetailPage'));
 const SupplierDashboard    = lazy(() => import('./pages/SupplierDashboard'));
 
@@ -138,6 +139,7 @@ export default function App() {
             <Route path="marketing-spend"   element={withBoundary(<MarketingSpendSection />)} />
             <Route path="closer"            element={withBoundary(<CloserSection />)} />
             <Route path="scrapers"          element={withBoundary(<ScrapersSection />)} />
+            <Route path="action-queue"      element={withBoundary(<ActionQueueSection />)} />
             <Route path="dfy-lite"          element={withBoundary(<DfyLiteSection />)} />
             <Route path="quora"             element={withBoundary(<QuoraSection />)} />
             <Route path="prompts"           element={withBoundary(<PromptsSection />)} />
