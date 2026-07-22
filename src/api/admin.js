@@ -574,6 +574,17 @@ export function fetchOperatorDashboard(token, { from, to } = {}, options = {}) {
   return adminFetch(token, `/api/admin/operator-dashboard/summary?${params.toString()}`, options);
 }
 
+// GET /api/admin/operator-dashboard/retention-cohorts?channel=&tier=&zip=&months=&cohorts=
+// T-B8-04 — paid logo retention grid. Filters default to "all" when omitted;
+// see docs/adr/0038 on the backend for the metric definition.
+export function fetchRetentionCohorts(token, { channel, tier, zip, months, cohorts } = {}, options = {}) {
+  const params = new URLSearchParams();
+  if (channel) params.set('channel', channel);
+  if (tier)    params.set('tier', tier);
+  if (zip)     params.set('zip', zip);
+  if (months)  params.set('months', months);
+  if (cohorts) params.set('cohorts', cohorts);
+  return adminFetch(token, `/api/admin/operator-dashboard/retention-cohorts?${params.toString()}`, options);
 // T-B8-03 — Operator Dashboard action queue: approvals + source-failure FYI lanes.
 export function fetchActionQueue(token, options = {}) {
   return adminFetch(token, '/api/admin/operator-dashboard/action-queue', options);
