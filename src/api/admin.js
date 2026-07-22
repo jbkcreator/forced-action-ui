@@ -112,6 +112,11 @@ export function fetchKillSwitchStatus(token, options = {}) {
   return adminFetch(token, '/api/admin/kill-switch-status', options);
 }
 
+// Block 11 — Inbound Velocity: hot-inbound response-time stats.
+export function fetchInboundVelocity(token, options = {}) {
+  return adminFetch(token, '/api/admin/inbound-velocity', options);
+}
+
 export function fetchEnrichmentHealth(token, options = {}) {
   return adminFetch(token, '/api/admin/enrichment-health', options);
 }
