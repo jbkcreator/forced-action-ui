@@ -590,6 +590,8 @@ export function fetchRetentionCohorts(token, { channel, tier, zip, months, cohor
   if (months)  params.set('months', months);
   if (cohorts) params.set('cohorts', cohorts);
   return adminFetch(token, `/api/admin/operator-dashboard/retention-cohorts?${params.toString()}`, options);
+}
+
 // T-B8-03 — Operator Dashboard action queue: approvals + source-failure FYI lanes.
 export function fetchActionQueue(token, options = {}) {
   return adminFetch(token, '/api/admin/operator-dashboard/action-queue', options);
