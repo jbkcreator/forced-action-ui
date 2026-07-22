@@ -117,7 +117,24 @@ export default function ZipChecker({ onZipChecked, countyId: externalCountyId, o
       )}
 
       {result?.status === 'taken' && (
-        <WaitlistForm zip={checkedZip} countyId={countyId} />
+        <>
+          {/* Sold-out-ZIP unlock nudge (MB2 item 6) — points at the existing
+              anon-safe unlock flow (FirstSessionWall, rendered once higher on
+              this same page) instead of duplicating it here. No live
+              flash_scarcity window is wired in — the anon/pre-signup side has
+              no public scarcity-window field yet (see FirstSessionWall.jsx),
+              so this is honest generic urgency copy, not a fake countdown. */}
+          <div className="max-w-xl mx-auto px-6 -mt-2 mb-6 text-center">
+            <button
+              type="button"
+              onClick={() => document.getElementById('first-session-wall')?.scrollIntoView({ behavior: 'smooth' })}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-yellow-400 hover:text-yellow-300 underline underline-offset-4"
+            >
+              Meanwhile — unlock a real lead near {checkedZip} now →
+            </button>
+          </div>
+          <WaitlistForm zip={checkedZip} countyId={countyId} />
+        </>
       )}
     </>
   );
