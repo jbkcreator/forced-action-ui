@@ -573,3 +573,8 @@ export function fetchOperatorDashboard(token, { from, to } = {}, options = {}) {
   const params = new URLSearchParams({ from, to });
   return adminFetch(token, `/api/admin/operator-dashboard/summary?${params.toString()}`, options);
 }
+
+// T-B8-03 — Operator Dashboard action queue: approvals + source-failure FYI lanes.
+export function fetchActionQueue(token, options = {}) {
+  return adminFetch(token, '/api/admin/operator-dashboard/action-queue', options);
+}
