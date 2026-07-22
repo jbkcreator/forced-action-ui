@@ -163,9 +163,14 @@ export default function OperatorDashboardSection() {
 
   return (
     <div className="px-6 py-6 space-y-5 max-w-5xl mx-auto">
-      <div>
-        <h2 className="text-xl font-bold text-white mb-0.5">At-a-Glance</h2>
-        <p className="text-xs text-slate-500">The whole business on one screen — 11 KPIs from existing metrics services.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-white mb-0.5">At-a-Glance</h2>
+          <p className="text-xs text-slate-500">The whole business on one screen — 11 KPIs from existing metrics services.</p>
+        </div>
+        <Link to="/admin/operator/retention" className="text-xs text-yellow-400/80 hover:text-yellow-300 whitespace-nowrap">
+          Retention Cohorts →
+        </Link>
       </div>
 
       <div className="flex items-center gap-3">
