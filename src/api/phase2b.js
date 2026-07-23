@@ -16,6 +16,8 @@ export function createFreeSignup({
   countyId = 'hillsborough',
   name = null,
   referralCode = null,
+  // T-B12-06 — origin marker for the referral ask (e.g. investor_to_investor).
+  referralSource = null,
   phone = null,
   consentAcceptance = null,
   // fa017 signup-source attribution
@@ -38,6 +40,7 @@ export function createFreeSignup({
     county_id: countyId,
     name,
     referral_code: referralCode,
+    referral_source: referralSource,
     phone,
     consent_acceptance: consentAcceptance,
     signup_source: signupSource,

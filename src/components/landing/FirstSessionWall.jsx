@@ -399,6 +399,7 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 				utmCampaign: attribution?.utmCampaign || null,
 				campaignId: attribution?.campaignId || null,
 				referralCode: attribution?.referralCode || null,
+				referralSource: attribution?.referralSource || null,
 				attributionToken: attribution?.attributionToken || null,
 				affiliateRef: attribution?.affiliateRef || null,
 				// User is about to pay $4 to unlock — defer welcome email until
