@@ -17,12 +17,6 @@ function tierBadgeClass(t) {
   return 'score-silver';
 }
 
-function maskAddress(address) {
-  return address
-    ? address.replace(/\d+\s+[A-Za-z]+/, '••• ••••••')
-    : '••• •••••• St';
-}
-
 function formatCountdown(msRemaining) {
   if (msRemaining <= 0) return '0:00:00';
   const totalSeconds = Math.floor(msRemaining / 1000);
@@ -56,7 +50,7 @@ export default function DealOfTheDay({ onUnlock }) {
   if (loading) {
     return (
       <section className="max-w-2xl mx-auto px-6 py-6">
-        <p className="text-slate-400 text-sm text-center">Loading today's exclusive deal…</p>
+        <p className="text-fa-text-muted text-sm text-center">Loading today's exclusive deal…</p>
       </section>
     );
   }
@@ -68,7 +62,9 @@ export default function DealOfTheDay({ onUnlock }) {
   const { deal } = payload;
   const windowEndMs = new Date(payload.window_end).getTime();
   const remainingMs = windowEndMs - now;
-  const maskedAddress = maskAddress(deal.address_masked || deal.address);
+  // Backend already returns a blurred address via _blur_address — render it
+  // directly, don't re-mask (avoids double-masking an already-masked string).
+  const maskedAddress = deal.address_masked || '••• •••••• St';
 
   return (
     <section className="max-w-2xl mx-auto px-6 py-8">
