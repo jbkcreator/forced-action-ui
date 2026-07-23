@@ -28,6 +28,10 @@ export function fetchSampleLeads(zipCode, vertical, countyId) {
   return api.get('/api/sample-leads', { zip_code: zipCode, vertical, county_id: countyId });
 }
 
+export function fetchHeroScoredDeal(zipCode, vertical) {
+  return api.get('/api/hero/scored-deal', { zip: zipCode, vertical });
+}
+
 export function getCountyLanding(countyId) {
   return api.get(`/api/counties/${countyId}/landing`);
 }
