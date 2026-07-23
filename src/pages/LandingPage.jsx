@@ -19,6 +19,7 @@ import ZipCollectorModal from '../components/landing/ZipCollectorModal';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
 import WaitlistForm from '../components/landing/WaitlistForm';
 import DealOfTheDay from '../components/landing/DealOfTheDay';
+import RoiCalculator from '../components/landing/RoiCalculator';
 import useStripeCheckout from '../hooks/useStripeCheckout';
 import { createFreeSignup, logBusinessEvent } from '../api/phase2b';
 
@@ -207,6 +208,12 @@ function LandingContent() {
                 <DealOfTheDay
                   onUnlock={() => setEmailGate({ open: true, tier: 'starter' })}
                 />
+              )}
+
+              {ctaMode === 'signup' && (
+                <div className="max-w-6xl mx-auto px-6 py-8">
+                  <RoiCalculator vertical={selectedVertical} />
+                </div>
               )}
 
               {ctaMode === 'signup' && (
