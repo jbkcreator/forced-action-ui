@@ -36,6 +36,28 @@ describe('CountyScarcityBar', () => {
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '35');
   });
 
+  it('shows grace ZIPs separately from locked, not folded together', async () => {
+    fetchCountyScarcity.mockResolvedValue({
+      zip_code: '34619',
+      zip_status: 'available',
+      county_id: 'pinellas',
+      county_name: 'Pinellas',
+      vertical: 'roofing',
+      open_count: 10,
+      locked_count: 30,
+      grace_count: 5,
+      total_count: 45,
+    });
+
+    render(<CountyScarcityBar zip="34619" vertical="roofing" />);
+
+    await waitFor(() =>
+      expect(screen.getByText(/30 locked, 5 in grace/i)).toBeInTheDocument(),
+    );
+    // aria-valuenow reflects total pressure (locked + grace), not locked alone
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '35');
+  });
+
   it('renders nothing when county has no territory', async () => {
     fetchCountyScarcity.mockResolvedValue({
       zip_code: '99999',

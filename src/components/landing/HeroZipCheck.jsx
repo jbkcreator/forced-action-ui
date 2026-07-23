@@ -78,37 +78,16 @@ export default function HeroZipCheck({ onUnlock }) {
         <p className="text-red-400 text-sm text-center mt-3">{result?.message}</p>
       )}
 
-      {state === 'result' && result?.status === 'zip_match' && result.deal && (
+      {state === 'result' && (result?.status === 'zip_match' || result?.status === 'nearest') && result.deal && (
         <div className="mt-5 text-left">
-          <p className="text-emerald-400 text-xs font-semibold text-center mb-3">
-            Real scored deal in ZIP {checkedZip}
-          </p>
-          <CountyScarcityBar
-            zip={checkedZip}
-            vertical={selectedVertical}
-            onLockClick={handleUnlockClick}
-            onZeroOpen={() => setZipFullyLocked(true)}
-          />
-          {zipFullyLocked && (
-            <div className="mt-3">
-              <p className="text-slate-400 text-xs mb-2">
-                {checkedZip} is fully claimed — join the waitlist to be first if it opens.
-              </p>
-              <WaitlistForm zip={checkedZip} waitlistType="hero_zip_locked" vertical={selectedVertical} />
-            </div>
-          )}
-          <BlurredStackSection
-            blurred={[result.deal]}
-            onUnlockLead={handleUnlockClick}
-            onUnlockHotLead={handleUnlockClick}
-          />
-        </div>
-      )}
-
-      {state === 'result' && result?.status === 'nearest' && result.deal && (
-        <div className="mt-5 text-left">
-          <p className="text-yellow-400 text-xs font-semibold text-center mb-3">
-            No live deals in ZIP {checkedZip} yet — {result.nearest_label}
+          <p
+            className={`text-xs font-semibold text-center mb-3 ${
+              result.status === 'zip_match' ? 'text-emerald-400' : 'text-yellow-400'
+            }`}
+          >
+            {result.status === 'zip_match'
+              ? `Real scored deal in ZIP ${checkedZip}`
+              : `No live deals in ZIP ${checkedZip} yet — ${result.nearest_label}`}
           </p>
           <CountyScarcityBar
             zip={checkedZip}
