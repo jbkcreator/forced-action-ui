@@ -44,12 +44,12 @@ export default function InvestorReferralCard({ tier, referralData }) {
   if (!isTier3(tier) || !investorLink) return null;
 
   return (
-    <div className="rounded-2xl bg-slate-900/60 border border-yellow-400/30 p-5">
+    <div className="rounded-2xl glass border border-fa-primary/30 p-5">
       <div className="flex items-start gap-3">
         <span className="text-2xl" aria-hidden="true">🤝</span>
         <div className="min-w-0">
-          <h3 className="text-base font-bold text-white">Invite a fellow investor</h3>
-          <p className="text-sm text-slate-300 mt-1">
+          <h3 className="text-base font-bold text-fa-text-primary">Invite a fellow investor</h3>
+          <p className="text-sm text-fa-text-secondary mt-1">
             You're a Dominator — the operators who move fastest in this county.
             Invite another serious investor you trust. When they come on board,
             you both earn the same rewards as any referral: credits, then a free
@@ -58,19 +58,20 @@ export default function InvestorReferralCard({ tier, referralData }) {
         </div>
       </div>
 
-      <div className="mt-4 rounded-xl bg-slate-950/60 border border-white/10 p-3 flex items-center gap-3 flex-wrap">
-        <code className="flex-1 min-w-0 text-xs sm:text-sm text-yellow-300 break-all">{investorLink}</code>
+      <div className="mt-4 rounded-xl bg-fa-bg-surface border border-fa-border-default p-3 flex items-center gap-3 flex-wrap">
+        <code className="flex-1 min-w-0 text-xs sm:text-sm text-fa-primary break-all">{investorLink}</code>
         <button
           type="button"
           onClick={handleCopy}
-          className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-900"
-          style={{ background: copied ? '#34d399' : '#facc15' }}
+          className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold text-fa-bg-base transition ${
+            copied ? 'bg-fa-status-available' : 'bg-fa-primary hover:bg-fa-primary-hover'
+          }`}
         >
           {copied ? 'Copied ✓' : 'Copy invite'}
         </button>
       </div>
 
-      <p className="text-[11px] text-slate-500 mt-2">
+      <p className="text-[11px] text-fa-text-muted mt-2">
         Investor invites are tracked separately so we can see how the community grows.
       </p>
     </div>
