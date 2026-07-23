@@ -198,6 +198,9 @@ export function LandingProvider({ children }) {
       utmCampaign: searchParams.get('utm_campaign') || null,
       campaignId: searchParams.get('campaign_id') || null,
       referralCode,
+      // T-B12-06: `rs` marks the origin of the referral ask (e.g.
+      // investor_to_investor from the Tier-3 card). Attribution only.
+      referralSource: searchParams.get('rs') || null,
       attributionToken: searchParams.get('token') || null,
     };
 
@@ -247,6 +250,7 @@ export function LandingProvider({ children }) {
           utmCampaign: null,
           campaignId: null,
           referralCode: null,
+          referralSource: null,
           attributionToken: null,
         }),
         // localStorage-backed (60-day), independent of the sessionStorage attribution

@@ -77,6 +77,7 @@ function LandingContent() {
           utmCampaign: attribution?.utmCampaign || null,
           campaignId: attribution?.campaignId || null,
           referralCode: attribution?.referralCode || null,
+          referralSource: attribution?.referralSource || null,
           attributionToken: attribution?.attributionToken || null,
           affiliateRef: attribution?.affiliateRef || null,
         });
