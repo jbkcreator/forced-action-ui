@@ -11,7 +11,7 @@ import { isAbortError } from '../../api/client';
  *
  * e.g. "34619 is one of 12 open ZIPs in Pinellas — 35 locked."
  */
-export default function CountyScarcityBar({ zip, vertical, onLockClick }) {
+export default function CountyScarcityBar({ zip, vertical, onLockClick, onZeroOpen }) {
   const [data, setData] = useState(null);
 
   useEffect(() => {
@@ -24,6 +24,12 @@ export default function CountyScarcityBar({ zip, vertical, onLockClick }) {
       });
     return () => controller.abort();
   }, [zip, vertical]);
+
+  useEffect(() => {
+    if (data && data.total_count > 0 && data.open_count <= 0 && onZeroOpen) {
+      onZeroOpen(zip);
+    }
+  }, [data, zip, onZeroOpen]);
 
   if (!data || data.total_count <= 0) return null;
 

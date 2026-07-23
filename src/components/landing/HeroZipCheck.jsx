@@ -21,6 +21,7 @@ export default function HeroZipCheck({ onUnlock }) {
   const [checkedZip, setCheckedZip] = useState('');
   const [state, setState] = useState('idle'); // idle | loading | error | result
   const [result, setResult] = useState(null);
+  const [zipFullyLocked, setZipFullyLocked] = useState(false);
 
   async function handleCheck() {
     const trimmed = zip.trim();
@@ -32,6 +33,7 @@ export default function HeroZipCheck({ onUnlock }) {
 
     setState('loading');
     setCheckedZip(trimmed);
+    setZipFullyLocked(false);
 
     try {
       const data = await fetchHeroScoredDeal(trimmed, selectedVertical);
@@ -81,7 +83,20 @@ export default function HeroZipCheck({ onUnlock }) {
           <p className="text-emerald-400 text-xs font-semibold text-center mb-3">
             Real scored deal in ZIP {checkedZip}
           </p>
-          <CountyScarcityBar zip={checkedZip} vertical={selectedVertical} onLockClick={handleUnlockClick} />
+          <CountyScarcityBar
+            zip={checkedZip}
+            vertical={selectedVertical}
+            onLockClick={handleUnlockClick}
+            onZeroOpen={() => setZipFullyLocked(true)}
+          />
+          {zipFullyLocked && (
+            <div className="mt-3">
+              <p className="text-slate-400 text-xs mb-2">
+                {checkedZip} is fully claimed — join the waitlist to be first if it opens.
+              </p>
+              <WaitlistForm zip={checkedZip} waitlistType="hero_zip_locked" vertical={selectedVertical} />
+            </div>
+          )}
           <BlurredStackSection
             blurred={[result.deal]}
             onUnlockLead={handleUnlockClick}
@@ -95,7 +110,20 @@ export default function HeroZipCheck({ onUnlock }) {
           <p className="text-yellow-400 text-xs font-semibold text-center mb-3">
             No live deals in ZIP {checkedZip} yet — {result.nearest_label}
           </p>
-          <CountyScarcityBar zip={checkedZip} vertical={selectedVertical} onLockClick={handleUnlockClick} />
+          <CountyScarcityBar
+            zip={checkedZip}
+            vertical={selectedVertical}
+            onLockClick={handleUnlockClick}
+            onZeroOpen={() => setZipFullyLocked(true)}
+          />
+          {zipFullyLocked && (
+            <div className="mt-3">
+              <p className="text-slate-400 text-xs mb-2">
+                {checkedZip} is fully claimed — join the waitlist to be first if it opens.
+              </p>
+              <WaitlistForm zip={checkedZip} waitlistType="hero_zip_locked" vertical={selectedVertical} />
+            </div>
+          )}
           <BlurredStackSection
             blurred={[result.deal]}
             onUnlockLead={handleUnlockClick}
