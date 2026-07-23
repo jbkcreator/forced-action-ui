@@ -212,7 +212,7 @@ function LandingContent() {
 
               {ctaMode === 'signup' && (
                 <div className="max-w-6xl mx-auto px-6 py-8">
-                  <RoiCalculator vertical={selectedVertical} />
+                  <RoiCalculator vertical={selectedVertical} onStartFree={handleStartFree} />
                 </div>
               )}
 

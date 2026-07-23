@@ -30,7 +30,7 @@ const USD = (n) =>
  * Every figure is labeled an "illustrative estimate, not a guarantee". No
  * historical claims, no promises.
  */
-export default function RoiCalculator({ vertical: seededVertical }) {
+export default function RoiCalculator({ vertical: seededVertical, onStartFree }) {
   const [vertical, setVertical] = useState(seededVertical || DEFAULT_VERTICAL);
   const defaults = getRoiCalculatorDefaults(vertical);
 
@@ -60,19 +60,22 @@ export default function RoiCalculator({ vertical: seededVertical }) {
   );
 
   const inputClass =
-    'w-full bg-white/[0.04] border border-white/[0.12] rounded-lg px-3 py-2 ' +
-    'text-slate-100 text-sm focus:outline-none focus:border-white/30';
-  const labelClass = 'block text-xs font-medium text-slate-400 mb-1.5';
+    'w-full bg-fa-bg-surface border border-fa-border-default rounded-lg px-3 py-2 ' +
+    'text-fa-text-primary text-sm focus:outline-none focus:border-fa-border-emphasis';
+  const labelClass = 'block text-xs font-medium text-fa-text-secondary mb-1.5';
 
   return (
     <section
-      className="max-w-2xl mx-auto rounded-2xl border border-white/[0.12] bg-white/[0.03] p-6 sm:p-8"
+      className="max-w-2xl mx-auto rounded-2xl border border-fa-border-default bg-fa-bg-card p-6 sm:p-8"
       aria-labelledby="roi-calc-heading"
     >
-      <h3 id="roi-calc-heading" className="text-xl font-semibold text-slate-100 mb-1">
-        Estimate your potential
-      </h3>
-      <p className="text-sm text-slate-400 mb-6">
+      <h2
+        id="roi-calc-heading"
+        className="text-3xl sm:text-4xl font-bold text-fa-text-primary text-center mb-2"
+      >
+        Estimate Your Potential
+      </h2>
+      <p className="text-sm text-fa-text-secondary text-center mb-6">
         Pick your vertical and adjust the numbers to your business.
       </p>
 
@@ -144,24 +147,36 @@ export default function RoiCalculator({ vertical: seededVertical }) {
         </div>
       </div>
 
-      <div className="rounded-xl border border-white/[0.12] bg-white/[0.04] p-5 text-center">
-        <p className="text-xs uppercase tracking-wide text-slate-400 mb-1">
+      <div className="rounded-xl border border-fa-border-default bg-fa-bg-surface p-5 text-center">
+        <p className="text-xs uppercase tracking-wide text-fa-text-secondary mb-1">
           Estimated monthly potential
         </p>
-        <p className="text-3xl font-bold text-slate-100" data-testid="roi-monthly">
+        <p className="text-3xl font-bold text-fa-text-primary" data-testid="roi-monthly">
           {USD(result.monthlyEarnings)}
         </p>
-        <p className="text-sm text-slate-400 mt-1" data-testid="roi-annual">
+        <p className="text-sm text-fa-text-secondary mt-1" data-testid="roi-annual">
           ~{USD(result.annualEarnings)} / year
         </p>
-        <p className="text-xs text-slate-500 mt-2">
+        <p className="text-xs text-fa-text-muted mt-2">
           {result.dealsPerMonth.toLocaleString('en-US', { maximumFractionDigits: 1 })} closed / mo
           {' × '}
           {USD(result.earningsPerDeal)} each
         </p>
       </div>
 
-      <p className="text-xs text-slate-500 mt-4 text-center" data-testid="roi-disclaimer">
+      {onStartFree && (
+        <div className="text-center mt-5">
+          <button
+            type="button"
+            onClick={onStartFree}
+            className="bg-fa-primary hover:bg-fa-primary-hover text-fa-bg-base font-bold px-7 py-3 rounded-xl transition shadow-lg shadow-fa-primary/20"
+          >
+            Start Free — Claim Lead Preview
+          </button>
+        </div>
+      )}
+
+      <p className="text-xs text-fa-text-muted mt-4 text-center" data-testid="roi-disclaimer">
         {ROI_CALCULATOR_DISCLAIMER}
       </p>
     </section>

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import RoiCalculator from './RoiCalculator';
 import { computeRoi } from '../../config/verticals';
@@ -43,5 +43,17 @@ describe('RoiCalculator', () => {
     expect(screen.getByTestId('roi-monthly')).toHaveTextContent('$4,800');
     fireEvent.change(screen.getByLabelText(/leads worked/i), { target: { value: '40' } });
     expect(screen.getByTestId('roi-monthly')).toHaveTextContent('$9,600');
+  });
+
+  it('shows no CTA when onStartFree is omitted', () => {
+    render(<RoiCalculator vertical="roofing" />);
+    expect(screen.queryByRole('button', { name: /start free/i })).not.toBeInTheDocument();
+  });
+
+  it('fires onStartFree when the CTA is clicked', () => {
+    const onStartFree = vi.fn();
+    render(<RoiCalculator vertical="roofing" onStartFree={onStartFree} />);
+    fireEvent.click(screen.getByRole('button', { name: /start free/i }));
+    expect(onStartFree).toHaveBeenCalledTimes(1);
   });
 });
