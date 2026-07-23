@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLanding } from './LandingContext';
 import { fetchHeroScoredDeal } from '../../api/landing';
 import BlurredStackSection from '../dashboard/BlurredStackSection';
+import CountyScarcityBar from '../dashboard/CountyScarcityBar';
 import WaitlistForm from './WaitlistForm';
 
 /**
@@ -80,6 +81,7 @@ export default function HeroZipCheck({ onUnlock }) {
           <p className="text-emerald-400 text-xs font-semibold text-center mb-3">
             Real scored deal in ZIP {checkedZip}
           </p>
+          <CountyScarcityBar zip={checkedZip} vertical={selectedVertical} onLockClick={handleUnlockClick} />
           <BlurredStackSection
             blurred={[result.deal]}
             onUnlockLead={handleUnlockClick}
@@ -93,6 +95,7 @@ export default function HeroZipCheck({ onUnlock }) {
           <p className="text-yellow-400 text-xs font-semibold text-center mb-3">
             No live deals in ZIP {checkedZip} yet — {result.nearest_label}
           </p>
+          <CountyScarcityBar zip={checkedZip} vertical={selectedVertical} onLockClick={handleUnlockClick} />
           <BlurredStackSection
             blurred={[result.deal]}
             onUnlockLead={handleUnlockClick}
