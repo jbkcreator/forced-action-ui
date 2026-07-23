@@ -72,29 +72,29 @@ export default function DealOfTheDay({ onUnlock }) {
 
   return (
     <section className="max-w-2xl mx-auto px-6 py-8">
-      <div className="glass-strong rounded-2xl p-6 border border-yellow-400/30">
+      <div className="glass-strong rounded-2xl p-6 border border-fa-primary/30">
         <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
           <h3 className="font-bold text-lg flex items-center gap-2">
-            <Icon name="bolt" size={18} className="text-yellow-400" />
+            <Icon name="bolt" size={18} className="text-fa-primary" />
             Deal of the Day
           </h3>
           <div className="text-right shrink-0">
-            <span className="font-mono text-lg font-bold text-yellow-400">
+            <span className="font-mono text-lg font-bold text-fa-primary">
               {formatCountdown(remainingMs)}
             </span>
-            <p className="text-[11px] text-slate-500">exclusive window closes</p>
+            <p className="text-[11px] text-fa-text-muted">exclusive window closes</p>
           </div>
         </div>
 
         <div className="sample-lead-card">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-white text-sm blur-[3px] select-none">{maskedAddress}</p>
-              <p className="text-slate-500 text-xs mt-0.5">
+              <p className="font-semibold text-fa-text-primary text-sm blur-[3px] select-none">{maskedAddress}</p>
+              <p className="text-fa-text-muted text-xs mt-0.5">
                 {deal.city ? `${deal.city}, ${deal.state || 'FL'}` : ''} {deal.zip}
               </p>
               {deal.distress_types?.length > 0 && (
-                <p className="text-slate-500 text-xs mt-1">{deal.distress_types.join(' · ')}</p>
+                <p className="text-fa-text-muted text-xs mt-1">{deal.distress_types.join(' · ')}</p>
               )}
             </div>
             <div className="flex flex-col items-end gap-1 shrink-0">
@@ -102,23 +102,23 @@ export default function DealOfTheDay({ onUnlock }) {
                 {deal.lead_tier}
               </span>
               {deal.score != null && (
-                <span className="text-xs text-slate-400">
-                  Score: <span className="text-white font-medium">{Math.round(deal.score)}</span>
+                <span className="text-xs text-fa-text-secondary">
+                  Score: <span className="text-fa-text-primary font-medium">{Math.round(deal.score)}</span>
                 </span>
               )}
             </div>
           </div>
         </div>
 
-        <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between flex-wrap gap-3">
-          <p className="text-xs text-slate-400">
+        <div className="mt-4 pt-4 border-t border-fa-border-default text-center">
+          <p className="text-xs text-fa-text-secondary mb-4">
             One exclusive lead, one 24-hour window — first come, first served, at
             standard price.
           </p>
           <button
             type="button"
             onClick={() => onUnlock?.(deal)}
-            className="cta-primary text-sm px-5 py-2.5"
+            className="cta-primary text-sm px-8 py-3"
           >
             Unlock now
           </button>
