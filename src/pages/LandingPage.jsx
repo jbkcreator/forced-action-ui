@@ -18,6 +18,7 @@ import EmailGateModal from '../components/landing/EmailGateModal';
 import ZipCollectorModal from '../components/landing/ZipCollectorModal';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
 import WaitlistForm from '../components/landing/WaitlistForm';
+import DealOfTheDay from '../components/landing/DealOfTheDay';
 import useStripeCheckout from '../hooks/useStripeCheckout';
 import { createFreeSignup, logBusinessEvent } from '../api/phase2b';
 
@@ -200,6 +201,12 @@ function LandingContent() {
                     <span>🔔</span> Coming Soon — Join the Waitlist
                   </button>
                 </div>
+              )}
+
+              {ctaMode === 'signup' && (
+                <DealOfTheDay
+                  onUnlock={() => setEmailGate({ open: true, tier: 'starter' })}
+                />
               )}
 
               {ctaMode === 'signup' && (
