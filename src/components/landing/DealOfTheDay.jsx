@@ -118,7 +118,7 @@ export default function DealOfTheDay({ onUnlock }) {
           <button
             type="button"
             onClick={() => onUnlock?.(deal)}
-            className="cta-primary text-sm px-8 py-3"
+            className="bg-fa-primary hover:bg-fa-primary-hover text-fa-bg-base font-bold px-8 py-3 rounded-xl text-sm transition"
           >
             Unlock now
           </button>
