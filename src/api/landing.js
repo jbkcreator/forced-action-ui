@@ -46,6 +46,10 @@ export function submitWaitlist({ zipCode, vertical, countyId, name, email, phone
   });
 }
 
+export function fetchDealOfTheDay() {
+  return api.get('/api/deal-of-the-day');
+}
+
 export function createCheckout({
   tier, vertical, countyId, zipCodes, email, interval = 'monthly', consentAcceptance = null, attribution = null,
   alreadyHasDashboardAccess = false, successReturnPath = null,
