@@ -46,7 +46,12 @@ export default function ActivationTracker({ subscriber, leadCount, onUnlockFirst
   useEffect(() => {
     if (unlocked || !signupTime) return undefined;
     setElapsed(elapsedSeconds(signupTime));
-    const id = setInterval(() => setElapsed(elapsedSeconds(signupTime)), 1000);
+    const id = setInterval(() => {
+      const next = elapsedSeconds(signupTime);
+      setElapsed(next);
+      // Stop ticking once past the activation window — nothing left to count down.
+      if (next > ACTIVATION_WINDOW_SECONDS) clearInterval(id);
+    }, 1000);
     return () => clearInterval(id);
   }, [signupTime, unlocked]);
 
@@ -70,16 +75,19 @@ export default function ActivationTracker({ subscriber, leadCount, onUnlockFirst
             {' '}Unlock one to see the owner + contact info.
           </p>
         </div>
-        <div className="shrink-0 text-right">
-          <span
-            className={`font-mono text-lg font-bold ${withinWindow ? 'text-fa-status-available' : 'text-fa-status-taken'}`}
-          >
-            {withinWindow ? formatClock(remaining) : formatClock(elapsed)}
-          </span>
-          <p className="text-[11px] text-fa-text-muted">
-            {withinWindow ? 'left in your activation window' : 'window closed — unlock anytime'}
-          </p>
-        </div>
+        {withinWindow ? (
+          <div className="shrink-0 text-right">
+            <span className="font-mono text-lg font-bold text-fa-status-available">
+              {formatClock(remaining)}
+            </span>
+            <p className="text-[11px] text-fa-text-muted">left in your activation window</p>
+          </div>
+        ) : (
+          <div className="shrink-0 text-right">
+            <p className="text-xs font-semibold text-fa-status-taken">Window closed</p>
+            <p className="text-[11px] text-fa-text-muted">unlock anytime below</p>
+          </div>
+        )}
       </div>
 
       <div className="mt-4">

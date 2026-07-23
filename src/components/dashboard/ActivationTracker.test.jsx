@@ -65,4 +65,19 @@ describe('ActivationTracker (T-B12-05)', () => {
     cta.click();
     expect(onUnlockFirstLead).toHaveBeenCalledTimes(1);
   });
+
+  it('shows "Window closed" instead of a growing clock once past 5 minutes', () => {
+    const sixMinAgo = new Date(Date.now() - 6 * 60 * 1000).toISOString();
+    render(
+      <ActivationTracker
+        subscriber={subscriber({
+          activation: { signup_time: sixMinAgo, first_leads_shown_time: sixMinAgo, first_unlock_time: null },
+        })}
+        leadCount={5}
+        onUnlockFirstLead={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/window closed/i)).toBeInTheDocument();
+    expect(screen.getByText(/unlock anytime below/i)).toBeInTheDocument();
+  });
 });
