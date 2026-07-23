@@ -35,11 +35,19 @@ export default function CountyScarcityBar({ zip, vertical, onLockClick }) {
     <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
       <div className="flex items-baseline justify-between gap-4 flex-wrap">
         <p className="text-white font-semibold text-sm">
-          {zip} is{' '}
-          <span className={scarce ? 'text-red-400' : 'text-yellow-400'}>
-            one of {open} open {open === 1 ? 'ZIP' : 'ZIPs'}
-          </span>{' '}
-          in {county}
+          {open > 0 ? (
+            <>
+              {zip} is{' '}
+              <span className={scarce ? 'text-red-400' : 'text-yellow-400'}>
+                one of {open} open {open === 1 ? 'ZIP' : 'ZIPs'}
+              </span>{' '}
+              in {county}
+            </>
+          ) : (
+            <>
+              <span className="text-red-400">No open ZIPs left</span> in {county} — {zip} is fully claimed
+            </>
+          )}
         </p>
         <p className="text-slate-400 text-xs">{locked} locked</p>
       </div>
@@ -56,7 +64,7 @@ export default function CountyScarcityBar({ zip, vertical, onLockClick }) {
           style={{ width: `${lockedPct}%` }}
         />
       </div>
-      {onLockClick && (
+      {onLockClick && open > 0 && (
         <button
           type="button"
           onClick={() => onLockClick(zip)}
