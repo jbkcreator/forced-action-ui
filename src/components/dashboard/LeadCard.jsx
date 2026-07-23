@@ -14,6 +14,23 @@ function formatTagLabel(s) {
   return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
+// Block 13: reflects the subscriber's reported outcome on the card.
+const OUTCOME_BADGE = {
+  closed:  { label: '✓ Closed',  cls: 'bg-emerald-400/15 text-emerald-300 border-emerald-400/30' },
+  dead:    { label: 'Dead',      cls: 'bg-rose-400/15 text-rose-300 border-rose-400/30' },
+  pending: { label: 'Pending',   cls: 'bg-amber-400/15 text-amber-300 border-amber-400/30' },
+};
+
+function OutcomeBadge({ state }) {
+  const b = OUTCOME_BADGE[state];
+  if (!b) return null;
+  return (
+    <span className={`shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${b.cls}`}>
+      {b.label}
+    </span>
+  );
+}
+
 function LeadCard({ lead, index, onUnlockLead, onUnlockHotLead, contacted, onToggleContacted, onOpenPremium, onOpenPitch, onReportOutcome, urgencyViewers, activeWindow, feedUuid }) {
   const [expanded, setExpanded] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -67,6 +84,7 @@ function LeadCard({ lead, index, onUnlockLead, onUnlockHotLead, contacted, onTog
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-semibold text-white text-base truncate">{esc(lead.address)}</p>
             {contacted && <Icon name="check" size={14} className="text-green-400 shrink-0" />}
+            <OutcomeBadge state={lead.outcome_state} />
             <UrgencyBadge viewers={urgencyViewers} />
           </div>
           <p className="text-slate-400 text-sm mt-0.5">{esc(lead.city)}, {esc(lead.state)} {esc(lead.zip)}</p>
@@ -204,7 +222,7 @@ function LeadCard({ lead, index, onUnlockLead, onUnlockHotLead, contacted, onTog
                 className="text-xs px-3 py-1.5 rounded-lg font-medium bg-emerald-400/10 text-emerald-300 border border-emerald-400/25 hover:bg-emerald-400/20 transition"
                 title="Report the outcome of this lead"
               >
-                I closed this →
+                {lead.outcome_state ? 'Update outcome' : 'I closed this →'}
               </button>
             )}
           </div>
