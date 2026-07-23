@@ -60,10 +60,10 @@ export default function ActivationTracker({ subscriber, leadCount, onUnlockFirst
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h3 className="font-bold text-base flex items-center gap-2">
-            <Icon name="bolt" size={18} className="text-yellow-400" />
+            <Icon name="bolt" size={18} className="text-fa-primary" />
             Get your first lead in 5 minutes
           </h3>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-sm text-fa-text-secondary mt-1">
             {leadsShown
               ? `${leadCount || 'Your'} real scored lead${leadCount === 1 ? '' : 's'} for your ZIP are ready below — scores and distress signals visible now.`
               : 'Pulling real scored leads for your ZIP…'}
@@ -72,12 +72,12 @@ export default function ActivationTracker({ subscriber, leadCount, onUnlockFirst
         </div>
         <div className="shrink-0 text-right">
           <span
-            className={`font-mono text-lg font-bold ${withinWindow ? 'text-emerald-400' : 'text-slate-400'}`}
+            className={`font-mono text-lg font-bold ${withinWindow ? 'text-fa-status-available' : 'text-fa-status-taken'}`}
           >
             {withinWindow ? formatClock(remaining) : formatClock(elapsed)}
           </span>
-          <p className="text-[11px] text-slate-500">
-            {withinWindow ? 'left in your activation window' : 'since signup'}
+          <p className="text-[11px] text-fa-text-muted">
+            {withinWindow ? 'left in your activation window' : 'window closed — unlock anytime'}
           </p>
         </div>
       </div>
@@ -90,7 +90,7 @@ export default function ActivationTracker({ subscriber, leadCount, onUnlockFirst
         <button
           type="button"
           onClick={onUnlockFirstLead}
-          className="mt-2 w-full sm:w-auto cta-primary text-sm px-5 py-2.5"
+          className="mt-2 w-full sm:w-auto bg-fa-primary hover:bg-fa-primary-hover text-fa-bg-base font-bold px-5 py-2.5 rounded-xl text-sm transition"
         >
           Unlock first contact — $4
         </button>
