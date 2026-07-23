@@ -1,4 +1,5 @@
 import { useLanding } from './LandingContext';
+import HeroZipCheck from './HeroZipCheck';
 
 export default function HeroBanner({ onStartFree }) {
   const { landingData } = useLanding();
@@ -49,6 +50,8 @@ export default function HeroBanner({ onStartFree }) {
       <p className="text-xs text-slate-500 mt-3">
         No card required. See blurred leads in your county and unlock individual leads for $4.
       </p>
+
+      <HeroZipCheck onUnlock={onStartFree} />
     </section>
   );
 }
