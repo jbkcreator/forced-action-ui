@@ -1185,7 +1185,7 @@ export default function DashboardPage() {
               <DealCapture
                 feedUuid={feedUuid}
                 propertyId={dealCaptureLead.property_id}
-                onCaptured={() => setTimeout(() => setDealCaptureLead(null), 1500)}
+                onCaptured={() => setTimeout(() => { setDealCaptureLead(null); refetch(); }, 1500)}
                 onDismiss={() => setDealCaptureLead(null)}
               />
             </div>

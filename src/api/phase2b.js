@@ -125,16 +125,26 @@ export function fetchZipActivity(zipCode, vertical) {
 // feed_uuid authenticates. bucket ∈ {'5_10k' | '10_25k' | '25k_plus' | 'skip'}
 export function captureDeal({
   feedUuid,
-  bucket,
+  bucket = null,
+  outcomeState = null,
+  deadReason = null,
   dealAmount = null,
   daysToClose = null,
   propertyId = null,
 }) {
-  return api.post('/api/deal-capture', {
+  const body = {
     feed_uuid: feedUuid,
-    deal_size_bucket: bucket,
     deal_amount: dealAmount,
     days_to_close: daysToClose,
     property_id: propertyId,
-  });
+  };
+  // T-B13-01 contract: prefer outcome_state (closed/dead/pending). dead
+  // requires a reason. Falls back to the legacy deal_size_bucket path.
+  if (outcomeState) {
+    body.outcome_state = outcomeState;
+    if (deadReason) body.dead_reason = deadReason;
+  } else {
+    body.deal_size_bucket = bucket;
+  }
+  return api.post('/api/deal-capture', body);
 }
