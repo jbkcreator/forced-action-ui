@@ -28,6 +28,10 @@ export function fetchSampleLeads(zipCode, vertical, countyId) {
   return api.get('/api/sample-leads', { zip_code: zipCode, vertical, county_id: countyId });
 }
 
+export function fetchHeroScoredDeal(zipCode, vertical) {
+  return api.get('/api/hero/scored-deal', { zip: zipCode, vertical });
+}
+
 export function getCountyLanding(countyId) {
   return api.get(`/api/counties/${countyId}/landing`);
 }
@@ -44,6 +48,10 @@ export function submitWaitlist({ zipCode, vertical, countyId, name, email, phone
     waitlist_type,
     consent_acceptance,
   });
+}
+
+export function fetchDealOfTheDay() {
+  return api.get('/api/deal-of-the-day');
 }
 
 export function createCheckout({

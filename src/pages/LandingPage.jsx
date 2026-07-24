@@ -19,6 +19,8 @@ import EmailGateModal from '../components/landing/EmailGateModal';
 import ZipCollectorModal from '../components/landing/ZipCollectorModal';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
 import WaitlistForm from '../components/landing/WaitlistForm';
+import DealOfTheDay from '../components/landing/DealOfTheDay';
+import RoiCalculator from '../components/landing/RoiCalculator';
 import useStripeCheckout from '../hooks/useStripeCheckout';
 import { createFreeSignup, logBusinessEvent } from '../api/phase2b';
 
@@ -92,6 +94,7 @@ function LandingContent() {
           utmCampaign: attribution?.utmCampaign || null,
           campaignId: attribution?.campaignId || null,
           referralCode: attribution?.referralCode || null,
+          referralSource: attribution?.referralSource || null,
           attributionToken: attribution?.attributionToken || null,
           affiliateRef: attribution?.affiliateRef || null,
         });
@@ -213,6 +216,18 @@ function LandingContent() {
                   >
                     <span>🔔</span> Coming Soon — Join the Waitlist
                   </button>
+                </div>
+              )}
+
+              {ctaMode === 'signup' && (
+                <DealOfTheDay
+                  onUnlock={() => setEmailGate({ open: true, tier: 'starter' })}
+                />
+              )}
+
+              {ctaMode === 'signup' && (
+                <div className="max-w-6xl mx-auto px-6 py-8">
+                  <RoiCalculator vertical={selectedVertical} onStartFree={handleStartFree} />
                 </div>
               )}
 

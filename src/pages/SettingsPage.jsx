@@ -15,6 +15,7 @@ import ErrorState from '../components/ui/ErrorState';
 import Icon from '../components/ui/Icon';
 import PauseModal from '../components/dashboard/PauseModal';
 import BonusZipModal from '../components/dashboard/BonusZipModal';
+import InvestorReferralCard from '../components/dashboard/InvestorReferralCard';
 import PauseStatusBanner from '../components/dashboard/PauseStatusBanner';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
 
@@ -463,6 +464,10 @@ export default function SettingsPage() {
                   )}
                 </Tile>
               )}
+
+              {/* T-B12-06: Tier-3-gated investor-to-investor referral ask.
+                  Renders only for Dominator accounts; component self-gates. */}
+              <InvestorReferralCard tier={subscriber.tier} referralData={referralData} />
 
               <Tile title="Billing" subtitle="Stripe billing portal — update card, view invoices, or cancel.">
                 <StatRow
