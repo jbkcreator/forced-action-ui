@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef, lazy, Suspense } from 'react';
+import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { LandingProvider, useLanding } from '../components/landing/LandingContext';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
@@ -45,6 +46,20 @@ function LandingContent() {
   const handleCheckout = useCallback((tier, interval = 'monthly') => {
     setEmailGate({ open: true, tier, interval, flow: 'paid' });
   }, []);
+
+  // Deep-link entry point (?start_tier=starter[&interval=monthly]) — drops a
+  // visitor straight into the email gate → ZIP collector flow for that tier,
+  // skipping manual plan selection. Used for E2E test links / cold outreach.
+  const [searchParams] = useSearchParams();
+  const [autoStartHandled, setAutoStartHandled] = useState(false);
+  useEffect(() => {
+    if (autoStartHandled) return;
+    const startTier = searchParams.get('start_tier');
+    if (startTier && ['starter', 'pro', 'dominator', 'founder'].includes(startTier)) {
+      setAutoStartHandled(true);
+      handleCheckout(startTier, searchParams.get('interval') || 'monthly');
+    }
+  }, [autoStartHandled, searchParams, handleCheckout]);
 
   // Free-tier entry: Start Free button → open email gate in 'free' flow
   const handleStartFree = useCallback(() => {
