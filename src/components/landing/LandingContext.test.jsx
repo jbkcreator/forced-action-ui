@@ -79,10 +79,10 @@ describe('LandingContext attribution capture', () => {
   });
 
   it('persists attribution to sessionStorage', async () => {
-    renderAt('/?signup_source=cora_sms', <AttrProbe />);
+    renderAt('/?signup_source=lifecycle_sms', <AttrProbe />);
     await waitFor(() => {
       const stored = JSON.parse(sessionStorage.getItem('fa.attribution') || '{}');
-      expect(stored.signupSource).toBe('cora_sms');
+      expect(stored.signupSource).toBe('lifecycle_sms');
     });
   });
 

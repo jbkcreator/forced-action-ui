@@ -11,10 +11,10 @@ import { fetchActionQueue } from '../../api/admin';
 const TOKEN = 'test-token';
 
 const APPROVAL_ROW = {
-  type: 'approval', source: 'cora', category: 'legal', lane: 'approvals',
+  type: 'approval', source: 'lifecycle', category: 'legal', lane: 'approvals',
   id: 1, title: 'feature_killed: tracerfy match_rate', subtitle: 'feature_killed · degraded provider',
   severity: 'red', created_at: '2026-07-21T04:00:00Z',
-  amount_cents: null, county_id: 'hillsborough', action_url: '/admin/cora?tab=incidents',
+  amount_cents: null, county_id: 'hillsborough', action_url: '/admin/lifecycle?tab=incidents',
 };
 
 const FAILURE_ROW = {
@@ -29,7 +29,7 @@ function queueResponse({ approvals = [], failures = [] } = {}) {
     approvals, failures,
     counts: {
       approvals: approvals.length, failures: failures.length,
-      cora_approvals_waiting: approvals.filter(a => a.category === 'legal').length,
+      lifecycle_approvals_waiting: approvals.filter(a => a.category === 'legal').length,
       source_failures: failures.filter(f => f.source === 'scraper').length,
     },
   };
@@ -81,7 +81,7 @@ describe('ActionQueueDashboard — deep links', () => {
     fetchActionQueue.mockResolvedValue(queueResponse({ approvals: [APPROVAL_ROW] }));
     render(<ActionQueueDashboard token={TOKEN} />);
     const link = await screen.findByRole('link', { name: /feature_killed: tracerfy match_rate/i });
-    expect(link).toHaveAttribute('href', '/admin/cora?tab=incidents');
+    expect(link).toHaveAttribute('href', '/admin/lifecycle?tab=incidents');
   });
 });
 

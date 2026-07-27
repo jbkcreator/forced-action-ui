@@ -18,7 +18,7 @@ const AFFILIATE_TTL_MS = 60 * 24 * 60 * 60 * 1000;
 // Allowed signup_source values — must stay in sync with backend
 // `signup_engine.ALLOWED_SIGNUP_SOURCES`.
 const ALLOWED_SIGNUP_SOURCES = new Set([
-  'direct', 'landing_page', 'dbpr_email', 'cora_sms',
+  'direct', 'landing_page', 'dbpr_email', 'lifecycle_sms',
   'missed_call', 'referral', 'admin', 'unknown', 'affiliate',
 ]);
 

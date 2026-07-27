@@ -73,7 +73,7 @@ export default function ProspectHeader({ queueItem, detail }) {
 
       {/* Stats row */}
       <div className="flex items-center gap-4 text-[11px] text-slate-500 border-t border-white/5 pt-2">
-        <span>{queueItem.interactions_count} Cora interactions</span>
+        <span>{queueItem.interactions_count} Lifecycle interactions</span>
         {openDeals > 0 && <span>{openDeals} open deal{openDeals !== 1 ? 's' : ''}</span>}
       </div>
 

@@ -58,7 +58,7 @@ const VERTICAL_PITCH = {
 };
 
 const DEFAULT_PITCH = {
-  open: 'Lead with the revenue signal score and the number of Cora touches — shows intent.',
+  open: 'Lead with the revenue signal score and the number of Lifecycle touches — shows intent.',
   points: [
     'They\'ve been active but haven\'t converted — urgency is already built in',
     'Ask what stopped them from upgrading after seeing the leads',
@@ -136,7 +136,7 @@ export default function CallBrief({ queueItem }) {
         </ul>
       </div>
 
-      {/* Why Cora flagged */}
+      {/* Why Lifecycle flagged */}
       <div
         className="rounded-lg px-3 py-2 flex items-center gap-3 text-xs"
         style={{ background: 'rgba(250,204,21,0.06)', border: '1px solid rgba(250,204,21,0.12)' }}
@@ -146,15 +146,15 @@ export default function CallBrief({ queueItem }) {
           <div className="text-[9px] uppercase" style={{ color: '#64748b' }}>RSS</div>
         </div>
         <div style={dimText}>
-          {queueItem.interactions_count} Cora touches, no conversion.
-          Cora flagged this lead as high-intent — they've engaged but not committed.
+          {queueItem.interactions_count} Lifecycle touches, no conversion.
+          Lifecycle flagged this lead as high-intent — they've engaged but not committed.
         </div>
       </div>
 
-      {/* Last Cora touches */}
+      {/* Last Lifecycle touches */}
       {touches.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#64748b' }}>Last Cora Touches</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#64748b' }}>Last Lifecycle Touches</p>
           <ul className="space-y-1">
             {touches.slice(0, 4).map((t, i) => (
               <li key={i} className="text-[11px] flex gap-2 items-start" style={dimText}>

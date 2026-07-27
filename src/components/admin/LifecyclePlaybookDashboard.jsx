@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  adoptPlaybook, fetchCoraPlaybooks, rejectPlaybook, retirePlaybook,
+  adoptPlaybook, fetchLifecyclePlaybooks, rejectPlaybook, retirePlaybook,
 } from '../../api/admin';
 
 const STATUSES = ['recommended', 'adopted', 'rejected', 'retired'];
@@ -20,7 +20,7 @@ function relativeDate(iso) {
   return new Date(iso).toLocaleDateString();
 }
 
-export default function CoraPlaybookDashboard({ token }) {
+export default function LifecyclePlaybookDashboard({ token }) {
   const [statusFilter, setStatusFilter] = useState('recommended');
   const [playbooks, setPlaybooks] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -32,7 +32,7 @@ export default function CoraPlaybookDashboard({ token }) {
   const load = useCallback((signal) => {
     setLoading(true);
     setError('');
-    return fetchCoraPlaybooks(token, statusFilter, { signal })
+    return fetchLifecyclePlaybooks(token, statusFilter, { signal })
       .then(d => setPlaybooks(d.playbooks || []))
       .catch(e => { if (e.name !== 'AbortError') setError(e.message || e.detail || 'Failed to load playbooks'); })
       .finally(() => setLoading(false));

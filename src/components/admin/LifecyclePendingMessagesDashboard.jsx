@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  approveCoraMessage,
-  cancelCoraMessage,
-  fetchCoraPendingMessages,
-  fetchCoraReviewSwitch,
-  setCoraReviewSwitch,
+  approveLifecycleMessage,
+  cancelLifecycleMessage,
+  fetchLifecyclePendingMessages,
+  fetchLifecycleReviewSwitch,
+  setLifecycleReviewSwitch,
 } from '../../api/admin';
 
 const STATUS_COLORS = {
@@ -28,7 +28,7 @@ function truncate(str, n) {
   return str.length > n ? str.slice(0, n) + '…' : str;
 }
 
-export default function CoraPendingMessagesDashboard({ token }) {
+export default function LifecyclePendingMessagesDashboard({ token }) {
   const [messages, setMessages]   = useState(null);
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
@@ -42,7 +42,7 @@ export default function CoraPendingMessagesDashboard({ token }) {
   const load = useCallback((signal) => {
     setLoading(true);
     setError('');
-    return fetchCoraPendingMessages(token, { limit }, { signal })
+    return fetchLifecyclePendingMessages(token, { limit }, { signal })
       .then(d => setMessages(d.messages || []))
       .catch(e => { if (e.name !== 'AbortError') setError(e.message || e.detail || 'Failed to load messages'); })
       .finally(() => setLoading(false));
@@ -57,7 +57,7 @@ export default function CoraPendingMessagesDashboard({ token }) {
   // Load the human-review switch state once on mount.
   useEffect(() => {
     const ctrl = new AbortController();
-    fetchCoraReviewSwitch(token, { signal: ctrl.signal })
+    fetchLifecycleReviewSwitch(token, { signal: ctrl.signal })
       .then(d => setReviewOn(!!d.enabled))
       .catch(e => { if (e.name !== 'AbortError') setReviewOn(false); });
     return () => ctrl.abort();
@@ -68,12 +68,12 @@ export default function CoraPendingMessagesDashboard({ token }) {
     const next = !reviewOn;
     setSwitching(true);
     try {
-      const d = await setCoraReviewSwitch(token, next);
+      const d = await setLifecycleReviewSwitch(token, next);
       setReviewOn(!!d.enabled);
       showSuccess(
         d.enabled
-          ? 'Human review ON — Cora messages will now be held for approval.'
-          : 'Human review OFF — Cora messages will send immediately.'
+          ? 'Human review ON — Lifecycle messages will now be held for approval.'
+          : 'Human review OFF — Lifecycle messages will send immediately.'
       );
     } catch (e) {
       setError(e.message || e.detail || 'Failed to change review switch');
@@ -94,7 +94,7 @@ export default function CoraPendingMessagesDashboard({ token }) {
   async function handleApprove(msg) {
     setActing(msg.id);
     try {
-      await approveCoraMessage(token, msg.id);
+      await approveLifecycleMessage(token, msg.id);
       removeRow(msg.id);
       showSuccess(`Message #${msg.id} approved.`);
     } catch (e) {
@@ -107,7 +107,7 @@ export default function CoraPendingMessagesDashboard({ token }) {
     if (reason === null) return; // user dismissed prompt
     setActing(msg.id);
     try {
-      await cancelCoraMessage(token, msg.id, reason);
+      await cancelLifecycleMessage(token, msg.id, reason);
       removeRow(msg.id);
       showSuccess(`Message #${msg.id} cancelled.`);
     } catch (e) {
@@ -126,8 +126,8 @@ export default function CoraPendingMessagesDashboard({ token }) {
             {reviewOn === null
               ? 'Checking switch status…'
               : reviewOn
-                ? 'ON — Cora’s outbound messages are held here for you to approve or cancel before they send.'
-                : 'OFF — Cora’s messages send immediately. Turn on only when you want to intercept outgoing messages.'}
+                ? 'ON — Lifecycle’s outbound messages are held here for you to approve or cancel before they send.'
+                : 'OFF — Lifecycle’s messages send immediately. Turn on only when you want to intercept outgoing messages.'}
           </p>
         </div>
 
@@ -135,7 +135,7 @@ export default function CoraPendingMessagesDashboard({ token }) {
           type="button"
           role="switch"
           aria-checked={reviewOn === true}
-          aria-label="Toggle human review of Cora outbound messages"
+          aria-label="Toggle human review of Lifecycle outbound messages"
           disabled={switching || reviewOn === null}
           onClick={toggleReview}
           className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${

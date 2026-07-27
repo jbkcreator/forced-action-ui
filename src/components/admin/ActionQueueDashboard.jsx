@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchActionQueue } from '../../api/admin';
 
-// Severity colors mirror CoraIncidentsDashboard's SEV_COLORS (the repo's
+// Severity colors mirror LifecycleIncidentsDashboard's SEV_COLORS (the repo's
 // existing sanctioned severity palette — no semantic --fa-* token exists).
 const SEVERITY_COLOR = {
   red: '#f87171',

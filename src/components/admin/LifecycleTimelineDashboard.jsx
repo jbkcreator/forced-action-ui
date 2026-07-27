@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { fetchCoraTimeline } from '../../api/admin';
+import { fetchLifecycleTimeline } from '../../api/admin';
 
 const card = { background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(255,255,255,0.08)' };
 const inputCls = 'rounded-lg px-2 py-1 text-xs bg-white/5 border border-white/10 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-yellow-400/40';
@@ -89,7 +89,7 @@ function SmsSendRow({ sms }) {
   );
 }
 
-function CoraTouchRow({ touch }) {
+function LifecycleTouchRow({ touch }) {
   const [expanded, setExpanded] = useState(false);
 
   const headline =
@@ -211,7 +211,7 @@ function DayGroup({ dayKey, label, items }) {
       <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-4">
         {label}
       </h2>
-      {items.map(touch => <CoraTouchRow key={touch.decision_id} touch={touch} />)}
+      {items.map(touch => <LifecycleTouchRow key={touch.decision_id} touch={touch} />)}
     </section>
   );
 }
@@ -232,7 +232,7 @@ function Shimmer() {
 const GRAPH_OPTIONS = ['', 'retention', 'nws_urgency', 'accelerated_wallet_push', 'wallet_to_lock_close', 'ap_lite_close', 'fomo', 'abandonment'];
 const STATUS_OPTIONS = ['', 'completed', 'aborted', 'escalated', 'failed'];
 
-export default function CoraTimelineDashboard({ token }) {
+export default function LifecycleTimelineDashboard({ token }) {
   const [subscriberId, setSubscriberId] = useState('');
   const [activeId, setActiveId] = useState('');
   const [graphName, setGraphName] = useState('');
@@ -253,7 +253,7 @@ export default function CoraTimelineDashboard({ token }) {
     append ? setLoadingMore(true) : setLoading(true);
     setError('');
     try {
-      const data = await fetchCoraTimeline(token, id, {
+      const data = await fetchLifecycleTimeline(token, id, {
         graphName: opts.graphName || undefined,
         status: opts.status || undefined,
         since: opts.since || undefined,
@@ -312,7 +312,7 @@ export default function CoraTimelineDashboard({ token }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-xl p-4" style={card}>
-        <h2 className="text-sm font-semibold text-white mb-3">Cora Touch Timeline</h2>
+        <h2 className="text-sm font-semibold text-white mb-3">Lifecycle Touch Timeline</h2>
 
         <form onSubmit={handleSearch} className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1">
@@ -372,13 +372,13 @@ export default function CoraTimelineDashboard({ token }) {
 
       {!loading && groups.length === 0 && activeId && (
         <p className="text-slate-500 text-sm text-center py-8">
-          No Cora touches for subscriber #{activeId}.
+          No Lifecycle touches for subscriber #{activeId}.
         </p>
       )}
 
       {!loading && groups.length === 0 && !activeId && (
         <p className="text-slate-600 text-sm text-center py-8">
-          Enter a subscriber ID to view their Cora touch history.
+          Enter a subscriber ID to view their Lifecycle touch history.
         </p>
       )}
 

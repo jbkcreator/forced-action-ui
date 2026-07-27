@@ -27,7 +27,7 @@ const TIERS = [
 // allow-list (models.py:1263) as fallback values.
 const CHANNELS = [
   'meta', 'dbpr_email', 'quora', 'direct', 'landing_page',
-  'cora_sms', 'missed_call', 'referral', 'admin', 'affiliate', 'unattributed',
+  'lifecycle_sms', 'missed_call', 'referral', 'admin', 'affiliate', 'unattributed',
 ];
 
 function fmtPercent(rate) {

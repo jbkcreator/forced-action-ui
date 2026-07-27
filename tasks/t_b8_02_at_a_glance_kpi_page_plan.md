@@ -21,7 +21,7 @@ not built, links stay commented out (see Q1).
   can be `null` when no conversions occurred in the window — frontend already
   handles this (`?? '—'`).
 - **New info not in the original plan:** `_kpi_source_failures` and
-  `_kpi_cora_approvals_waiting` in `operator_dashboard.py` are explicitly
+  `_kpi_lifecycle_approvals_waiting` in `operator_dashboard.py` are explicitly
   commented `BOOTSTRAP COUNT — not canonical`. The backend author intends to
   swap both for a call into T-B8-03's action-queue count helper once that
   ships, "so the KPI tile and the queue never drift apart" — confirming the
@@ -38,7 +38,7 @@ no drill-downs. The operator's daily overview.
 
 11 KPIs: MRR · New accounts · Churn risk · Leads delivered · Activation ·
 Deals submitted · Lender matches · Loans funded · Commissions owed ·
-Source failures · Cora approvals waiting.
+Source failures · Lifecycle approvals waiting.
 
 ## Locked decisions (confirmed with product owner)
 
@@ -49,7 +49,7 @@ Source failures · Cora approvals waiting.
 | Not-yet-built KPIs (deals/lender/loans/commissions) | Dimmed tile + backend `reason` string. All 11 slots always render. |
 | Charting | None. 11 scalars need no chart library. |
 | Trend / sparklines / delta-vs-prior-period | **Out of scope, permanently.** T-B8-01's endpoint returns one point-in-time snapshot per KPI, no historical series. Not requested by the DoD. Not tracked as a follow-up. |
-| Severity coloring | **Added.** `churn_risk`, `source_failures`, `cora_approvals_waiting` render red when `value > 0`, emerald when `0` — the only threshold with no product-defined target band (0 is unambiguously good for these three). Every other KPI stays neutral (no invented thresholds without product input). |
+| Severity coloring | **Added.** `churn_risk`, `source_failures`, `lifecycle_approvals_waiting` render red when `value > 0`, emerald when `0` — the only threshold with no product-defined target band (0 is unambiguously good for these three). Every other KPI stays neutral (no invented thresholds without product input). |
 | Shared tile component | `KpiTile` kept **local/inline** in the section file. No speculative shared abstraction. |
 
 ## API contract (from T-B8-01 plan)
@@ -68,7 +68,7 @@ placeholder KPIs go live with **zero frontend change** when Block 5/7 ship.
 | `leads_delivered` | ✅ | `value` (int) |
 | `activation` | ✅ proxy | `free_to_paid_rate` %, `avg_days_to_convert` + proxy note |
 | `source_failures` | ✅ | `value` (int) — **card links to action queue (T-B8-03)** |
-| `cora_approvals_waiting` | ✅ | `value` (int) + note — **card links to action queue (T-B8-03)** |
+| `lifecycle_approvals_waiting` | ✅ | `value` (int) + note — **card links to action queue (T-B8-03)** |
 | `deals_submitted` | ❌ | dimmed + `reason` |
 | `lender_matches` | ❌ | dimmed + `reason` |
 | `loans_funded` | ❌ | dimmed + `reason` |
@@ -127,7 +127,7 @@ The whole page. Structure:
   Auto-loads on mount, refetches when the range changes.
 - **`KPI_META`** — ordered array of the 11 slugs → `{label, format, linkTo?}`.
   Drives render order (spec order) and per-KPI formatting (`$`, `%`, int).
-  `source_failures` + `cora_approvals_waiting` carry `linkTo` → queue route
+  `source_failures` + `lifecycle_approvals_waiting` carry `linkTo` → queue route
   (see open question Q1).
 - **Local `KpiTile({ label, kpi, linkTo })`:**
   - `kpi.available === false` → dimmed card (`opacity-50`), shows `kpi.reason`.
@@ -158,7 +158,7 @@ Add `{ id:'operator', label:'At-a-Glance', path:'operator', icon:<…> }` as the
 - Action queue UI (T-B8-03) — this page only *links to* it.
 - Cohort retention viewport (T-B8-04).
 - Win-story approval admin view — no DB status column exists; not counted in
-  `cora_approvals_waiting`; not linked from any card here.
+  `lifecycle_approvals_waiting`; not linked from any card here.
 - Extracting a shared `StatCard`/`SeverityDot` primitive — only if T-B8-03
   commits to consuming it (see Q3).
 
@@ -169,7 +169,7 @@ No test runner configured in this repo (CLAUDE.md). Manual verification:
    with reason text; date inputs default to a 30-day window; changing a date
    triggers a refetch (mock returns same payload — verify no crash).
 2. Loading state shows 11 skeletons; forced fetch rejection shows error banner.
-3. `source_failures` + `cora_approvals_waiting` tiles are clickable and route
+3. `source_failures` + `lifecycle_approvals_waiting` tiles are clickable and route
    to the queue path (once Q1 resolved).
 4. Sidebar shows "At-a-Glance" first; NavLink active state correct.
 

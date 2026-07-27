@@ -277,30 +277,30 @@ export function fetchAdminStormPacks(token, { limit = 50, offset = 0 } = {}, opt
   return adminFetch(token, `/api/admin/storm-packs?limit=${limit}&offset=${offset}`, options);
 }
 
-// ─── Cora Intelligence (fa036 + fa037) ───────────────────────────────────────
+// ─── Lifecycle Intelligence (fa036 + fa037) ───────────────────────────────────────
 
 export function fetchRevenueSignal(token, subscriberId, historyLimit = 20, options = {}) {
   return adminFetch(token, `/api/admin/subscribers/${subscriberId}/revenue-signal?history_limit=${historyLimit}`, options);
 }
 
-export function fetchCoraAutonomy(token, weeks = 8, options = {}) {
-  return adminFetch(token, `/api/admin/cora-autonomy?weeks=${weeks}`, options);
+export function fetchLifecycleAutonomy(token, weeks = 8, options = {}) {
+  return adminFetch(token, `/api/admin/lifecycle-autonomy?weeks=${weeks}`, options);
 }
 
-export function fetchCoraPlaybooks(token, status = 'recommended', options = {}) {
-  return adminFetch(token, `/api/admin/cora-playbooks?status=${status}`, options);
+export function fetchLifecyclePlaybooks(token, status = 'recommended', options = {}) {
+  return adminFetch(token, `/api/admin/lifecycle-playbooks?status=${status}`, options);
 }
 
 export function adoptPlaybook(token, id, actor, options = {}) {
-  return adminFetch(token, `/api/admin/cora-playbook/${id}/adopt`, { method: 'POST', body: { actor }, ...options });
+  return adminFetch(token, `/api/admin/lifecycle-playbook/${id}/adopt`, { method: 'POST', body: { actor }, ...options });
 }
 
 export function rejectPlaybook(token, id, actor, reason = '', options = {}) {
-  return adminFetch(token, `/api/admin/cora-playbook/${id}/reject`, { method: 'POST', body: { actor, reason }, ...options });
+  return adminFetch(token, `/api/admin/lifecycle-playbook/${id}/reject`, { method: 'POST', body: { actor, reason }, ...options });
 }
 
 export function retirePlaybook(token, id, actor, options = {}) {
-  return adminFetch(token, `/api/admin/cora-playbook/${id}/retire`, { method: 'POST', body: { actor }, ...options });
+  return adminFetch(token, `/api/admin/lifecycle-playbook/${id}/retire`, { method: 'POST', body: { actor }, ...options });
 }
 
 // ─── ROAS / Campaign Performance (S2) ────────────────────────────────────────
@@ -382,38 +382,38 @@ export function fetchAttributionTrace(token, eventId, options = {}) {
   return adminFetch(token, `/api/admin/attribution/trace/${encodeURIComponent(eventId)}`, options);
 }
 
-// ─── Cora Incidents (fa034) ───────────────────────────────────────────────────
+// ─── Lifecycle Incidents (fa034) ───────────────────────────────────────────────────
 
-export function fetchCoraIncidents(token, filters = {}, options = {}) {
+export function fetchLifecycleIncidents(token, filters = {}, options = {}) {
   const params = new URLSearchParams();
   const keys = ['severity', 'metric_name', 'feature_name', 'action_taken', 'date_from', 'date_to', 'limit', 'offset'];
   keys.forEach(k => { if (filters[k] != null && filters[k] !== '') params.set(k, String(filters[k])); });
   if (filters.open_only) params.set('open_only', 'true');
-  return adminFetch(token, `/api/admin/cora-incidents?${params.toString()}`, options);
+  return adminFetch(token, `/api/admin/lifecycle-incidents?${params.toString()}`, options);
 }
 
-export function fetchCoraIncidentDetail(token, incidentId, options = {}) {
-  return adminFetch(token, `/api/admin/cora-incidents/${incidentId}`, options);
+export function fetchLifecycleIncidentDetail(token, incidentId, options = {}) {
+  return adminFetch(token, `/api/admin/lifecycle-incidents/${incidentId}`, options);
 }
 
-export function acknowledgeCoraIncident(token, incidentId, body = {}, options = {}) {
-  return adminFetch(token, `/api/admin/cora-incidents/${incidentId}/acknowledge`, {
+export function acknowledgeLifecycleIncident(token, incidentId, body = {}, options = {}) {
+  return adminFetch(token, `/api/admin/lifecycle-incidents/${incidentId}/acknowledge`, {
     method: 'POST', body, ...options,
   });
 }
 
-export function resolveCoraIncident(token, incidentId, body = {}, options = {}) {
-  return adminFetch(token, `/api/admin/cora-incidents/${incidentId}/resolve`, {
+export function resolveLifecycleIncident(token, incidentId, body = {}, options = {}) {
+  return adminFetch(token, `/api/admin/lifecycle-incidents/${incidentId}/resolve`, {
     method: 'POST', body, ...options,
   });
 }
 
-// fa045 — fetchCoraTimeline removed; use fetchSubscriberConversation below.
+// fa045 — fetchLifecycleTimeline removed; use fetchSubscriberConversation below.
 
-// GET /api/admin/cora/subscribers/{subscriberId}/timeline
+// GET /api/admin/lifecycle/subscribers/{subscriberId}/timeline
 // opts: { cursor, limit, graphName, status, since }
 // Returns { subscriber_id, items, next_cursor }
-export function fetchCoraTimeline(token, subscriberId, opts = {}, options = {}) {
+export function fetchLifecycleTimeline(token, subscriberId, opts = {}, options = {}) {
   const params = new URLSearchParams();
   if (opts.cursor) params.set('cursor', opts.cursor);
   if (opts.limit) params.set('limit', String(opts.limit));
@@ -421,7 +421,7 @@ export function fetchCoraTimeline(token, subscriberId, opts = {}, options = {}) 
   if (opts.status) params.set('status', opts.status);
   if (opts.since) params.set('since', opts.since);
   const qs = params.toString();
-  return adminFetch(token, `/api/admin/cora/subscribers/${subscriberId}/timeline${qs ? '?' + qs : ''}`, options);
+  return adminFetch(token, `/api/admin/lifecycle/subscribers/${subscriberId}/timeline${qs ? '?' + qs : ''}`, options);
 }
 
 // ─── SMS Analytics (fa038) ───────────────────────────────────────────────────
@@ -527,36 +527,36 @@ export function fetchTagSuggestions(token, options = {}) {
   return adminFetch(token, '/api/admin/subscriber-tag-suggestions', options);
 }
 
-// ─── Cora Pending Messages ────────────────────────────────────────────────────
+// ─── Lifecycle Pending Messages ────────────────────────────────────────────────────
 
-export function fetchCoraPendingMessages(token, { limit = 100 } = {}, options = {}) {
-  return adminFetch(token, `/api/admin/cora-messages/pending?limit=${limit}`, options);
+export function fetchLifecyclePendingMessages(token, { limit = 100 } = {}, options = {}) {
+  return adminFetch(token, `/api/admin/lifecycle-messages/pending?limit=${limit}`, options);
 }
 
-export function approveCoraMessage(token, messageId, options = {}) {
-  return adminFetch(token, `/api/admin/cora-messages/${messageId}/approve`, {
+export function approveLifecycleMessage(token, messageId, options = {}) {
+  return adminFetch(token, `/api/admin/lifecycle-messages/${messageId}/approve`, {
     method: 'POST',
     body: {},
     ...options,
   });
 }
 
-export function cancelCoraMessage(token, messageId, reason, options = {}) {
-  return adminFetch(token, `/api/admin/cora-messages/${messageId}/cancel`, {
+export function cancelLifecycleMessage(token, messageId, reason, options = {}) {
+  return adminFetch(token, `/api/admin/lifecycle-messages/${messageId}/cancel`, {
     method: 'POST',
     body: { reason: reason || null },
     ...options,
   });
 }
 
-// Human-review switch — when ON, Cora's outbound messages are held for
+// Human-review switch — when ON, Lifecycle's outbound messages are held for
 // approve/cancel; when OFF (default) they send immediately.
-export function fetchCoraReviewSwitch(token, options = {}) {
-  return adminFetch(token, '/api/admin/cora-messages/review-switch', options);
+export function fetchLifecycleReviewSwitch(token, options = {}) {
+  return adminFetch(token, '/api/admin/lifecycle-messages/review-switch', options);
 }
 
-export function setCoraReviewSwitch(token, enabled, options = {}) {
-  return adminFetch(token, '/api/admin/cora-messages/review-switch', {
+export function setLifecycleReviewSwitch(token, enabled, options = {}) {
+  return adminFetch(token, '/api/admin/lifecycle-messages/review-switch', {
     method: 'POST',
     body: { enabled },
     ...options,

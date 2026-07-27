@@ -7,7 +7,7 @@
  * dashboard with `?upgrade=autopilot_pro` we render this banner.
  *
  * Calls POST /api/upgrade with tier=autopilot_pro. On success, the local
- * subscriber tier flips and Cora's 5-touch + appointment-setting workflow
+ * subscriber tier flips and Lifecycle's 5-touch + appointment-setting workflow
  * activates in GHL.
  */
 import { useState } from 'react';
@@ -75,7 +75,7 @@ export default function APProUpsellBanner({ feedUuid, onUpgraded, onDismiss }) {
         </p>
         <p className="text-slate-300 text-xs mt-1 max-w-md">
           Your close rate cleared the threshold. Pro adds 5-touch outbound
-          sequences, premium routing (Immediate-tier first), and Cora-handled
+          sequences, premium routing (Immediate-tier first), and Lifecycle-handled
           appointment setting.
         </p>
         {error && <p className="text-red-300 text-xs mt-2">{error}</p>}
