@@ -28,6 +28,7 @@ import BlurredStackSection from '../components/dashboard/BlurredStackSection';
 import FreeTierUpgradeCard from '../components/dashboard/FreeTierUpgradeCard';
 import DashboardHeroBanner from '../components/dashboard/DashboardHeroBanner';
 import OnboardingChecklist from '../components/dashboard/OnboardingChecklist';
+import ActivationTracker from '../components/dashboard/ActivationTracker';
 import OnboardingStep from '../components/dashboard/OnboardingStep';
 import MonetizationWall from '../components/dashboard/MonetizationWall';
 import DealCapture from '../components/dashboard/DealCapture';
@@ -857,6 +858,28 @@ export default function DashboardPage() {
                 />
               )}
 
+              {/* T-B12-05: 5-min activation sequence — shown until first-contact-unlock */}
+              {subscriber.id && (
+                <ActivationTracker
+                  subscriber={subscriber}
+                  leadCount={data?.blurred_stack?.length}
+                  onUnlockFirstLead={() => {
+                    const first = data?.blurred_stack?.[0];
+                    if (first) {
+                      handleUnlockLead({
+                        property_id: first.property_id,
+                        address: first.address_masked,
+                        lead_tier: first.lead_tier,
+                        zip: first.zip,
+                      });
+                    } else {
+                      const el = document.querySelector('main');
+                      if (el) el.scrollBy({ top: 400, behavior: 'smooth' });
+                    }
+                  }}
+                />
+              )}
+
               {/* Persistent free-tier upgrade card (replaces dead-end empty state after 48h) */}
               {subscriber.id && subscriber.tier === 'free' && !isPaused && (
                 <FreeTierUpgradeCard
@@ -1185,7 +1208,7 @@ export default function DashboardPage() {
               <DealCapture
                 feedUuid={feedUuid}
                 propertyId={dealCaptureLead.property_id}
-                onCaptured={() => setTimeout(() => setDealCaptureLead(null), 1500)}
+                onCaptured={() => setTimeout(() => { setDealCaptureLead(null); refetch(); }, 1500)}
                 onDismiss={() => setDealCaptureLead(null)}
               />
             </div>

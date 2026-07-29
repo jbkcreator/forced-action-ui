@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef, lazy, Suspense } from 'react';
+import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { LandingProvider, useLanding } from '../components/landing/LandingContext';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
@@ -18,6 +19,8 @@ import EmailGateModal from '../components/landing/EmailGateModal';
 import ZipCollectorModal from '../components/landing/ZipCollectorModal';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
 import WaitlistForm from '../components/landing/WaitlistForm';
+import DealOfTheDay from '../components/landing/DealOfTheDay';
+import RoiCalculator from '../components/landing/RoiCalculator';
 import useStripeCheckout from '../hooks/useStripeCheckout';
 import { createFreeSignup, logBusinessEvent } from '../api/phase2b';
 
@@ -45,6 +48,20 @@ function LandingContent() {
   const handleCheckout = useCallback((tier, interval = 'monthly') => {
     setEmailGate({ open: true, tier, interval, flow: 'paid' });
   }, []);
+
+  // Deep-link entry point (?start_tier=starter[&interval=monthly]) — drops a
+  // visitor straight into the email gate → ZIP collector flow for that tier,
+  // skipping manual plan selection. Used for E2E test links / cold outreach.
+  const [searchParams] = useSearchParams();
+  const [autoStartHandled, setAutoStartHandled] = useState(false);
+  useEffect(() => {
+    if (autoStartHandled) return;
+    const startTier = searchParams.get('start_tier');
+    if (startTier && ['starter', 'pro', 'dominator', 'founder'].includes(startTier)) {
+      setAutoStartHandled(true);
+      handleCheckout(startTier, searchParams.get('interval') || 'monthly');
+    }
+  }, [autoStartHandled, searchParams, handleCheckout]);
 
   // Free-tier entry: Start Free button → open email gate in 'free' flow
   const handleStartFree = useCallback(() => {
@@ -77,6 +94,7 @@ function LandingContent() {
           utmCampaign: attribution?.utmCampaign || null,
           campaignId: attribution?.campaignId || null,
           referralCode: attribution?.referralCode || null,
+          referralSource: attribution?.referralSource || null,
           attributionToken: attribution?.attributionToken || null,
           affiliateRef: attribution?.affiliateRef || null,
         });
@@ -198,6 +216,18 @@ function LandingContent() {
                   >
                     <span>🔔</span> Coming Soon — Join the Waitlist
                   </button>
+                </div>
+              )}
+
+              {ctaMode === 'signup' && (
+                <DealOfTheDay
+                  onUnlock={() => setEmailGate({ open: true, tier: 'starter' })}
+                />
+              )}
+
+              {ctaMode === 'signup' && (
+                <div className="max-w-6xl mx-auto px-6 py-8">
+                  <RoiCalculator vertical={selectedVertical} onStartFree={handleStartFree} />
                 </div>
               )}
 

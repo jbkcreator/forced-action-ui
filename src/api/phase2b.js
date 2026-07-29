@@ -16,6 +16,8 @@ export function createFreeSignup({
   countyId = 'hillsborough',
   name = null,
   referralCode = null,
+  // T-B12-06 — origin marker for the referral ask (e.g. investor_to_investor).
+  referralSource = null,
   phone = null,
   consentAcceptance = null,
   // fa017 signup-source attribution
@@ -38,6 +40,7 @@ export function createFreeSignup({
     county_id: countyId,
     name,
     referral_code: referralCode,
+    referral_source: referralSource,
     phone,
     consent_acceptance: consentAcceptance,
     signup_source: signupSource,
@@ -129,20 +132,28 @@ export function fetchZipActivity(zipCode, vertical) {
 // trigger still key off bucket, not outcome_state.
 export function captureDeal({
   feedUuid,
-  bucket,
+  bucket = null,
+  outcomeState = null,
+  deadReason = null,
   dealAmount = null,
   daysToClose = null,
   propertyId = null,
   outcomeState = null,
   deadReason = null,
 }) {
-  return api.post('/api/deal-capture', {
+  const body = {
     feed_uuid: feedUuid,
-    deal_size_bucket: bucket,
     deal_amount: dealAmount,
     days_to_close: daysToClose,
     property_id: propertyId,
-    outcome_state: outcomeState,
-    dead_reason: deadReason,
-  });
+  };
+  // T-B13-01 contract: prefer outcome_state (closed/dead/pending). dead
+  // requires a reason. Falls back to the legacy deal_size_bucket path.
+  if (outcomeState) {
+    body.outcome_state = outcomeState;
+    if (deadReason) body.dead_reason = deadReason;
+  } else {
+    body.deal_size_bucket = bucket;
+  }
+  return api.post('/api/deal-capture', body);
 }
