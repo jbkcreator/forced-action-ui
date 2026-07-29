@@ -138,8 +138,6 @@ export function captureDeal({
   dealAmount = null,
   daysToClose = null,
   propertyId = null,
-  outcomeState = null,
-  deadReason = null,
 }) {
   const body = {
     feed_uuid: feedUuid,

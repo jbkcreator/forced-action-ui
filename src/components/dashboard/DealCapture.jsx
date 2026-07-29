@@ -21,7 +21,6 @@
  */
 import { useState } from 'react';
 import { captureDeal } from '../../api/phase2b';
-import { OUTCOME_STATES, REVENUE_BUCKETS, DEAD_REASONS } from '../../config/dealOutcomeOptions';
 import Icon from '../ui/Icon';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
