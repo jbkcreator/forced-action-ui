@@ -51,13 +51,18 @@ export default function ZipChecker({ onZipChecked, countyId: externalCountyId, o
       if (onZipChecked) onZipChecked(trimmed);
 
       if (data.status === 'invalid') {
-        setResult({ status: 'invalid', message: `✗ ZIP ${trimmed} is not in our ${countyName} service area.` });
+        setResult({ status: 'invalid', message: `× ZIP ${trimmed} is not in our ${countyName} service area.` });
       } else if (data.status === 'available') {
         setResult({ status: 'available', message: `✓ ZIP ${trimmed} is available for ${label} — lock it in when you subscribe.`, pricing: data.pricing });
       } else if (data.status === 'grace') {
-        setResult({ status: 'grace', message: `⏳ ZIP ${trimmed} is opening soon for ${label} — subscribe now to claim it.`, pricing: data.pricing });
+        setResult({ status: 'grace', message: `ZIP ${trimmed} is opening soon for ${label} — subscribe now to claim it.`, pricing: data.pricing });
       } else if (data.status === 'taken') {
-        setResult({ status: 'taken', message: `✗ ZIP ${trimmed} is taken for ${label} by another subscriber.`, zip: trimmed });
+        setResult({
+          status: 'taken',
+          message: `× ZIP ${trimmed} is taken for ${label} by another subscriber.`,
+          zip: trimmed,
+          adjacentZipSuggestion: data.adjacent_zip_suggestion || null,
+        });
         if (onZipTaken) onZipTaken(trimmed);
       } else {
         setResult({ status: 'error', message: 'Unknown status' });
@@ -67,10 +72,10 @@ export default function ZipChecker({ onZipChecked, countyId: externalCountyId, o
     }
   }
 
-  const statusClass = result?.status === 'available' ? 'zip-available' :
-                      result?.status === 'grace' ? 'zip-grace' :
-                      result?.status === 'taken' ? 'zip-taken' :
-                      'border-white/20 bg-white/5';
+  const statusClass = result?.status === 'available' ? 'zip-available'
+    : result?.status === 'grace' ? 'zip-grace'
+      : result?.status === 'taken' ? 'zip-taken'
+        : 'border-white/20 bg-white/5';
 
   return (
     <>
@@ -106,6 +111,16 @@ export default function ZipChecker({ onZipChecked, countyId: externalCountyId, o
           {result && (
             <div className={`mt-5 rounded-xl border px-5 py-4 text-sm font-medium max-w-xl mx-auto ${statusClass}`}>
               {result.message}
+              {result.status === 'taken' && result.adjacentZipSuggestion && (
+                <div className="mt-3 rounded-lg border border-yellow-400/20 bg-yellow-400/5 px-4 py-3 text-left text-slate-200">
+                  <p className="text-sm font-semibold text-yellow-300">
+                    Nearby option available now: ZIP {result.adjacentZipSuggestion.zip_code}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    About {result.adjacentZipSuggestion.distance_miles} miles away. You can still join the waitlist for {checkedZip}, or claim this nearby ZIP now.
+                  </p>
+                </div>
+              )}
               <PricingStrip pricing={result.pricing} />
             </div>
           )}
@@ -118,19 +133,13 @@ export default function ZipChecker({ onZipChecked, countyId: externalCountyId, o
 
       {result?.status === 'taken' && (
         <>
-          {/* Sold-out-ZIP unlock nudge (MB2 item 6) — points at the existing
-              anon-safe unlock flow (FirstSessionWall, rendered once higher on
-              this same page) instead of duplicating it here. No live
-              flash_scarcity window is wired in — the anon/pre-signup side has
-              no public scarcity-window field yet (see FirstSessionWall.jsx),
-              so this is honest generic urgency copy, not a fake countdown. */}
           <div className="max-w-xl mx-auto px-6 -mt-2 mb-6 text-center">
             <button
               type="button"
               onClick={() => document.getElementById('first-session-wall')?.scrollIntoView({ behavior: 'smooth' })}
               className="inline-flex items-center gap-2 text-sm font-semibold text-yellow-400 hover:text-yellow-300 underline underline-offset-4"
             >
-              Meanwhile — unlock a real lead near {checkedZip} now →
+              Meanwhile - unlock a real lead near {checkedZip} now →
             </button>
           </div>
           <WaitlistForm zip={checkedZip} countyId={countyId} />
