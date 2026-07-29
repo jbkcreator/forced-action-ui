@@ -219,7 +219,7 @@ export default function PromptsSection() {
       >
         <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <h3 className="text-xs font-semibold tracking-wider uppercase" style={{ color: '#64748b' }}>
-            Cora Graphs
+            Lifecycle Graphs
           </h3>
         </div>
         {loadingGraphs ? (

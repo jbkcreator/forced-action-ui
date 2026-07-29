@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Modal, { ModalClose } from '../ui/Modal';
 import {
-  acknowledgeCoraIncident, fetchCoraIncidentDetail,
-  fetchCoraIncidents, resolveCoraIncident,
+  acknowledgeLifecycleIncident, fetchLifecycleIncidentDetail,
+  fetchLifecycleIncidents, resolveLifecycleIncident,
 } from '../../api/admin';
 
 const card = { background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(255,255,255,0.08)' };
@@ -70,7 +70,7 @@ function IncidentDetailModal({ incidentId, token, onClose, onAcknowledge, onReso
     if (!incidentId) return;
     setLoading(true);
     setError('');
-    fetchCoraIncidentDetail(token, incidentId)
+    fetchLifecycleIncidentDetail(token, incidentId)
       .then(setDetail)
       .catch(e => setError(e.detail || e.message || 'Failed to load'))
       .finally(() => setLoading(false));
@@ -299,7 +299,7 @@ function ResolveModal({ incident, onClose, onDone }) {
 
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 
-export default function CoraIncidentsDashboard({ token }) {
+export default function LifecycleIncidentsDashboard({ token }) {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [applied, setApplied] = useState({});
   const [offset, setOffset] = useState(0);
@@ -319,7 +319,7 @@ export default function CoraIncidentsDashboard({ token }) {
     abortRef.current = ctrl;
     setLoading(true);
     setError('');
-    fetchCoraIncidents(token, { ...f, limit: LIMIT, offset: off }, { signal: ctrl.signal })
+    fetchLifecycleIncidents(token, { ...f, limit: LIMIT, offset: off }, { signal: ctrl.signal })
       .then(setData)
       .catch(e => { if (e.name !== 'AbortError') setError(e.detail || e.message || 'Failed to load'); })
       .finally(() => setLoading(false));
@@ -346,7 +346,7 @@ export default function CoraIncidentsDashboard({ token }) {
   const hasNext = offset + LIMIT < total;
 
   async function handleAcknowledge(incidentId, note) {
-    await acknowledgeCoraIncident(token, incidentId, { notes: note || undefined, acknowledged_by: 'admin' });
+    await acknowledgeLifecycleIncident(token, incidentId, { notes: note || undefined, acknowledged_by: 'admin' });
     showSuccess(`Incident #${incidentId} acknowledged.`);
     setAckTarget(null);
     setDetailId(null);
@@ -354,7 +354,7 @@ export default function CoraIncidentsDashboard({ token }) {
   }
 
   async function handleResolve(incidentId, note) {
-    await resolveCoraIncident(token, incidentId, { resolution_notes: note || undefined, resolved_by: 'admin' });
+    await resolveLifecycleIncident(token, incidentId, { resolution_notes: note || undefined, resolved_by: 'admin' });
     showSuccess(`Incident #${incidentId} resolved.`);
     setResolveTarget(null);
     setDetailId(null);
@@ -447,7 +447,7 @@ export default function CoraIncidentsDashboard({ token }) {
               <tr><td colSpan={14} className="px-4 py-8 text-center text-slate-500 animate-pulse">Loading…</td></tr>
             )}
             {!loading && rows.length === 0 && (
-              <tr><td colSpan={14} className="px-4 py-8 text-center text-slate-500">No Cora incidents found.</td></tr>
+              <tr><td colSpan={14} className="px-4 py-8 text-center text-slate-500">No Lifecycle incidents found.</td></tr>
             )}
             {!loading && rows.map(r => (
               <tr key={r.id} className="border-b border-white/5 hover:bg-white/[0.03] text-slate-300 cursor-pointer" onClick={() => setDetailId(r.id)}>

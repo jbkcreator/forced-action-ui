@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { fetchCoraAutonomy } from '../../api/admin';
+import { fetchLifecycleAutonomy } from '../../api/admin';
 
 const card = { background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(255,255,255,0.08)' };
 
@@ -34,7 +34,7 @@ function MetricCard({ label, children, sublabel }) {
   );
 }
 
-export default function CoraAutonomyDashboard({ token }) {
+export default function LifecycleAutonomyDashboard({ token }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -42,7 +42,7 @@ export default function CoraAutonomyDashboard({ token }) {
   const load = useCallback((signal) => {
     setLoading(true);
     setError('');
-    return fetchCoraAutonomy(token, 8, { signal })
+    return fetchLifecycleAutonomy(token, 8, { signal })
       .then(setData)
       .catch(e => { if (e.name !== 'AbortError') setError(e.message || e.detail || 'Failed to load'); })
       .finally(() => setLoading(false));
@@ -69,7 +69,7 @@ export default function CoraAutonomyDashboard({ token }) {
     return (
       <div className="rounded-2xl p-8 text-center" style={card}>
         <p className="text-slate-400 text-sm">No autonomy data yet.</p>
-        <p className="text-slate-600 text-xs mt-1">Scorecard runs every Monday at 08:45 UTC via <code>cora_autonomy_report</code>.</p>
+        <p className="text-slate-600 text-xs mt-1">Scorecard runs every Monday at 08:45 UTC via <code>lifecycle_autonomy_report</code>.</p>
       </div>
     );
   }

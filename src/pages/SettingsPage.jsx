@@ -522,7 +522,7 @@ export default function SettingsPage() {
                 return (
                   <Tile
                     title="Auto Mode"
-                    subtitle="Cora handles skip-trace + first SMS + 24h voicemail on every new lead."
+                    subtitle="Lifecycle handles skip-trace + first SMS + 24h voicemail on every new lead."
                   >
                     <div className="flex items-center gap-3 flex-wrap">
                       <span

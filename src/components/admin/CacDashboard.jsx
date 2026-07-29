@@ -10,7 +10,7 @@ const CHANNEL_LABELS = {
   quora: 'Quora',
   affiliate: 'Affiliate',
   referral: 'Referral',
-  cora_sms: 'Cora SMS',
+  lifecycle_sms: 'Lifecycle SMS',
   missed_call: 'Missed Call',
   landing_page: 'Landing Page (organic)',
   direct: 'Direct',

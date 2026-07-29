@@ -1,6 +1,6 @@
 /**
  * fa017 — small "Welcome from X" badge shown when the visitor arrived via
- * a recognised channel (DBPR email / Cora SMS / missed call / referral).
+ * a recognised channel (DBPR email / Lifecycle SMS / missed call / referral).
  *
  * Reassures the visitor the link worked + gives QA a visible signal that
  * URL attribution propagated correctly. Renders null for direct /
@@ -10,7 +10,7 @@ import { useLanding } from './LandingContext';
 
 const SOURCE_LABELS = {
   dbpr_email:   'DBPR email',
-  cora_sms:     'Cora SMS',
+  lifecycle_sms:     'Lifecycle SMS',
   missed_call:  'your missed call',
   referral:     'a referral',
 };

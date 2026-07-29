@@ -35,7 +35,7 @@ export const OUTCOME_OPTIONS = [
   { value: 'rescheduled',   label: 'Rescheduled',   color: '#facc15' },
 ];
 
-// ── A6: Teaching Corrections (Closer-to-Cora) ────────────────────────────────
+// ── A6: Teaching Corrections (Closer-to-Lifecycle) ────────────────────────────────
 // Closer flags a mis-scored lead. Must stay in sync with config/closer.py
 // (CORRECTION_REASONS, TEACHABLE_SIGNAL_TYPES) on the backend.
 

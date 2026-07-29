@@ -50,7 +50,7 @@ const DataSection      = lazy(() => import('./components/admin/sections/DataSect
 const RevenueSection   = lazy(() => import('./components/admin/sections/RevenueSection'));
 const MessagingSection = lazy(() => import('./components/admin/sections/MessagingSection'));
 const OpsSection       = lazy(() => import('./components/admin/sections/OpsSection'));
-const CoraSection        = lazy(() => import('./components/admin/sections/CoraSection'));
+const LifecycleSection        = lazy(() => import('./components/admin/sections/LifecycleSection'));
 const SubscribersSection = lazy(() => import('./components/admin/sections/SubscribersSection'));
 const IcpChannelSection    = lazy(() => import('./components/admin/sections/IcpChannelSection'));
 const SupplierIntelSection = lazy(() => import('./components/admin/sections/SupplierIntelSection'));
@@ -128,7 +128,7 @@ export default function App() {
             <Route path="revenue"   element={withBoundary(<RevenueSection />)} />
             <Route path="messaging" element={withBoundary(<MessagingSection />)} />
             <Route path="ops"       element={withBoundary(<OpsSection />)} />
-            <Route path="cora"      element={withBoundary(<CoraSection />)} />
+            <Route path="lifecycle"      element={withBoundary(<LifecycleSection />)} />
             <Route path="subscribers"       element={withBoundary(<SubscribersSection />)} />
             <Route path="subscribers/:id"   element={withBoundary(<SubscriberDetailPage />)} />
             <Route path="deliveries"        element={withBoundary(<LeadDeliverySection />)} />

@@ -30,7 +30,7 @@ export default function PauseModal({ isOpen, onClose, feedUuid, onPaused }) {
         <ul className="text-slate-300 text-sm space-y-2 mb-5 list-none">
           <li>• Billing pauses immediately. No charges until <strong>{formatted}</strong>.</li>
           <li>• Your ZIP territory stays reserved.</li>
-          <li>• Cora messages and lead emails stop during pause.</li>
+          <li>• Lifecycle messages and lead emails stop during pause.</li>
           <li>• Auto-resumes on {formatted}. Reminder sent 7 days before.</li>
         </ul>
         {error && <p className="text-red-400 text-sm mb-3" role="alert">{error}</p>}

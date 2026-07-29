@@ -42,8 +42,8 @@ Copy `.env.example` to `.env` and set:
 | `/admin` | `AdminPage` | Admin upload / ops surface; sub-sections via `?tab=` |
 | `/admin/subscribers` | SubscribersSection | Queue + All tabs (fa045 — operator CRM). Hot Subscriber Queue = at-risk (RSS≥60 ∧ cool>7d). |
 | `/admin/subscribers/:id` | SubscriberDetailPage | 4 tabs: Revenue Signal, Conversation, Deals, Notes & Tags |
-| `/admin/cora?tab=timeline&subscriber=<id>` | CoraSection → CoraTimelineDashboard | Per-subscriber Cora touch timeline |
-| `/admin/closer` | CloserSection | Closer Cockpit — full-height 3-panel workspace; Aircall V2 SDK; Cora-escalated prospect queue |
+| `/admin/lifecycle?tab=timeline&subscriber=<id>` | LifecycleSection → LifecycleTimelineDashboard | Per-subscriber Lifecycle touch timeline |
+| `/admin/closer` | CloserSection | Closer Cockpit — full-height 3-panel workspace; Aircall V2 SDK; Lifecycle-escalated prospect queue |
 | `/admin/quora` | QuoraSection | Quora Answers — review drafted answers, edit, post via Playwright (S6) |
 | `*` | `NotFoundPage` | |
 
@@ -68,8 +68,8 @@ No state library. React hooks only:
 All requests go through `src/api/client.js` (`apiRequest`, `api.get`, `api.post`). Dev server proxies `/api/*` and `/webhooks/*` → `http://localhost:8001`. Domain modules:
 - `landing.js` — Founding summary, ZIP check, checkout, waitlist.
 - `dashboard.js` — Lead feed, stats, lead packs, hot lead unlock.
-- `phase2b.js` — Phase 2B (Cora agent) endpoints.
-- `admin.js` — Admin endpoints incl. `fetchCoraTimeline(token, subscriberId, opts)` → per-subscriber Cora touch timeline.
+- `phase2b.js` — Phase 2B (Lifecycle agent) endpoints.
+- `admin.js` — Admin endpoints incl. `fetchLifecycleTimeline(token, subscriberId, opts)` → per-subscriber Lifecycle touch timeline.
 - `closer.js` — Closer Cockpit endpoints: queue, prospect detail/conversation/calls, dial-time correlation, feedback, recording, escalation outcome. `USE_MOCK=true` flag at top for local dev (delete mock block before push).
 - `quora.js` — Quora Answers (S6): `fetchQuoraQueue`, `updateQuoraDraft`, `postQuoraAnswer`. Uses same `adminFetch` JWT pattern as `closer.js`.
 - `chat.js` — Concierge Chat (M5a): `createSession`, `sendMessage`, `streamTurn` (EventSource), `linkSession`, `escalateSession`.

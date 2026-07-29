@@ -49,7 +49,7 @@ export default function CloserQueueList({ items, loading, error, selectedId, onS
         {!loading && !error && items.length === 0 && (
           <div className="px-4 py-10 text-center">
             <p className="text-slate-400 text-sm">No escalations in queue</p>
-            <p className="text-slate-600 text-xs mt-1">Cora will route prospects here when ready.</p>
+            <p className="text-slate-600 text-xs mt-1">Lifecycle will route prospects here when ready.</p>
           </div>
         )}
 

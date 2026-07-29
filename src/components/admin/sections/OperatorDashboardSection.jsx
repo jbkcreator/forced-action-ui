@@ -39,7 +39,7 @@ function fmtPercent(rate) {
 // T-B8-03 action queue lives at /admin/action-queue and filters by ?lane / ?category.
 // These two KPI cards deep-link into the matching pre-filtered lane.
 const QUEUE_LINKS = {
-  cora_approvals_waiting: '/admin/action-queue?lane=approvals&category=legal',
+  lifecycle_approvals_waiting: '/admin/action-queue?lane=approvals&category=legal',
   source_failures: '/admin/action-queue?lane=failures&category=source',
 };
 
@@ -76,7 +76,7 @@ const ICONS = {
   source_failures: (
     <svg {...ICON_PROPS}><path d="M12 3l9 16H3l9-16z" strokeLinecap="round" strokeLinejoin="round" /><path d="M12 10v4m0 3h.01" strokeLinecap="round" /></svg>
   ),
-  cora_approvals_waiting: (
+  lifecycle_approvals_waiting: (
     <svg {...ICON_PROPS}><rect x="5" y="8" width="14" height="11" rx="2" /><path d="M12 8V5m-3 8h.01M15 13h.01" strokeLinecap="round" /><circle cx="12" cy="4" r="1" /></svg>
   ),
 };
@@ -112,12 +112,12 @@ const KPI_META = [
   { slug: 'commissions_owed', label: 'Commissions Owed', render: kpi => fmtDollars(kpi.value_cents), color: () => NEUTRAL, icon: ICONS.commissions_owed, accent: '#fb923c' },
   { slug: 'source_failures', label: 'Source Failures', render: kpi => kpi.value, color: zeroIsGoodSeverity, icon: ICONS.source_failures, accent: '#f87171' },
   {
-    slug: 'cora_approvals_waiting',
-    label: 'Cora Approvals Waiting',
+    slug: 'lifecycle_approvals_waiting',
+    label: 'Lifecycle Approvals Waiting',
     render: kpi => kpi.value,
     note: kpi => kpi.note,
     color: zeroIsGoodSeverity,
-    icon: ICONS.cora_approvals_waiting,
+    icon: ICONS.lifecycle_approvals_waiting,
     accent: '#a78bfa',
   },
 ];

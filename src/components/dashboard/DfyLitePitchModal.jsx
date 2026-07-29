@@ -225,7 +225,7 @@ export default function DfyLitePitchModal({ lead, feedUuid, onClose }) {
       : null,
     );
 
-    // Poll until Cora completes (Needs_Review) or fails
+    // Poll until Lifecycle completes (Needs_Review) or fails
     const TERMINAL = new Set(['Needs_Review', 'Pitch_Failed', 'Signal_Failed', 'Cancelled']);
     const POLL_MS = 2500;
     const MAX_POLLS = 72; // 3 minutes
@@ -432,7 +432,7 @@ export default function DfyLitePitchModal({ lead, feedUuid, onClose }) {
         {/* ── Loading ── */}
         {step === 'loading' && (
           <div className="py-8">
-            <LoadingSpinner text="Cora is building your pitch..." />
+            <LoadingSpinner text="Lifecycle is building your pitch..." />
           </div>
         )}
 

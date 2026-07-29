@@ -83,7 +83,7 @@ export function fetchDeliveredLeads(token, subscriberId, opts = {}) {
 
 // Record a Teaching Correction for a mis-scored property.
 // body: { subject_id, correction_reason, signal_type?, note?, closer_call_id? }
-// 201 → created (CoraTrainingOverride); 409 → duplicate active correction;
+// 201 → created (LifecycleTrainingOverride); 409 → duplicate active correction;
 // 422 → bad reason / signal_type rule; 404 → property not found.
 export function createTeachingCorrection(token, body) {
   return adminFetch(token, '/api/admin/closer/teach', { method: 'POST', body });
