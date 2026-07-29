@@ -121,14 +121,20 @@ export function fetchZipActivity(zipCode, vertical) {
 }
 
 // ─── Deal-Size Capture ──────────────────────────────────────────────────────
-// POST /api/deal-capture — subscriber reports a closed deal.
-// feed_uuid authenticates. bucket ∈ {'5_10k' | '10_25k' | '25k_plus' | 'skip'}
+// POST /api/deal-capture — subscriber reports a lead's outcome.
+// outcomeState ∈ {'closed' | 'pending' | 'dead'} (T-B13-01). deadReason is
+// required by the backend when outcomeState === 'dead'. bucket is the legacy
+// field (∈ {'5_10k' | '10_25k' | '25k_plus' | 'skip'}) — still sent alongside
+// outcomeState because deal_outcome_effects.py / annual_push.py's two_deals
+// trigger still key off bucket, not outcome_state.
 export function captureDeal({
   feedUuid,
   bucket,
   dealAmount = null,
   daysToClose = null,
   propertyId = null,
+  outcomeState = null,
+  deadReason = null,
 }) {
   return api.post('/api/deal-capture', {
     feed_uuid: feedUuid,
@@ -136,5 +142,7 @@ export function captureDeal({
     deal_amount: dealAmount,
     days_to_close: daysToClose,
     property_id: propertyId,
+    outcome_state: outcomeState,
+    dead_reason: deadReason,
   });
 }
