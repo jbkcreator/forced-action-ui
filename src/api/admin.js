@@ -392,6 +392,18 @@ export function fetchLifecycleIncidents(token, filters = {}, options = {}) {
   return adminFetch(token, `/api/admin/lifecycle-incidents?${params.toString()}`, options);
 }
 
+// ─── Closing Cockpit (THROUGH-v2.2 T3) ─────────────────────────────────────────
+
+export function fetchClosingCockpit(token, opportunityThreadId, options = {}) {
+  return adminFetch(token, `/api/admin/closing-cockpit/${encodeURIComponent(opportunityThreadId)}`, options);
+}
+
+// Read-only — decisions happen in Slack, not here. See admin_router.py's
+// get_cora_batches docstring for why this endpoint has no mutation path.
+export function fetchThroughQueue(token, options = {}) {
+  return adminFetch(token, '/api/admin/cora-batches', options);
+}
+
 export function fetchLifecycleIncidentDetail(token, incidentId, options = {}) {
   return adminFetch(token, `/api/admin/lifecycle-incidents/${incidentId}`, options);
 }
