@@ -596,3 +596,20 @@ export function fetchRetentionCohorts(token, { channel, tier, zip, months, cohor
 export function fetchActionQueue(token, options = {}) {
   return adminFetch(token, '/api/admin/operator-dashboard/action-queue', options);
 }
+
+// ─── Vera Promises ────────────────────────────────────────────────────────────
+export function fetchVeraPromises(token, { status = 'all', limit = 100, offset = 0 } = {}, options = {}) {
+  return adminFetch(token, `/api/admin/vera/promises?status=${status}&limit=${limit}&offset=${offset}`, options);
+}
+
+export function createVeraPromise(token, body, options = {}) {
+  return adminFetch(token, '/api/admin/vera/promises', { method: 'POST', body, ...options });
+}
+
+export function updateVeraPromise(token, id, body, options = {}) {
+  return adminFetch(token, `/api/admin/vera/promises/${id}`, { method: 'PATCH', body, ...options });
+}
+
+export function deleteVeraPromise(token, id, options = {}) {
+  return adminFetch(token, `/api/admin/vera/promises/${id}`, { method: 'DELETE', ...options });
+}
