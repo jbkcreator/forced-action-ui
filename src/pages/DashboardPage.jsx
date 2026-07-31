@@ -117,6 +117,7 @@ export default function DashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { filters, setFilter, setPage, searchInput, setSearchInput } = useFeedFilters();
   const { isContacted, toggleContacted } = useContacted();
+  const [demoCounty, setDemoCounty] = useState(null); // null = use subscriber's home county
   const [cancelOpen, setCancelOpen] = useState(false);
   const [lpZip, setLpZip] = useState('');
   const [lpSegment, setLpSegment] = useState(null);
@@ -228,9 +229,10 @@ export default function DashboardPage() {
       minScore: filters.minScore,
       incidentType: filters.incidentType,
       search: filters.search,
+      county: demoCounty || undefined,
       signal,
     }),
-    [feedUuid, filters.page, filters.sort, filters.minScore, filters.incidentType, filters.search],
+    [feedUuid, filters.page, filters.sort, filters.minScore, filters.incidentType, filters.search, demoCounty],
   );
 
   useEffect(() => {
@@ -924,6 +926,16 @@ export default function DashboardPage() {
                   <div className="flex-1 min-w-[200px]">
                     <SearchBar value={searchInput} onChange={setSearchInput} />
                   </div>
+                  {subscriber.is_demo && (
+                    <select
+                      value={demoCounty || subscriber.county_id || 'hillsborough'}
+                      onChange={(e) => { setDemoCounty(e.target.value); setPage(1); }}
+                      className="rounded-lg border border-fa-border-default bg-fa-bg-card text-fa-text-primary px-3 py-2 text-sm font-medium cursor-pointer"
+                    >
+                      <option value="hillsborough">Hillsborough County</option>
+                      <option value="pinellas">Pinellas County</option>
+                    </select>
+                  )}
                   <SortDropdown value={filters.sort} onChange={(v) => setFilter('sort', v)} />
                   <ExportButton leads={leads} page={filters.page} feedUuid={feedUuid} />
                 </div>

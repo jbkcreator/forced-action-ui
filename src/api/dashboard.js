@@ -11,12 +11,13 @@ function _loginPath(feedUuid) {
   return `/dashboard/${feedUuid}/login`;
 }
 
-export function fetchFeed(feedUuid, { page = 1, pageSize = 25, sort, minScore, incidentType, search, signal } = {}) {
+export function fetchFeed(feedUuid, { page = 1, pageSize = 25, sort, minScore, incidentType, search, county, signal } = {}) {
   const params = { page, page_size: pageSize };
   if (sort && sort !== 'score_desc') params.sort = sort;
   if (minScore) params.min_score = minScore;
   if (incidentType) params.incident_type = incidentType;
   if (search) params.search = search;
+  if (county) params.county = county;
   return withSubRefresh(
     () => api.get(`/api/feed/${feedUuid}`, params, { signal, headers: subHeaders() }),
     { loginPath: _loginPath(feedUuid) },
