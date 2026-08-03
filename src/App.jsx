@@ -63,6 +63,7 @@ const CommissionsSection    = lazy(() => import('./components/admin/sections/Com
 const ScrapersSection       = lazy(() => import('./components/admin/sections/ScrapersSection'));
 const DfyLiteSection        = lazy(() => import('./components/admin/sections/DfyLiteSection'));
 const QuoraSection          = lazy(() => import('./components/admin/sections/QuoraSection'));
+const VeraSection           = lazy(() => import('./components/admin/sections/VeraSection'));
 const PromptsSection        = lazy(() => import('./components/admin/sections/PromptsSection'));
 const LeadDeliverySection   = lazy(() => import('./components/admin/sections/LeadDeliverySection'));
 const ActionQueueSection    = lazy(() => import('./components/admin/sections/ActionQueueSection'));
@@ -150,6 +151,7 @@ export default function App() {
             <Route path="brokers-lanes"     element={withBoundary(<BrokersLanesSection />)} />
             <Route path="brokers-lanes/:laneId" element={withBoundary(<LaneDetailPage />)} />
             <Route path="commissions"       element={withBoundary(<CommissionsSection />)} />
+            <Route path="vera"              element={withBoundary(<VeraSection />)} />
           </Route>
           {/* Supplier Intelligence dashboard (access_token auth) */}
           <Route path="/supplier/:accessToken" element={withBoundary(<SupplierDashboard />)} />
