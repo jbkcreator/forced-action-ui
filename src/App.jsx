@@ -66,7 +66,9 @@ const QuoraSection          = lazy(() => import('./components/admin/sections/Quo
 const PromptsSection        = lazy(() => import('./components/admin/sections/PromptsSection'));
 const LeadDeliverySection   = lazy(() => import('./components/admin/sections/LeadDeliverySection'));
 const ActionQueueSection    = lazy(() => import('./components/admin/sections/ActionQueueSection'));
+const ThroughQueueSection   = lazy(() => import('./components/admin/sections/ThroughQueueSection'));
 const SubscriberDetailPage = lazy(() => import('./pages/SubscriberDetailPage'));
+const ClosingCockpitPage = lazy(() => import('./pages/ClosingCockpitPage'));
 const SupplierDashboard    = lazy(() => import('./pages/SupplierDashboard'));
 
 // White-label tier pages (Stage 12 / fa056)
@@ -131,6 +133,7 @@ export default function App() {
             <Route path="lifecycle"      element={withBoundary(<LifecycleSection />)} />
             <Route path="subscribers"       element={withBoundary(<SubscribersSection />)} />
             <Route path="subscribers/:id"   element={withBoundary(<SubscriberDetailPage />)} />
+            <Route path="closing-cockpit/:threadId" element={withBoundary(<ClosingCockpitPage />)} />
             <Route path="deliveries"        element={withBoundary(<LeadDeliverySection />)} />
             <Route path="icp"               element={withBoundary(<IcpChannelSection />)} />
             <Route path="supplier-intel"    element={withBoundary(<SupplierIntelSection />)} />
@@ -140,6 +143,7 @@ export default function App() {
             <Route path="closer"            element={withBoundary(<CloserSection />)} />
             <Route path="scrapers"          element={withBoundary(<ScrapersSection />)} />
             <Route path="action-queue"      element={withBoundary(<ActionQueueSection />)} />
+            <Route path="through-queue"     element={withBoundary(<ThroughQueueSection />)} />
             <Route path="dfy-lite"          element={withBoundary(<DfyLiteSection />)} />
             <Route path="quora"             element={withBoundary(<QuoraSection />)} />
             <Route path="prompts"           element={withBoundary(<PromptsSection />)} />

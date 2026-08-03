@@ -195,6 +195,18 @@ const SECTIONS = [
     ),
   },
   {
+    id: 'through-queue',
+    label: 'Through Queue',
+    path: '/admin/through-queue',
+    icon: (
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <rect x="3" y="4" width="18" height="4" rx="1" />
+        <rect x="3" y="10" width="18" height="4" rx="1" />
+        <rect x="3" y="16" width="12" height="4" rx="1" />
+      </svg>
+    ),
+  },
+  {
     id: 'closer',
     label: 'Closer Cockpit',
     path: '/admin/closer',
