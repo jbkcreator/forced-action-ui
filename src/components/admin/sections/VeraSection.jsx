@@ -16,7 +16,9 @@ function formatDate(iso) {
 
 function isOverdue(promise) {
   if (promise.status !== 'open' || !promise.due_at) return false;
-  return new Date(promise.due_at) < new Date();
+  // Compare calendar dates only — a promise due "today" is not overdue until tomorrow.
+  const today = new Date().toISOString().slice(0, 10);
+  return promise.due_at.slice(0, 10) < today;
 }
 
 function mrrDisplay(cents) {
