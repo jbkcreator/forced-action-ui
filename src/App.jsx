@@ -42,6 +42,7 @@ const PartnerUpgradePage = lazy(() => import('./pages/PartnerUpgradePage'));
 const FounderPrepayPortalPage = lazy(() => import('./pages/FounderPrepayPortalPage'));
 const CountyLanding = lazy(() => import('./pages/CountyLanding'));
 const DealSubmitPage = lazy(() => import('./pages/DealSubmitPage'));
+const BankruptcyAlertSuccessPage = lazy(() => import('./pages/BankruptcyAlertSuccessPage'));
 
 // Admin section pages
 const OperatorDashboardSection = lazy(() => import('./components/admin/sections/OperatorDashboardSection'));
@@ -108,6 +109,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={withBoundary(<LandingPage />)} />
           <Route path="/success" element={withBoundary(<SuccessPage />)} />
+          <Route path="/bankruptcy-alerts/success" element={withBoundary(<BankruptcyAlertSuccessPage />)} />
           {/* Subscriber feed auth (fa061) — public */}
           <Route path="/login"                         element={withBoundary(<SubscriberLoginPage />)} />
           <Route path="/forgot-password"               element={withBoundary(<SubscriberForgotPasswordPage />)} />

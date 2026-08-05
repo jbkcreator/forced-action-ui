@@ -38,6 +38,7 @@ Copy `.env.example` to `.env` and set:
 | `/auth/verify` | `MagicLinkVerifyPage` | Exchanges emailed `?token=` for a session (fa061 passwordless) |
 | `/dashboard/:feedUuid` | `DashboardPage` | Token-gated (fa061); redirects to login if no valid JWT |
 | `/success` | `SuccessPage` | Post-checkout; reads `?tier=&zips=` query params |
+| `/bankruptcy-alerts/success` | `BankruptcyAlertSuccessPage` | Post-checkout for Bankruptcy Filing Alerts ($297/mo); reads `?session_id=` (Stripe `{CHECKOUT_SESSION_ID}`, dynamic per session) |
 | `/email-previews` | `EmailPreviewsPage` | Dev tool — preview transactional email templates |
 | `/admin` | `AdminPage` | Admin upload / ops surface; sub-sections via `?tab=` |
 | `/admin/subscribers` | SubscribersSection | Queue + All tabs (fa045 — operator CRM). Hot Subscriber Queue = at-risk (RSS≥60 ∧ cool>7d). |
