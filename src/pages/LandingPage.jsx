@@ -44,16 +44,16 @@ function LandingContent() {
   const { isOpen, loading, checkoutError, openCheckout, closeCheckout, embeddedRef } = useStripeCheckout();
   const pricingRef = useRef(null);
 
+  // Deep-link entry point (?start_tier=starter[&interval=monthly]) — drops a
+  // visitor straight into the email gate → ZIP collector flow for that tier,
+  // skipping manual plan selection. Used for E2E test links / cold outreach.
+  const [searchParams, setSearchParams] = useSearchParams();
+
   // Step 1: User clicks a paid plan → open email gate first
   const handleCheckout = useCallback((tier, interval = 'monthly') => {
     setEmailGate({ open: true, tier, interval, flow: 'paid' });
     setSearchParams(interval !== 'monthly' ? { start_tier: tier, interval } : { start_tier: tier });
   }, [setSearchParams]);
-
-  // Deep-link entry point (?start_tier=starter[&interval=monthly]) — drops a
-  // visitor straight into the email gate → ZIP collector flow for that tier,
-  // skipping manual plan selection. Used for E2E test links / cold outreach.
-  const [searchParams, setSearchParams] = useSearchParams();
   const [autoStartHandled, setAutoStartHandled] = useState(false);
   useEffect(() => {
     if (autoStartHandled) return;
