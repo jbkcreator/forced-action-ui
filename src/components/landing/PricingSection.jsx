@@ -14,10 +14,10 @@ export default function PricingSection({ onCheckout, onStartFree }) {
         </p>
       </div>
       <div className="grid grid-cols-1 gap-6 lg:gap-8 md:grid-cols-4">
+        <AnnualPricingCard onCheckout={onCheckout} />
         <PricingCard tier="starter" onCheckout={onCheckout} />
         <PricingCard tier="pro" isPopular onCheckout={onCheckout} />
         <PricingCard tier="dominator" onCheckout={onCheckout} />
-        <AnnualPricingCard onCheckout={onCheckout} />
       </div>
 
       {/* Founder — premium tier, separate from the main grid (renders only when
