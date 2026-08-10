@@ -1,6 +1,22 @@
 export default function MapZipPopup({ zip, onClose, onSelect }) {
   const isAvailable = zip.status === 'available';
   const isGrace = zip.status === 'grace';
+  const isNoLeads = zip.status === 'no_active_leads';
+
+  const statusLabel = isAvailable
+    ? '🟢 Available'
+    : isGrace
+      ? '🟡 Grace period'
+      : isNoLeads
+        ? '⚪ No active leads yet'
+        : '🔴 Locked';
+  const statusColor = isAvailable
+    ? 'text-emerald-400'
+    : isGrace
+      ? 'text-amber-400'
+      : isNoLeads
+        ? 'text-slate-400'
+        : 'text-red-400';
 
   return (
     <div
@@ -12,10 +28,8 @@ export default function MapZipPopup({ zip, onClose, onSelect }) {
       <div className="flex items-start justify-between mb-3">
         <div>
           <p className="text-white font-bold text-lg font-mono">{zip.zip}</p>
-          <p className={`text-xs font-semibold mt-0.5 ${
-            isAvailable ? 'text-emerald-400' : isGrace ? 'text-amber-400' : 'text-red-400'
-          }`}>
-            {isAvailable ? '🟢 Available' : isGrace ? '🟡 Grace period' : '🔴 Locked'}
+          <p className={`text-xs font-semibold mt-0.5 ${statusColor}`}>
+            {statusLabel}
           </p>
         </div>
         <button
@@ -28,7 +42,7 @@ export default function MapZipPopup({ zip, onClose, onSelect }) {
       </div>
 
       <div className="space-y-1.5 text-xs text-slate-400 mb-4">
-        {zip.lead_count != null && <p>{zip.lead_count} leads available</p>}
+        {zip.lead_count > 0 && <p>{zip.lead_count} leads available</p>}
         {zip.active_viewers > 0 && <p className="text-amber-300">{zip.active_viewers} viewing now</p>}
         {isGrace && zip.grace_expires_at && (
           <p>Grace ends {new Date(zip.grace_expires_at).toLocaleDateString()}</p>
