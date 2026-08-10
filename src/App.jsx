@@ -108,6 +108,9 @@ export default function App() {
       <Suspense fallback={<RouteSkeleton />}>
         <Routes>
           <Route path="/" element={withBoundary(<LandingPage />)} />
+          {/* /pricing has no standalone page — send it to the homepage pricing
+              section. LandingPage scrolls to #pricing on hash. */}
+          <Route path="/pricing" element={<Navigate to="/#pricing" replace />} />
           <Route path="/success" element={withBoundary(<SuccessPage />)} />
           <Route path="/bankruptcy-alerts/success" element={withBoundary(<BankruptcyAlertSuccessPage />)} />
           {/* Subscriber feed auth (fa061) — public */}
