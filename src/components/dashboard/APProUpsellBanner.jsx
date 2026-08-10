@@ -51,7 +51,7 @@ export default function APProUpsellBanner({ feedUuid, onUpgraded, onDismiss }) {
       const { url } = await createPortalSession(feedUuid);
       window.location.href = url;
     } catch {
-      setError('Could not open the billing portal. Email support@forcedactionleads.com.');
+      setError('Could not open the billing portal. Email info@forcedactionleads.com.');
     }
   };
 
