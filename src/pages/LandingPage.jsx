@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { LandingProvider, useLanding } from '../components/landing/LandingContext';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
@@ -43,6 +43,18 @@ function LandingContent() {
   const [freeSignupSuccessEmail, setFreeSignupSuccessEmail] = useState(null);
   const { isOpen, loading, checkoutError, openCheckout, closeCheckout, embeddedRef } = useStripeCheckout();
   const pricingRef = useRef(null);
+
+  // Hash deep-link (e.g. /#pricing, used by the /pricing redirect): scroll to
+  // the pricing section once it's mounted. Runs on hash change.
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash !== '#pricing') return;
+    // rAF so the target exists after the first paint
+    const id = requestAnimationFrame(() => {
+      pricingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [hash]);
 
   // Deep-link entry point (?start_tier=starter[&interval=monthly]) — drops a
   // visitor straight into the email gate → ZIP collector flow for that tier,

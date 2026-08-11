@@ -16,8 +16,8 @@ export default function DisputeBanner({ disputedAt }) {
           </p>
           <p className="text-slate-400 text-xs mt-1">
             Contact{' '}
-            <a href="mailto:support@forcedaction.io" className="text-fa-accent-gold hover:underline">
-              support@forcedaction.io
+            <a href="mailto:info@forcedactionleads.com" className="text-fa-accent-gold hover:underline">
+              info@forcedactionleads.com
             </a>{' '}
             to resolve.
             {date && <span className="ml-1 text-slate-500">· Since {date}</span>}

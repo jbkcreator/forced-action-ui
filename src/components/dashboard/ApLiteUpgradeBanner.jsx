@@ -54,7 +54,7 @@ export default function ApLiteUpgradeBanner({ feedUuid, weeklyActions, onUpgrade
       const { url } = await createPortalSession(feedUuid);
       window.location.href = url;
     } catch {
-      setError('Could not open billing portal. Email support@forcedaction.io.');
+      setError('Could not open billing portal. Email info@forcedactionleads.com.');
     }
   };
 
