@@ -69,7 +69,7 @@ export default function ChatBody({ messages, isLoading, error, onSend, onRetry, 
     if (intent?.kind === 'annual') {
       onInjectAssistantMessage(
         "Annual pricing depends on your tier and ZIP count — " +
-        "email [support@forcedaction.ai](mailto:support@forcedaction.ai) " +
+        "email [info@forcedactionleads.com](mailto:info@forcedactionleads.com) " +
         "and they'll set it up."
       );
       setPinned(true);

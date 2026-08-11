@@ -4,9 +4,10 @@ import 'leaflet/dist/leaflet.css';
 import useReducedMotion from '../../hooks/useReducedMotion';
 
 const STATUS_COLOR = {
-  available: '#10b981',
-  locked:    '#ef4444',
-  grace:     '#f59e0b',
+  available:       '#10b981',
+  locked:          '#ef4444',
+  grace:           '#f59e0b',
+  no_active_leads: '#64748b',
 };
 
 // Fallback when the server hasn't returned map_config yet (shouldn't normally happen,
@@ -83,8 +84,8 @@ export default function MapCanvas({ zips, highlightZip, onZipClick, mapConfig })
         >
           <Tooltip direction="top" opacity={1}>
             <strong>{z.zip}</strong>{' '}
-            {z.status === 'available' ? '🟢' : z.status === 'grace' ? '🟡' : '🔴'}{' '}
-            {z.status}
+            {z.status === 'available' ? '🟢' : z.status === 'grace' ? '🟡' : z.status === 'no_active_leads' ? '⚪' : '🔴'}{' '}
+            {z.status === 'no_active_leads' ? 'no active leads' : z.status}
             {z.active_viewers > 0 && <> · {z.active_viewers} viewing</>}
             {z.lead_count != null && <> · {z.lead_count} leads</>}
           </Tooltip>
