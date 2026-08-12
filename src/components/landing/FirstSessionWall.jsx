@@ -122,11 +122,18 @@ function tierLabel(t) {
 function RevealedLead({ lead }) {
 	const isPaidUnlock = lead.unlocked === true;
 	const ownerName = lead.contact?.owner_name || lead.owner_name;
+	// B1: the free preview (isPaidUnlock === false) is shown to anonymous
+	// public visitors — never render a real person's full name/address/phone
+	// there. Only a lead the visitor actually paid to unlock gets full detail.
+	const ownerInitial = ownerName ? `${ownerName.trim().charAt(0).toUpperCase()}.` : null;
+	const maskedAddress = lead.address
+		? lead.address.replace(/^\d+\s+[A-Za-z]+/, '••• ••••••')
+		: '••• •••••• St';
 	return (
 		<div className={`sample-lead-card ${tierCardClass(lead.lead_tier)}`}>
 			<div className="flex items-start justify-between gap-4">
 				<div className="flex-1 min-w-0">
-					<p className="font-semibold text-white text-sm">{lead.address}</p>
+					<p className="font-semibold text-white text-sm">{isPaidUnlock ? lead.address : maskedAddress}</p>
 					<p className="text-slate-400 text-xs mt-0.5">
 						{lead.city ? `${lead.city}, FL` : ''} {lead.zip}
 					</p>
@@ -135,17 +142,22 @@ function RevealedLead({ lead }) {
 					)}
 					{ownerName && (
 						<p className="text-emerald-300 text-xs mt-1 flex items-center gap-1">
-							<Icon name="user" size={12} /> Owner: <span className="text-white">{ownerName}</span>
+							<Icon name="user" size={12} /> Owner: <span className="text-white">{isPaidUnlock ? ownerName : ownerInitial}</span>
 						</p>
 					)}
-					{lead.contact?.mobile_phone && (
+					{isPaidUnlock && lead.contact?.mobile_phone && (
 						<p className="text-emerald-300 text-xs mt-1 flex items-center gap-1">
 							<Icon name="phone" size={12} /> <span className="font-mono text-white">{lead.contact.mobile_phone}</span>
 						</p>
 					)}
-					{lead.contact?.email && (
+					{isPaidUnlock && lead.contact?.email && (
 						<p className="text-emerald-300 text-xs mt-1 flex items-center gap-1">
 							<Icon name="mail" size={12} /> <span className="font-mono text-white">{lead.contact.email}</span>
+						</p>
+					)}
+					{!isPaidUnlock && (lead.contact?.mobile_phone || lead.phone) && (
+						<p className="text-slate-500 text-xs mt-1 flex items-center gap-1">
+							<Icon name="lock" size={12} /> Phone hidden until unlocked
 						</p>
 					)}
 				</div>
