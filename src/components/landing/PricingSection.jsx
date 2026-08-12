@@ -1,7 +1,6 @@
 import PricingCard from './PricingCard';
 import AnnualPricingCard from './AnnualPricingCard';
 import FounderPricingCard from './FounderPricingCard';
-import Icon from '../ui/Icon';
 
 export default function PricingSection({ onCheckout, onStartFree }) {
   return (
@@ -43,18 +42,6 @@ export default function PricingSection({ onCheckout, onStartFree }) {
         </div>
       )}
 
-      {/* 30-Day Guarantee */}
-      <div className="mt-10 max-w-lg mx-auto">
-        <div className="glass-card rounded-2xl p-6 sm:p-8 text-center">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <Icon name="shield-check" size={32} className="text-yellow-400" />
-            <h3 className="text-lg font-bold text-white">30-Day Money-Back Guarantee</h3>
-          </div>
-          <p className="text-slate-400 text-sm leading-relaxed">
-            First 30 days or your money back. If the leads aren't what you expected, we'll refund your subscription — no questions asked.
-          </p>
-        </div>
-      </div>
     </section>
   );
 }

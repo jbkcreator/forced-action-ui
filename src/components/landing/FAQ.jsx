@@ -11,7 +11,7 @@ const FAQS = [
   },
   {
     q: 'Can I cancel anytime?',
-    a: 'Yes. There are no long-term contracts. Cancel anytime from your dashboard. If you cancel within the first 30 days, you get a full refund.',
+    a: 'Yes. There are no long-term contracts. Cancel anytime from your dashboard — you keep access through the end of your current billing period. Subscriptions are non-refundable.',
   },
   {
     q: 'What is the CDS score?',
