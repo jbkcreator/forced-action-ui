@@ -126,9 +126,12 @@ function RevealedLead({ lead }) {
 	// public visitors — never render a real person's full name/address/phone
 	// there. Only a lead the visitor actually paid to unlock gets full detail.
 	const ownerInitial = ownerName ? `${ownerName.trim().charAt(0).toUpperCase()}.` : null;
+	// Only the house number is identifying enough to matter here — keep the
+	// street name/suffix visible so the free preview still shows more than
+	// the fully-locked cards below it (client asked for "partial address").
 	const maskedAddress = lead.address
-		? lead.address.replace(/^\d+\s+[A-Za-z]+/, '••• ••••••')
-		: '••• •••••• St';
+		? lead.address.replace(/^\d+/, '•••')
+		: '••• St';
 	return (
 		<div className={`sample-lead-card ${tierCardClass(lead.lead_tier)}`}>
 			<div className="flex items-start justify-between gap-4">
