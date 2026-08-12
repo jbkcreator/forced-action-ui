@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { submitWaitlist } from '../../api/landing';
+import { trackEvent } from '../../utils/ga4';
 import TermsConsentGate from '../shared/TermsConsentGate';
 
 const TRADE_OPTIONS = [
@@ -65,6 +66,7 @@ export default function WaitlistForm({ zip, countyId, waitlistType = 'sold_out',
         setMsg({ type: 'success', text: `✓ You're already on the list. We'll notify you when it opens.` });
       } else {
         setMsg({ type: 'success', text: `✓ You're on the waitlist for ZIP ${zipInput.trim()}. We'll email you when it opens.` });
+        trackEvent('waitlist_joined', { zip: zipInput.trim() });
       }
 
       setTimeout(() => { onSuccess?.(); }, 1800);

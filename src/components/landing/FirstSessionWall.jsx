@@ -28,6 +28,7 @@ import {
   createPaymentIntent,
   logBusinessEvent,
 } from '../../api/phase2b';
+import { getAttribution } from '../../utils/attribution';
 import { unlockHotLead } from '../../api/dashboard';
 import PaymentSheetModal from '../common/PaymentSheetModal';
 import LandingAttribution from './LandingAttribution';
@@ -401,6 +402,7 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 			},
 		});
 		try {
+			const _attr = getAttribution();
 			const result = await createFreeSignup({
 				email,
 				vertical: selectedVertical,
@@ -412,6 +414,10 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 				utmSource: attribution?.utmSource || null,
 				utmMedium: attribution?.utmMedium || null,
 				utmCampaign: attribution?.utmCampaign || null,
+				utmContent: _attr.utm_content || null,
+				utmTerm: _attr.utm_term || null,
+				landingPath: _attr.landing_path || null,
+				referrer: _attr.referrer || null,
 				campaignId: attribution?.campaignId || null,
 				referralCode: attribution?.referralCode || null,
 				referralSource: attribution?.referralSource || null,

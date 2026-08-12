@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLanding } from './LandingContext';
 import { VERTICAL_LABELS } from '../../config/constants';
 import { checkZip as apiCheckZip } from '../../api/landing';
+import { trackEvent } from '../../utils/ga4';
 import SampleLeads from './SampleLeads';
 import WaitlistForm from './WaitlistForm';
 
@@ -49,6 +50,12 @@ export default function ZipChecker({ onZipChecked, countyId: externalCountyId, o
       const label = VERTICAL_LABELS[selectedVertical];
       setCheckedZip(trimmed);
       if (onZipChecked) onZipChecked(trimmed);
+
+      const inServiceArea = data.status !== 'invalid';
+      trackEvent('zip_checked', { zip: trimmed, results_returned: inServiceArea });
+      if (inServiceArea) {
+        trackEvent('territory_checked', { zip: trimmed, available: data.status === 'available' });
+      }
 
       if (data.status === 'invalid') {
         setResult({ status: 'invalid', message: `× ZIP ${trimmed} is not in our ${countyName} service area.` });
