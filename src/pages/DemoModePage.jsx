@@ -149,7 +149,7 @@ export default function DemoModePage() {
           onChange={e => setVertical(e.target.value)}
           className="bg-fa-bg-base border border-fa-border-default rounded-lg px-3 py-1.5 text-sm text-fa-text-primary focus:outline-none focus:border-fa-primary"
         >
-          {['roofing', 'remediation', 'fix_flip', 'wholesalers', 'public_adjusters', 'attorneys'].map(v => (
+          {['roofing', 'fix_flip', 'wholesalers', 'public_adjusters', 'attorneys'].map(v => (
             <option key={v} value={v}>{v.replace(/_/g, ' ')}</option>
           ))}
         </select>
