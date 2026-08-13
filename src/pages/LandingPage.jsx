@@ -23,6 +23,8 @@ import DealOfTheDay from '../components/landing/DealOfTheDay';
 import RoiCalculator from '../components/landing/RoiCalculator';
 import useStripeCheckout from '../hooks/useStripeCheckout';
 import { createFreeSignup, logBusinessEvent } from '../api/phase2b';
+import { getAttribution } from '../utils/attribution';
+import { trackEvent } from '../utils/ga4';
 
 // Lazy-loaded: leaflet (~120 KB) and react-markdown (~75 KB) are excluded from
 // the main chunk and only fetched when these components actually render.
@@ -63,6 +65,8 @@ function LandingContent() {
 
   // Step 1: User clicks a paid plan → open email gate first
   const handleCheckout = useCallback((tier, interval = 'monthly') => {
+    trackEvent('plan_selected', { tier, interval });
+    trackEvent('signup_started', { tier });
     setEmailGate({ open: true, tier, interval, flow: 'paid' });
     setSearchParams(interval !== 'monthly' ? { start_tier: tier, interval } : { start_tier: tier });
   }, [setSearchParams]);
@@ -79,6 +83,7 @@ function LandingContent() {
   // Free-tier entry: Start Free button → open email gate in 'free' flow
   const handleStartFree = useCallback(() => {
     logBusinessEvent('SIGNUP_STARTED', { payload: { source: 'free_cta' } });
+    trackEvent('signup_started', {});
     setEmailGate({ open: true, tier: null, flow: 'free' });
   }, []);
 
@@ -91,10 +96,12 @@ function LandingContent() {
   const handleEmailProceed = useCallback(async (email, consent, phone) => {
     setUserEmail(email);
     setUserConsent(consent);
+    trackEvent('signup_submitted', { vertical: selectedVertical, tier: emailGate.tier });
 
     if (emailGate.flow === 'free') {
       setFreeSigningUp(true);
       try {
+        const _attr = getAttribution();
         const resp = await createFreeSignup({
           email,
           vertical: selectedVertical,
@@ -105,6 +112,10 @@ function LandingContent() {
           utmSource: attribution?.utmSource || null,
           utmMedium: attribution?.utmMedium || null,
           utmCampaign: attribution?.utmCampaign || null,
+          utmContent: _attr.utm_content || null,
+          utmTerm: _attr.utm_term || null,
+          landingPath: _attr.landing_path || null,
+          referrer: _attr.referrer || null,
           campaignId: attribution?.campaignId || null,
           referralCode: attribution?.referralCode || null,
           referralSource: attribution?.referralSource || null,
@@ -132,6 +143,7 @@ function LandingContent() {
   // Step 3: ZIPs collected → launch Stripe checkout. fa017: pass attribution
   // so the pre-checkout free-signup persists signup_source/utm_* on the row.
   const handleZipCollectorProceed = useCallback((zips) => {
+    trackEvent('zips_selected', { tier: zipCollector.tier, zip_count: zips.length, zips: zips.join(',') });
     setZipCollector({ open: false, tier: null });
     openCheckout({
       tier: zipCollector.tier,

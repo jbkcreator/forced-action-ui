@@ -13,6 +13,7 @@ import ZipCollectorModal from '../components/landing/ZipCollectorModal';
 import TierSelectModal from '../components/dashboard/TierSelectModal';
 import SubscribeInsteadModal from '../components/dashboard/SubscribeInsteadModal';
 import { logBusinessEvent } from '../api/phase2b';
+import { trackEvent, setUserProperties } from '../utils/ga4';
 import PaymentSheetModal from '../components/common/PaymentSheetModal';
 import Navbar from '../components/layout/Navbar';
 import StatsBar from '../components/dashboard/StatsBar';
@@ -271,6 +272,16 @@ export default function DashboardPage() {
   const lockedZips = subscriber.locked_zips || [];
   const deepLinkBundleZip = lockedZips.length === 1 ? lockedZips[0] : '';
 
+  // Set GA4 user properties once subscriber data is loaded
+  useEffect(() => {
+    if (!subscriber?.id) return;
+    setUserProperties({
+      plan_tier: subscriber.tier,
+      vertical: subscriber.vertical,
+      zips_locked: lockedZips.length,
+    });
+  }, [subscriber?.id, subscriber?.tier, subscriber?.vertical, lockedZips.length]);
+
   const bundleLeadSectionRef = useRef(null);
   const { hasStormLeads, stormLeads, hoursRemaining: stormHoursRemaining } = useStormStatus(data);
 
@@ -418,6 +429,7 @@ export default function DashboardPage() {
   const handleUnlockHotLead = useCallback(async (lead) => {
     if (!lead?.property_id) return;
     logUnlockEvent('LEAD_UNLOCK_CLICKED', lead, { source: 'dashboard', product: 'hot_lead_unlock' });
+    trackEvent('unlock_clicked', { price: lead.price ?? null, cds_score: lead.cds_score ?? null, zip: lead.zip_code ?? null, tier: subscriber.tier });
     try {
       const resp = await unlockHotLead(feedUuid, lead.property_id);
       logUnlockEvent('PAYMENT_STARTED', lead, { product: 'hot_lead_unlock' });
@@ -694,7 +706,7 @@ export default function DashboardPage() {
           {error && <ErrorState />}
 
           {!loading && !error && subscriber?.id && subscriber.onboarding_completed === false && (
-            <OnboardingStep feedUuid={feedUuid} onComplete={refetch} />
+            <OnboardingStep feedUuid={feedUuid} tier={subscriber.tier} onComplete={refetch} />
           )}
 
           {!loading && !error && (
