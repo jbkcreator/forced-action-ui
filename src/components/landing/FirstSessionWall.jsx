@@ -411,9 +411,9 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 				consentAcceptance: flow.consent || null,
 				// fa017 — attribution captured at landing
 				signupSource: attribution?.signupSource || null,
-				utmSource: attribution?.utmSource || null,
-				utmMedium: attribution?.utmMedium || null,
-				utmCampaign: attribution?.utmCampaign || null,
+				utmSource: _attr.utm_source || null,
+				utmMedium: _attr.utm_medium || null,
+				utmCampaign: _attr.utm_campaign || null,
 				utmContent: _attr.utm_content || null,
 				utmTerm: _attr.utm_term || null,
 				landingPath: _attr.landing_path || null,

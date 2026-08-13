@@ -47,14 +47,15 @@ export default function useStripeCheckout() {
 
     let feedUuid = null;
     try {
+      const _attr = getAttribution();
       const signup = await createFreeSignup({
         email,
         vertical,
         countyId,
         signupSource: attribution?.signupSource || null,
-        utmSource: attribution?.utmSource || null,
-        utmMedium: attribution?.utmMedium || null,
-        utmCampaign: attribution?.utmCampaign || null,
+        utmSource: _attr.utm_source || null,
+        utmMedium: _attr.utm_medium || null,
+        utmCampaign: _attr.utm_campaign || null,
         campaignId: attribution?.campaignId || null,
         referralCode: attribution?.referralCode || null,
         referralSource: attribution?.referralSource || null,
