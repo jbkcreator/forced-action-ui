@@ -3,10 +3,27 @@ import { createDemoDealRoom } from '../../api/dealRoom';
 
 const TIERS = ['Starter', 'Pro', 'Founder'];
 
+// Must match backend VALID_VERTICALS. A hold is on one (zip, vertical, county).
+const VERTICALS = [
+  ['roofing', 'Roofing'],
+  ['restoration', 'Restoration'],
+  ['public_adjusters', 'Public Adjusters'],
+  ['wholesalers', 'Wholesalers'],
+  ['fix_flip', 'Fix & Flip'],
+  ['attorneys', 'Attorneys'],
+];
+
+const COUNTIES = [
+  ['hillsborough', 'Hillsborough'],
+  ['pinellas', 'Pinellas'],
+];
+
 const INITIAL = {
   prospect_name: '',
   prospect_email: '',
   zip_code: '',
+  vertical: 'roofing',
+  county_id: 'hillsborough',
   tier: 'Starter',
   job_value: '',
   close_rate: '',
@@ -69,6 +86,8 @@ export default function DealRoomGenerator({ passcode, onUnauthorized }) {
       prospect_name: form.prospect_name.trim(),
       prospect_email: form.prospect_email.trim(),
       zip_code: form.zip_code.trim(),
+      vertical: form.vertical,
+      county_id: form.county_id,
       tier: form.tier.toLowerCase(),
       job_value: Number(form.job_value),
       close_rate: Number(form.close_rate) / 100,
@@ -159,6 +178,37 @@ export default function DealRoomGenerator({ passcode, onUnauthorized }) {
             >
               {TIERS.map(t => (
                 <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>Vertical</label>
+            <select
+              name="vertical"
+              value={form.vertical}
+              onChange={handleChange}
+              required
+              className={inputClass}
+            >
+              {VERTICALS.map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelClass}>County</label>
+            <select
+              name="county_id"
+              value={form.county_id}
+              onChange={handleChange}
+              required
+              className={inputClass}
+            >
+              {COUNTIES.map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
               ))}
             </select>
           </div>
