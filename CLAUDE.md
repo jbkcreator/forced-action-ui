@@ -37,6 +37,7 @@ Copy `.env.example` to `.env` and set:
 | `/reset-password/:token` | `SubscriberResetPasswordPage` | Set new password via token (fa061) |
 | `/auth/verify` | `MagicLinkVerifyPage` | Exchanges emailed `?token=` for a session (fa061 passwordless) |
 | `/dashboard/:feedUuid` | `DashboardPage` | Token-gated (fa061); redirects to login if no valid JWT |
+| `/dashboard/:feedUuid/demo` | `DemoModePage` | Live Demo Mode (3g+3h+3i) — closer-only full-screen demo; auto-redirect on `is_demo` login |
 | `/success` | `SuccessPage` | Post-checkout; reads `?tier=&zips=` query params |
 | `/bankruptcy-alerts/success` | `BankruptcyAlertSuccessPage` | Post-checkout for Bankruptcy Filing Alerts ($297/mo); reads `?session_id=` (Stripe `{CHECKOUT_SESSION_ID}`, dynamic per session) |
 | `/email-previews` | `EmailPreviewsPage` | Dev tool — preview transactional email templates |
@@ -75,6 +76,7 @@ All requests go through `src/api/client.js` (`apiRequest`, `api.get`, `api.post`
 - `quora.js` — Quora Answers (S6): `fetchQuoraQueue`, `updateQuoraDraft`, `postQuoraAnswer`. Uses same `adminFetch` JWT pattern as `closer.js`.
 - `chat.js` — Concierge Chat (M5a): `createSession`, `sendMessage`, `streamTurn` (EventSource), `linkSession`, `escalateSession`.
 - `subscriber.js` — Subscriber feed auth (fa061 + magic-link): `subscriberLogin`, `subscriberRequestMagicLink`, `subscriberVerifyMagicLink`, `subscriberForgotPassword`, `subscriberResetPassword`, `subHeaders`, `withSubRefresh`, `decodeSubToken`. Token stored in `localStorage.sub_access_token`.
+- `demo.js` — Live Demo Mode (3g+3h+3i): `fetchZipReveal`, `prepareCall`, `revealLead`. Auth via `feed_uuid` param.
 
 ### Stripe Integration
 
