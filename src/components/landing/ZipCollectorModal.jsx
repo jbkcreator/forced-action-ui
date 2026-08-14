@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Modal, { ModalClose } from '../ui/Modal';
 import { useLanding } from './LandingContext';
 import { fetchZipAvailability } from '../../api/landing';
+import { fetchZipScarcity } from '../../api/scarcity';
 
 export default function ZipCollectorModal({ isOpen, onClose, tier, initialZip, onProceed, vertical, countyId, pricing }) {
   // Landing page: reads vertical/countyId/pricing from LandingContext. Callers
@@ -17,6 +18,29 @@ export default function ZipCollectorModal({ isOpen, onClose, tier, initialZip, o
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
+  // Live scarcity status map: { [zip]: 'available' | 'taken' }
+  const [scarcityMap, setScarcityMap] = useState({});
+
+  // Fetch scarcity for each selected ZIP as selection changes
+  useEffect(() => {
+    if (!selected.length || !selectedVertical) return;
+    const controllers = [];
+    selected.forEach((zip) => {
+      const code = typeof zip === 'object' ? (zip.zip || zip.zip_code) : zip;
+      if (scarcityMap[code] !== undefined) return; // already fetched
+      const controller = new AbortController();
+      controllers.push(controller);
+      fetchZipScarcity(code, selectedVertical, { signal: controller.signal })
+        .then((data) => {
+          if (!controller.signal.aborted) {
+            setScarcityMap((prev) => ({ ...prev, [code]: data.status }));
+          }
+        })
+        .catch(() => {});
+    });
+    return () => controllers.forEach((c) => c.abort());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, selectedVertical]);
 
   // Fetch all ZIP availability when modal opens or vertical changes
   useEffect(() => {
@@ -68,6 +92,10 @@ export default function ZipCollectorModal({ isOpen, onClose, tier, initialZip, o
 
   const ready = selected.length === limit;
   const availableZips = allZips.filter((z) => z.status === 'available');
+  const anySelectedTaken = selected.some((zip) => {
+    const code = typeof zip === 'object' ? (zip.zip || zip.zip_code) : zip;
+    return scarcityMap[code] === 'taken';
+  });
   const filtered = search
     ? allZips.filter((z) => z.zip_code.startsWith(search))
     : allZips;
@@ -189,6 +217,7 @@ export default function ZipCollectorModal({ isOpen, onClose, tier, initialZip, o
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {selected.map((z) => {
                 const code = typeof z === 'object' ? (z.zip || z.zip_code) : z;
+                const zipScarcity = scarcityMap[code];
                 return (
                   <span
                     key={code}
@@ -197,17 +226,22 @@ export default function ZipCollectorModal({ isOpen, onClose, tier, initialZip, o
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '6px',
-                      background: 'rgba(251,191,36,0.12)',
-                      border: '1px solid rgba(251,191,36,0.3)',
+                      background: zipScarcity === 'taken' ? 'rgba(239,68,68,0.10)' : 'rgba(251,191,36,0.12)',
+                      border: zipScarcity === 'taken' ? '1px solid rgba(239,68,68,0.35)' : '1px solid rgba(251,191,36,0.3)',
                       borderRadius: '999px',
                       padding: '4px 12px',
                       fontSize: '12px',
                       fontWeight: 600,
-                      color: '#fbbf24',
+                      color: zipScarcity === 'taken' ? '#f87171' : '#fbbf24',
                       cursor: 'pointer',
                     }}
                   >
                     {code}
+                    {zipScarcity && (
+                      <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase' }}>
+                        {zipScarcity === 'available' ? '· Available' : '· Taken'}
+                      </span>
+                    )}
                     <span style={{ color: '#94a3b8', fontSize: '10px' }}>x</span>
                   </span>
                 );
@@ -216,17 +250,24 @@ export default function ZipCollectorModal({ isOpen, onClose, tier, initialZip, o
           </div>
         )}
 
+        {anySelectedTaken && (
+          <p className="text-red-400 text-xs font-medium text-center mb-2">
+            One or more selected ZIPs are now taken. Please deselect and choose another.
+          </p>
+        )}
         <button
-          onClick={() => ready && onProceed(selected)}
-          disabled={!ready}
+          onClick={() => ready && !anySelectedTaken && onProceed(selected)}
+          disabled={!ready || anySelectedTaken}
           className={`w-full font-bold py-3 rounded-xl transition ${
-            ready
+            ready && !anySelectedTaken
               ? 'bg-yellow-400 hover:bg-yellow-300 text-black cursor-pointer'
               : 'bg-white/10 text-slate-500 cursor-not-allowed'
           }`}
         >
           {ready
-            ? 'Continue to Payment'
+            ? anySelectedTaken
+              ? 'Cannot continue — Taken ZIP selected'
+              : 'Continue to Payment'
             : `Select ${limit - selected.length} more ZIP${limit - selected.length !== 1 ? 's' : ''} to continue`}
         </button>
       </div>

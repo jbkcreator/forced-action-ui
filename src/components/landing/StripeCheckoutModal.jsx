@@ -21,6 +21,7 @@ export default function StripeCheckoutModal({ isOpen, onClose, loading, error, e
         {error && (
           <p className="text-red-400 text-sm text-center py-8">{error}</p>
         )}
+        <p className="text-slate-400 text-xs text-center mb-3">Cancel anytime. No long-term contract. Billed monthly.</p>
         <div ref={mountRef} />
       </div>
     </Modal>

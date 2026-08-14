@@ -11,3 +11,11 @@ export function fetchCountyScarcity(zip, { vertical, signal } = {}) {
   if (vertical) params.vertical = vertical;
   return api.get('/api/scarcity/county', params, { signal });
 }
+
+/**
+ * GET /api/scarcity/zip?zip=XXXXX&vertical=YYYY
+ * Returns { zip_code, vertical, status: "available" | "taken" }
+ */
+export function fetchZipScarcity(zip, vertical, { signal } = {}) {
+  return api.get('/api/scarcity/zip', { zip, vertical }, { signal });
+}
