@@ -56,7 +56,7 @@ export function fetchDealOfTheDay() {
 
 export function createCheckout({
   tier, vertical, countyId, zipCodes, email, interval = 'monthly', consentAcceptance = null, attribution = null,
-  alreadyHasDashboardAccess = false, successReturnPath = null,
+  alreadyHasDashboardAccess = false, successReturnPath = null, holdToken = null,
 }) {
   return api.post('/api/checkout', {
     tier,
@@ -69,5 +69,6 @@ export function createCheckout({
     attribution,
     already_has_dashboard_access: alreadyHasDashboardAccess,
     success_return_path: successReturnPath,
+    ...(holdToken ? { hold_token: holdToken } : {}),
   });
 }

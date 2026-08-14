@@ -39,6 +39,9 @@ export default function useStripeCheckout() {
     alreadyHasDashboardAccess = false,
     successReturnPath = null,
     onComplete: onCompleteOverride = null,
+    // 3m deal-room: opaque hold token — passed as metadata so the checkout
+    // webhook can call refund_on_conversion for the reserved deal.
+    holdToken = null,
   }) => {
     checkoutCtxRef.current = { tier, zipCodes, countyId };
     setIsOpen(true);
@@ -80,6 +83,7 @@ export default function useStripeCheckout() {
         attribution: getAttribution(),
         alreadyHasDashboardAccess,
         successReturnPath,
+        holdToken,
       });
       checkoutCtxRef.current.sessionId = session_id || null;
       checkoutCtxRef.current.amountTotalCents = amount_total_cents ?? null;

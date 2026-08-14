@@ -61,14 +61,25 @@ function LandingContent() {
   // Deep-link entry point (?start_tier=starter[&interval=monthly]) — drops a
   // visitor straight into the email gate → ZIP collector flow for that tier,
   // skipping manual plan selection. Used for E2E test links / cold outreach.
+  // ?zip=<zip> pre-selects a ZIP and skips the picker step entirely.
+  // ?hold=<token> is threaded into checkout metadata for refund_on_conversion.
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Step 1: User clicks a paid plan → open email gate first
+  // Step 1: User clicks a paid plan → open email gate first.
+  // Preserve any existing ?zip= / ?hold= deep-link params — overwriting the
+  // whole query here previously dropped them, forcing the ZIP picker to reopen
+  // even when a ZIP was already chosen (e.g. from a deal-room Subscribe link).
   const handleCheckout = useCallback((tier, interval = 'monthly') => {
     trackEvent('plan_selected', { tier, interval });
     trackEvent('signup_started', { tier });
     setEmailGate({ open: true, tier, interval, flow: 'paid' });
-    setSearchParams(interval !== 'monthly' ? { start_tier: tier, interval } : { start_tier: tier });
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('start_tier', tier);
+      if (interval !== 'monthly') next.set('interval', interval);
+      else next.delete('interval');
+      return next;
+    });
   }, [setSearchParams]);
   const [autoStartHandled, setAutoStartHandled] = useState(false);
   useEffect(() => {
@@ -137,8 +148,28 @@ function LandingContent() {
     }
 
     setEmailGate({ open: false, tier: null, flow: 'paid' });
+
+    // ?zip= deep-link: skip the ZIP picker and jump straight to checkout
+    // with the pre-selected ZIP. ?hold= is threaded through so the backend
+    // webhook can call refund_on_conversion for the reserved deal.
+    const preZip = searchParams.get('zip');
+    if (preZip) {
+      openCheckout({
+        tier: emailGate.tier,
+        vertical: selectedVertical,
+        countyId,
+        zipCodes: [preZip],
+        email,
+        interval: emailGate.interval || 'monthly',
+        consent,
+        attribution,
+        holdToken: searchParams.get('hold') || null,
+      });
+      return;
+    }
+
     setZipCollector({ open: true, tier: emailGate.tier, interval: emailGate.interval });
-  }, [emailGate.flow, emailGate.tier, emailGate.interval, selectedVertical, countyId, attribution]);
+  }, [emailGate.flow, emailGate.tier, emailGate.interval, selectedVertical, countyId, attribution, searchParams, openCheckout]);
 
   // Step 3: ZIPs collected → launch Stripe checkout. fa017: pass attribution
   // so the pre-checkout free-signup persists signup_source/utm_* on the row.

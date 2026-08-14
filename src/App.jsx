@@ -43,6 +43,8 @@ const FounderPrepayPortalPage = lazy(() => import('./pages/FounderPrepayPortalPa
 const CountyLanding = lazy(() => import('./pages/CountyLanding'));
 const DealSubmitPage = lazy(() => import('./pages/DealSubmitPage'));
 const BankruptcyAlertSuccessPage = lazy(() => import('./pages/BankruptcyAlertSuccessPage'));
+const DealRoomPage = lazy(() => import('./pages/DealRoomPage'));
+const DemoDealRoomPage = lazy(() => import('./pages/DemoDealRoomPage'));
 
 // Admin section pages
 const OperatorDashboardSection = lazy(() => import('./components/admin/sections/OperatorDashboardSection'));
@@ -196,6 +198,10 @@ export default function App() {
             <Route path="settings" element={withBoundary(<WLSettingsSection />)} />
           </Route>
 
+          {/* 3m Deal Room — public prospect view, no auth */}
+          <Route path="/deal-room/:token" element={withBoundary(<DealRoomPage />)} />
+          {/* Deal Room generator — standalone, passcode-gated */}
+          <Route path="/demo/deal-room" element={withBoundary(<DemoDealRoomPage />)} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
