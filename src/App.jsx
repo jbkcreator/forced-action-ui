@@ -74,6 +74,7 @@ const ThroughQueueSection   = lazy(() => import('./components/admin/sections/Thr
 const SubscriberDetailPage = lazy(() => import('./pages/SubscriberDetailPage'));
 const ClosingCockpitPage = lazy(() => import('./pages/ClosingCockpitPage'));
 const SupplierDashboard    = lazy(() => import('./pages/SupplierDashboard'));
+const DemoModePage         = lazy(() => import('./pages/DemoModePage'));
 
 // White-label tier pages (Stage 12 / fa056)
 // Auth pages are eager (not lazy): they're tiny and navigate between each other
@@ -122,6 +123,7 @@ export default function App() {
           <Route path="/auth/verify"                   element={withBoundary(<MagicLinkVerifyPage />)} />
           {/* UUID-mode login: user clicks /dashboard/:uuid link, needs to enter password */}
           <Route path="/dashboard/:feedUuid/login"     element={withBoundary(<SubscriberLoginPage />)} />
+          <Route path="/dashboard/:feedUuid/demo"      element={withBoundary(<DemoModePage />)} />
 
           <Route path="/dashboard/:feedUuid" element={withBoundary(<DashboardPage />)} />
           <Route path="/deals/submit" element={withBoundary(<DealSubmitPage />)} />
