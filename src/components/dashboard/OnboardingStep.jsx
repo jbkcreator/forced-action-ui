@@ -8,6 +8,7 @@
  */
 import { useState } from 'react';
 import { submitOnboarding } from '../../api/subscriber';
+import { trackEvent } from '../../utils/ga4';
 
 const PROPERTY_TYPES = [
   { value: 'single_family', label: 'Single Family' },
@@ -50,7 +51,7 @@ function OptionGrid({ options, selected, onSelect }) {
   );
 }
 
-export default function OnboardingStep({ feedUuid, onComplete }) {
+export default function OnboardingStep({ feedUuid, tier, onComplete }) {
   const [propertyType, setPropertyType] = useState(null);
   const [budgetBand, setBudgetBand] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -64,6 +65,7 @@ export default function OnboardingStep({ feedUuid, onComplete }) {
     setError(null);
     try {
       await submitOnboarding(feedUuid, { propertyType, budgetBand });
+      trackEvent('onboarding_completed', { property_type: propertyType, budget: budgetBand, tier });
       onComplete?.();
     } catch (err) {
       setError(err?.detail?.message || err?.detail || err?.message || 'Something went wrong. Please try again.');
