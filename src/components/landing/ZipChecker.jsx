@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanding } from './LandingContext';
 import { VERTICAL_LABELS } from '../../config/constants';
 import { checkZip as apiCheckZip } from '../../api/landing';
+import { trackEvent } from '../../utils/ga4';
+import { fetchZipScarcity } from '../../api/scarcity';
 import SampleLeads from './SampleLeads';
 import WaitlistForm from './WaitlistForm';
 
@@ -34,6 +36,17 @@ export default function ZipChecker({ onZipChecked, countyId: externalCountyId, o
   const [zip, setZip] = useState('');
   const [result, setResult] = useState(null);
   const [checkedZip, setCheckedZip] = useState('');
+  const [scarcityStatus, setScarcityStatus] = useState(null);
+
+  // Live scarcity badge — fires whenever a ZIP check resolves successfully
+  useEffect(() => {
+    if (!checkedZip || !selectedVertical) { setScarcityStatus(null); return; }
+    const controller = new AbortController();
+    fetchZipScarcity(checkedZip, selectedVertical, { signal: controller.signal })
+      .then((data) => { if (!controller.signal.aborted) setScarcityStatus(data.status); })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [checkedZip, selectedVertical]);
 
   async function handleCheck() {
     const trimmed = zip.trim();
@@ -49,6 +62,12 @@ export default function ZipChecker({ onZipChecked, countyId: externalCountyId, o
       const label = VERTICAL_LABELS[selectedVertical];
       setCheckedZip(trimmed);
       if (onZipChecked) onZipChecked(trimmed);
+
+      const inServiceArea = data.status !== 'invalid';
+      trackEvent('zip_checked', { zip: trimmed, results_returned: inServiceArea });
+      if (inServiceArea) {
+        trackEvent('territory_checked', { zip: trimmed, available: data.status === 'available' });
+      }
 
       if (data.status === 'invalid') {
         setResult({ status: 'invalid', message: `× ZIP ${trimmed} is not in our ${countyName} service area.` });
@@ -110,7 +129,18 @@ export default function ZipChecker({ onZipChecked, countyId: externalCountyId, o
           </div>
           {result && (
             <div className={`mt-5 rounded-xl border px-5 py-4 text-sm font-medium max-w-xl mx-auto ${statusClass}`}>
-              {result.message}
+              <span className="flex items-center gap-2 flex-wrap">
+                {result.message}
+                {scarcityStatus && (
+                  <span className={`text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border ${
+                    scarcityStatus === 'available'
+                      ? 'text-green-400 border-green-400/30 bg-green-400/10'
+                      : 'text-red-400 border-red-400/30 bg-red-400/10'
+                  }`}>
+                    {scarcityStatus === 'available' ? 'Available' : 'Taken'}
+                  </span>
+                )}
+              </span>
               {result.status === 'taken' && result.adjacentZipSuggestion && (
                 <div className="mt-3 rounded-lg border border-yellow-400/20 bg-yellow-400/5 px-4 py-3 text-left text-slate-200">
                   <p className="text-sm font-semibold text-yellow-300">

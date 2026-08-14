@@ -23,6 +23,8 @@ import DealOfTheDay from '../components/landing/DealOfTheDay';
 import RoiCalculator from '../components/landing/RoiCalculator';
 import useStripeCheckout from '../hooks/useStripeCheckout';
 import { createFreeSignup, logBusinessEvent } from '../api/phase2b';
+import { getAttribution } from '../utils/attribution';
+import { trackEvent } from '../utils/ga4';
 
 // Lazy-loaded: leaflet (~120 KB) and react-markdown (~75 KB) are excluded from
 // the main chunk and only fetched when these components actually render.
@@ -35,6 +37,8 @@ function LandingContent() {
   // emailGate.flow: 'paid' (goes to ZIP collector → Stripe) or 'free' (goes to /api/free-signup → dashboard)
   const [emailGate, setEmailGate] = useState({ open: false, tier: null, flow: 'paid' });
   const [userEmail, setUserEmail] = useState('');
+  const [userPhone, setUserPhone] = useState('');
+  const [checkoutZip, setCheckoutZip] = useState('');
   const [userConsent, setUserConsent] = useState(null);
   const [zipCollector, setZipCollector] = useState({ open: false, tier: null });
   const [lastCheckedZip, setLastCheckedZip] = useState('');
@@ -68,6 +72,8 @@ function LandingContent() {
   // whole query here previously dropped them, forcing the ZIP picker to reopen
   // even when a ZIP was already chosen (e.g. from a deal-room Subscribe link).
   const handleCheckout = useCallback((tier, interval = 'monthly') => {
+    trackEvent('plan_selected', { tier, interval });
+    trackEvent('signup_started', { tier });
     setEmailGate({ open: true, tier, interval, flow: 'paid' });
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -90,6 +96,7 @@ function LandingContent() {
   // Free-tier entry: Start Free button → open email gate in 'free' flow
   const handleStartFree = useCallback(() => {
     logBusinessEvent('SIGNUP_STARTED', { payload: { source: 'free_cta' } });
+    trackEvent('signup_started', {});
     setEmailGate({ open: true, tier: null, flow: 'free' });
   }, []);
 
@@ -101,11 +108,14 @@ function LandingContent() {
   //     password login they were never given. The magic link is what signs them in.
   const handleEmailProceed = useCallback(async (email, consent, phone) => {
     setUserEmail(email);
+    setUserPhone(phone || '');
     setUserConsent(consent);
+    trackEvent('signup_submitted', { vertical: selectedVertical, tier: emailGate.tier });
 
     if (emailGate.flow === 'free') {
       setFreeSigningUp(true);
       try {
+        const _attr = getAttribution();
         const resp = await createFreeSignup({
           email,
           vertical: selectedVertical,
@@ -113,9 +123,13 @@ function LandingContent() {
           phone: phone || null,
           consentAcceptance: consent || null,
           signupSource: attribution?.signupSource || 'landing_page',
-          utmSource: attribution?.utmSource || null,
-          utmMedium: attribution?.utmMedium || null,
-          utmCampaign: attribution?.utmCampaign || null,
+          utmSource: _attr.utm_source || null,
+          utmMedium: _attr.utm_medium || null,
+          utmCampaign: _attr.utm_campaign || null,
+          utmContent: _attr.utm_content || null,
+          utmTerm: _attr.utm_term || null,
+          landingPath: _attr.landing_path || null,
+          referrer: _attr.referrer || null,
           campaignId: attribution?.campaignId || null,
           referralCode: attribution?.referralCode || null,
           referralSource: attribution?.referralSource || null,
@@ -143,6 +157,7 @@ function LandingContent() {
     // webhook can call refund_on_conversion for the reserved deal.
     const preZip = searchParams.get('zip');
     if (preZip) {
+      setCheckoutZip(preZip);
       openCheckout({
         tier: emailGate.tier,
         vertical: selectedVertical,
@@ -163,7 +178,9 @@ function LandingContent() {
   // Step 3: ZIPs collected → launch Stripe checkout. fa017: pass attribution
   // so the pre-checkout free-signup persists signup_source/utm_* on the row.
   const handleZipCollectorProceed = useCallback((zips) => {
+    trackEvent('zips_selected', { tier: zipCollector.tier, zip_count: zips.length, zips: zips.join(',') });
     setZipCollector({ open: false, tier: null });
+    if (zips[0]) setCheckoutZip(zips[0]);
     openCheckout({
       tier: zipCollector.tier,
       vertical: selectedVertical,
@@ -324,6 +341,10 @@ function LandingContent() {
           loading={loading}
           error={checkoutError}
           embeddedRef={embeddedRef}
+          zip={checkoutZip}
+          vertical={selectedVertical}
+          phone={userPhone}
+          voiceConsented={!!userConsent?.voice_consent_accepted}
         />
 
         {/* Waitlist modal */}

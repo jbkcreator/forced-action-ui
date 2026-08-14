@@ -4,6 +4,7 @@ import { createCheckout } from '../api/landing';
 import { createFreeSignup } from '../api/phase2b';
 import { getAttribution } from '../utils/attribution';
 import { trackInitiateCheckout } from '../utils/metaPixel';
+import { trackEvent } from '../utils/ga4';
 
 // Module-level variable — populated on first checkout open, not on module
 // evaluation. This keeps Stripe (~100 KB) out of the initial bundle: the SDK
@@ -49,14 +50,15 @@ export default function useStripeCheckout() {
 
     let feedUuid = null;
     try {
+      const _attr = getAttribution();
       const signup = await createFreeSignup({
         email,
         vertical,
         countyId,
         signupSource: attribution?.signupSource || null,
-        utmSource: attribution?.utmSource || null,
-        utmMedium: attribution?.utmMedium || null,
-        utmCampaign: attribution?.utmCampaign || null,
+        utmSource: _attr.utm_source || null,
+        utmMedium: _attr.utm_medium || null,
+        utmCampaign: _attr.utm_campaign || null,
         campaignId: attribution?.campaignId || null,
         referralCode: attribution?.referralCode || null,
         referralSource: attribution?.referralSource || null,
@@ -86,6 +88,12 @@ export default function useStripeCheckout() {
       checkoutCtxRef.current.sessionId = session_id || null;
       checkoutCtxRef.current.amountTotalCents = amount_total_cents ?? null;
       trackInitiateCheckout({ content_name: tier });
+      trackEvent('checkout_started', {
+        tier,
+        value: amount_total_cents != null ? amount_total_cents / 100 : null,
+        currency: 'USD',
+        zip_count: zipCodes.length,
+      });
       const stripe = await getStripePromise();
 
       embeddedRef.current = await stripe.initEmbeddedCheckout({
