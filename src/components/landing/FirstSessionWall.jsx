@@ -45,38 +45,38 @@ const _LEGACY_ROI_FRAMES = {
 	roofing: {
 		avg_job_value: 8500,
 		monthly_revenue: 102000,
-		headline: 'Roofers in {countyName} close 12+ storm/distress jobs/mo',
+		headline: 'Top roofers in {countyName} report closing 12+ storm/distress jobs/mo',
 	},
 	remediation: {
 		avg_job_value: 6500,
 		monthly_revenue: 52000,
-		headline: 'Remediation contractors average 8 distress calls/mo at ~$6,500 each',
+		headline: 'Top remediation contractors report averaging 8 distress calls/mo at ~$6,500 each',
 	},
 	public_adjusters: {
 		avg_job_value: 14000,
 		monthly_revenue: 112000,
-		headline: 'Public adjusters average 8 settled claims/mo',
+		headline: 'Top public adjusters report averaging 8 settled claims/mo',
 	},
 	investor: {
 		avg_deal_value: 22000,
 		monthly_revenue: 44000,
-		headline: 'Distressed-property investors average 2 deals/mo at $22K profit each',
+		headline: 'Top distressed-property investors report averaging 2 deals/mo at $22K profit each',
 	},
 	plumbing: {
 		avg_job_value: 3200,
 		monthly_revenue: 48000,
-		headline: 'Plumbers on distressed leads average 15 emergency jobs/mo',
+		headline: 'Top plumbers on distressed leads report averaging 15 emergency jobs/mo',
 	},
 	hvac: {
 		avg_job_value: 4800,
 		monthly_revenue: 48000,
-		headline: 'HVAC contractors find 10+ urgent replacements/mo via distress leads',
+		headline: 'Top HVAC contractors report finding 10+ urgent replacements/mo via distress leads',
 	},
 };
 const DEFAULT_ROI = {
 	avg_job_value: 5000,
 	monthly_revenue: 50000,
-	headline: 'Contractors using Forced Action data close 30–50% more distressed jobs',
+	headline: 'Contractors using Forced Action data report closing 30–50% more distressed jobs',
 };
 
 const UNLOCK_PRICE_CENTS = 400;                 // $4.00 — mid-range of v9 $2.50–$7 band
@@ -514,9 +514,14 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 							}
 						</p>
 						{!windowExpired && (
-							<p className="text-slate-400 text-xs mt-1">
-								Typical top-quartile {verticalLabel.toLowerCase() || 'contractor'}: ≈ ${roi.monthly_revenue.toLocaleString()}/mo (industry avg — your results will vary).
-							</p>
+							<>
+								<p className="text-slate-400 text-xs mt-1">
+									Top-quartile performers report ≈ ${roi.monthly_revenue.toLocaleString()}/mo. Individual results vary significantly based on territory, vertical, and close rate.
+								</p>
+								<p className="text-slate-500 text-xs mt-0.5 italic">
+									Earnings figures are illustrative estimates based on industry averages. They are not a guarantee or prediction of income.
+								</p>
+							</>
 						)}
 					</div>
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FOUNDING_SPOT_CAP } from '../../config/constants';
 
 const FAQS = [
   {
@@ -19,7 +20,7 @@ const FAQS = [
   },
   {
     q: "What's the founding rate?",
-    a: 'Founding members get a permanently discounted rate that never increases, even as we raise prices. Once all 30 founding spots per vertical fill, new subscribers pay the regular rate.',
+    a: `Founding members get a permanently discounted rate that never increases, even as we raise prices. Once all ${FOUNDING_SPOT_CAP} founding spots per vertical fill, new subscribers pay the regular rate.`,
   },
   {
     q: 'What verticals do you support?',

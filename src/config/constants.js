@@ -18,6 +18,7 @@ export const INSTANTLY_VARIABLES = [
 
 
 export const DEFAULT_COUNTY_ID = 'hillsborough';
+export const FOUNDING_SPOT_CAP = 10;
 export const PAGE_SIZE = 25;
 
 export const DISTRESS_TAG_COLORS = {
