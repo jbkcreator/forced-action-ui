@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Modal, { ModalClose } from '../ui/Modal';
 import { fetchZipScarcity } from '../../api/scarcity';
-import { VOICE_CONSENT_TEXT, VOICE_CONSENT_VERSION } from '../shared/TermsConsentGate';
+import { TCPA_CONSENT_TEXT } from '../shared/TermsConsentGate';
 
 function CheckoutScarcityBadge({ zip, vertical }) {
   const [status, setStatus] = useState(null);
@@ -62,10 +62,7 @@ export default function StripeCheckoutModal({ isOpen, onClose, loading, error, e
               className="mt-0.5 w-4 h-4 rounded border border-white/20 bg-white/10 text-yellow-400 shrink-0"
             />
             <label htmlFor="checkout-voice-consent" className="text-xs text-slate-400 leading-snug">
-              {VOICE_CONSENT_TEXT}
-              {voiceConsented && (
-                <span className="ml-1 text-green-400 font-semibold">(v{VOICE_CONSENT_VERSION})</span>
-              )}
+              {TCPA_CONSENT_TEXT}
             </label>
           </div>
         )}

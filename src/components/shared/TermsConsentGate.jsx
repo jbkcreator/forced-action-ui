@@ -2,19 +2,15 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import Modal from '../ui/Modal';
 import { ModalClose } from '../ui/Modal';
 
+// Single combined PEWC consent (v2026.07) — one affirmative opt-in covering
+// automated marketing calls, texts, AND AI-generated voice. Must match
+// VOICE_CONSENT_DISCLOSURES["2026.07"] in src/api/deps.py. There is deliberately
+// no separate voice-only checkbox: two overlapping AI-voice consents hurt
+// clarity and conversion without adding compliance.
 export const TCPA_CONSENT_TEXT =
   'I agree to receive recurring automated marketing calls and text messages, including calls that use an automated or ' +
   'AI-generated voice, from Forced Action at the phone number provided. Consent is not a condition of purchase. ' +
   'Msg & data rates may apply. Reply STOP to opt out.';
-
-// B0-06: PEWC AI-voice consent — server canonical text for version 2026.06.
-// Must match VOICE_CONSENT_DISCLOSURES["2026.06"] in src/api/deps.py exactly.
-export const VOICE_CONSENT_TEXT =
-  'By checking this box, you agree that ForcedAction and its partners may contact you using an automated telephone ' +
-  'dialing system and/or artificial or prerecorded voice at the phone number provided, including calls placed by an ' +
-  'AI voice assistant, to discuss your account and available leads. Consent is not required to purchase. ' +
-  'Message/data rates may apply.';
-export const VOICE_CONSENT_VERSION = '2026.06';
 
 const SCROLL_THRESHOLD = 20; // pixels from bottom
 
@@ -63,7 +59,6 @@ export default function TermsConsentGate({
 }) {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [tcpaAccepted, setTcpaAccepted] = useState(false);
-  const [voiceConsentAccepted, setVoiceConsentAccepted] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
 
   // Scroll tracking refs
@@ -131,12 +126,15 @@ export default function TermsConsentGate({
       tcpa_accepted: tcpaAccepted,
       tcpa_consent_text: tcpaAccepted ? TCPA_CONSENT_TEXT : null,
       tcpa_consent_version: tcpaAccepted ? tcpaVersion : null,
-      voice_consent_accepted: voiceConsentAccepted,
-      voice_consent_text: voiceConsentAccepted ? VOICE_CONSENT_TEXT : null,
-      voice_consent_version: voiceConsentAccepted ? VOICE_CONSENT_VERSION : null,
+      // Option A: one combined PEWC box. Its text covers automated/AI-generated
+      // voice calls, so voice consent is the same affirmative opt-in as TCPA —
+      // no separate voice checkbox (avoids two overlapping consents).
+      voice_consent_accepted: tcpaAccepted,
+      voice_consent_text: tcpaAccepted ? TCPA_CONSENT_TEXT : null,
+      voice_consent_version: tcpaAccepted ? tcpaVersion : null,
       user_agent: navigator.userAgent,
     });
-  }, [termsAccepted, tcpaAccepted, voiceConsentAccepted, onAccept, termsVersion, privacyVersion, computedHash, modalOpenedAt, modalScrolledToEndAt, scrolledToBottom, tcpaVersion]);
+  }, [termsAccepted, tcpaAccepted, onAccept, termsVersion, privacyVersion, computedHash, modalOpenedAt, modalScrolledToEndAt, scrolledToBottom, tcpaVersion]);
 
   const checkboxCls = 'mt-0.5 w-4 h-4 rounded border border-white/[0.2] bg-white/[0.06] text-yellow-400 focus:ring-1 focus:ring-yellow-400/40 shrink-0';
 
@@ -185,21 +183,6 @@ export default function TermsConsentGate({
         </div>
       )}
 
-      {/* Voice Consent Checkbox — B0-06 PEWC, optional, never required */}
-      {phoneProvided && (
-        <div className="flex items-start gap-2">
-          <input
-            type="checkbox"
-            id="voice-consent"
-            checked={voiceConsentAccepted}
-            onChange={(e) => setVoiceConsentAccepted(e.target.checked)}
-            className={checkboxCls}
-          />
-          <label htmlFor="voice-consent" className="text-xs text-slate-400 leading-snug">
-            {VOICE_CONSENT_TEXT}
-          </label>
-        </div>
-      )}
 
       {/* T&C / Privacy Modal */}
       <Modal isOpen={modalOpen} onClose={closeModal}>
