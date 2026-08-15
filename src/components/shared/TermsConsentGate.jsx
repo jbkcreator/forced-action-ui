@@ -2,6 +2,11 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import Modal from '../ui/Modal';
 import { ModalClose } from '../ui/Modal';
 
+// Single combined PEWC consent (v2026.07) — one affirmative opt-in covering
+// automated marketing calls, texts, AND AI-generated voice. Must match
+// VOICE_CONSENT_DISCLOSURES["2026.07"] in src/api/deps.py. There is deliberately
+// no separate voice-only checkbox: two overlapping AI-voice consents hurt
+// clarity and conversion without adding compliance.
 export const TCPA_CONSENT_TEXT =
   'I agree to receive recurring automated marketing calls and text messages, including calls that use an automated or ' +
   'AI-generated voice, from Forced Action at the phone number provided. Consent is not a condition of purchase. ' +
@@ -108,7 +113,7 @@ export default function TermsConsentGate({
     setModalOpen(false);
   }, []);
 
-  // Emit payload whenever termsAccepted or tcpaAccepted changes
+  // Emit payload whenever any consent field changes
   useEffect(() => {
     if (!onAccept) return;
     onAccept({
@@ -121,6 +126,9 @@ export default function TermsConsentGate({
       tcpa_accepted: tcpaAccepted,
       tcpa_consent_text: tcpaAccepted ? TCPA_CONSENT_TEXT : null,
       tcpa_consent_version: tcpaAccepted ? tcpaVersion : null,
+      // Option A: one combined PEWC box. Its text covers automated/AI-generated
+      // voice calls, so voice consent is the same affirmative opt-in as TCPA —
+      // no separate voice checkbox (avoids two overlapping consents).
       voice_consent_accepted: tcpaAccepted,
       voice_consent_text: tcpaAccepted ? TCPA_CONSENT_TEXT : null,
       voice_consent_version: tcpaAccepted ? tcpaVersion : null,
@@ -174,6 +182,7 @@ export default function TermsConsentGate({
           </label>
         </div>
       )}
+
 
       {/* T&C / Privacy Modal */}
       <Modal isOpen={modalOpen} onClose={closeModal}>

@@ -61,7 +61,7 @@ function CopyField({ label, sublabel, value }) {
   );
 }
 
-export default function DealRoomGenerator({ passcode, onUnauthorized }) {
+export default function DealRoomGenerator({ token, onUnauthorized }) {
   const [form, setForm] = useState(INITIAL);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -95,7 +95,7 @@ export default function DealRoomGenerator({ passcode, onUnauthorized }) {
 
     setLoading(true);
     try {
-      const data = await createDemoDealRoom(passcode, body);
+      const data = await createDemoDealRoom(token, body);
       setResult(data);
     } catch (err) {
       if (err.status === 401) {

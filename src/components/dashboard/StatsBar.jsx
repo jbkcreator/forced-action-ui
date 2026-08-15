@@ -1,11 +1,38 @@
+import { useState, useEffect } from 'react';
+import { fetchZipScarcity } from '../../api/scarcity';
+
 function capitalize(s) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ') : '';
+}
+
+function ZipScarcityBadge({ zip, vertical }) {
+  const [status, setStatus] = useState(null);
+
+  useEffect(() => {
+    if (!zip || !vertical) return;
+    const controller = new AbortController();
+    fetchZipScarcity(zip, vertical, { signal: controller.signal })
+      .then((data) => { if (!controller.signal.aborted) setStatus(data.status); })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [zip, vertical]);
+
+  if (!status) return null;
+  return (
+    <span
+      className={`ml-1 text-[10px] font-semibold uppercase tracking-wide ${
+        status === 'available' ? 'text-green-400' : 'text-red-400'
+      }`}
+    >
+      {status === 'available' ? 'Available' : 'Taken'}
+    </span>
+  );
 }
 
 export default function StatsBar({ subscriber, onTopup }) {
   if (!subscriber) return null;
 
-  const zips = (subscriber.locked_zips || []).join(', ');
+  const lockedZips = subscriber.locked_zips || [];
   const hasWallet = subscriber.wallet_balance != null;
 
   return (
@@ -23,7 +50,18 @@ export default function StatsBar({ subscriber, onTopup }) {
       </div>
       <div className="stat-card glass rounded-xl px-5 py-4">
         <p className="text-xs text-slate-400 uppercase tracking-wider font-medium mb-1">Territories</p>
-        <p className="text-sm font-bold text-white">{zips ? `ZIPs: ${zips}` : 'No locked ZIPs'}</p>
+        {lockedZips.length > 0 ? (
+          <div className="flex flex-col gap-0.5">
+            {lockedZips.map((zip) => (
+              <span key={zip} className="text-sm font-bold text-white flex items-center">
+                {zip}
+                <ZipScarcityBadge zip={zip} vertical={subscriber.vertical} />
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm font-bold text-white">No locked ZIPs</p>
+        )}
       </div>
       {hasWallet && (
         <div className="stat-card glass rounded-xl px-5 py-4 flex flex-col justify-between gap-2">

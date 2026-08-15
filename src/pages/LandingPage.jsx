@@ -37,6 +37,8 @@ function LandingContent() {
   // emailGate.flow: 'paid' (goes to ZIP collector → Stripe) or 'free' (goes to /api/free-signup → dashboard)
   const [emailGate, setEmailGate] = useState({ open: false, tier: null, flow: 'paid' });
   const [userEmail, setUserEmail] = useState('');
+  const [userPhone, setUserPhone] = useState('');
+  const [checkoutZip, setCheckoutZip] = useState('');
   const [userConsent, setUserConsent] = useState(null);
   const [zipCollector, setZipCollector] = useState({ open: false, tier: null });
   const [lastCheckedZip, setLastCheckedZip] = useState('');
@@ -106,6 +108,7 @@ function LandingContent() {
   //     password login they were never given. The magic link is what signs them in.
   const handleEmailProceed = useCallback(async (email, consent, phone) => {
     setUserEmail(email);
+    setUserPhone(phone || '');
     setUserConsent(consent);
     trackEvent('signup_submitted', { vertical: selectedVertical, tier: emailGate.tier });
 
@@ -154,6 +157,7 @@ function LandingContent() {
     // webhook can call refund_on_conversion for the reserved deal.
     const preZip = searchParams.get('zip');
     if (preZip) {
+      setCheckoutZip(preZip);
       openCheckout({
         tier: emailGate.tier,
         vertical: selectedVertical,
@@ -176,6 +180,7 @@ function LandingContent() {
   const handleZipCollectorProceed = useCallback((zips) => {
     trackEvent('zips_selected', { tier: zipCollector.tier, zip_count: zips.length, zips: zips.join(',') });
     setZipCollector({ open: false, tier: null });
+    if (zips[0]) setCheckoutZip(zips[0]);
     openCheckout({
       tier: zipCollector.tier,
       vertical: selectedVertical,
@@ -336,6 +341,10 @@ function LandingContent() {
           loading={loading}
           error={checkoutError}
           embeddedRef={embeddedRef}
+          zip={checkoutZip}
+          vertical={selectedVertical}
+          phone={userPhone}
+          voiceConsented={!!userConsent?.voice_consent_accepted}
         />
 
         {/* Waitlist modal */}
