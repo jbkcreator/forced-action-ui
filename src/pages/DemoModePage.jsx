@@ -17,6 +17,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { DISTRESS_TAG_COLORS } from '../config/constants.js';
 import { fetchZipReveal, prepareCall, revealLead } from '../api/demo.js';
+import { demoLogin, createDemoDealRoom } from '../api/dealRoom.js';
 
 const COUNTIES = [
   { value: 'hillsborough', label: 'Hillsborough' },
@@ -63,6 +64,65 @@ export default function DemoModePage() {
   const [revealing,    setRevealing]    = useState(false);
 
   const [piiVisible,   setPiiVisible]   = useState(false);  // default OFF = safe for screen share
+
+  // Deal room generator state
+  const [demoToken,    setDemoToken]    = useState(null);
+  const [showDrPanel,  setShowDrPanel]  = useState(false);
+  const [drLoginEmail, setDrLoginEmail] = useState('demo@forcedaction.io');
+  const [drLoginPass,  setDrLoginPass]  = useState('');
+  const [drLoginErr,   setDrLoginErr]   = useState('');
+  const [drLoginLoading, setDrLoginLoading] = useState(false);
+  const [drForm,       setDrForm]       = useState({ prospect_name: '', prospect_email: '', job_value: '', close_rate: '' });
+  const [drLoading,    setDrLoading]    = useState(false);
+  const [drResult,     setDrResult]     = useState(null);
+  const [drError,      setDrError]      = useState('');
+  const [drCopied,     setDrCopied]     = useState({});
+
+  async function handleDemoLogin(e) {
+    e.preventDefault();
+    setDrLoginErr('');
+    setDrLoginLoading(true);
+    try {
+      const res = await demoLogin(drLoginEmail, drLoginPass);
+      setDemoToken(res.access_token);
+    } catch (err) {
+      setDrLoginErr(err?.detail || 'Invalid credentials');
+    } finally {
+      setDrLoginLoading(false);
+    }
+  }
+
+  async function handleGenerateDealRoom(e) {
+    e.preventDefault();
+    setDrError('');
+    setDrResult(null);
+    setDrLoading(true);
+    try {
+      const data = await createDemoDealRoom(demoToken, {
+        prospect_name: drForm.prospect_name.trim(),
+        prospect_email: drForm.prospect_email.trim(),
+        zip_code: zipInput,
+        vertical,
+        county_id: countyId,
+        tier: 'starter',
+        job_value: Number(drForm.job_value) || 5000,
+        close_rate: Number(drForm.close_rate) / 100 || 0.2,
+      });
+      setDrResult(data);
+    } catch (err) {
+      if (err?.status === 401) { setDemoToken(null); setDrLoginErr('Session expired — re-login'); }
+      else setDrError(err?.detail || 'Failed to generate deal room');
+    } finally {
+      setDrLoading(false);
+    }
+  }
+
+  function copyLink(key, val) {
+    navigator.clipboard.writeText(val).then(() => {
+      setDrCopied(c => ({ ...c, [key]: true }));
+      setTimeout(() => setDrCopied(c => ({ ...c, [key]: false })), 2000);
+    });
+  }
 
   // Auto-reveal if returning to an already-revealed session (same ZIP within 2h idempotency window)
   useEffect(() => {
@@ -274,6 +334,133 @@ export default function DemoModePage() {
               >
                 {revealing ? 'Revealing…' : '🔴 Reveal Address Live'}
               </button>
+            )}
+
+            {/* Generate Deal Room — appears after reveal */}
+            {isRevealed && (
+              <div className="mt-4">
+                {!showDrPanel ? (
+                  <button
+                    type="button"
+                    onClick={() => { setShowDrPanel(true); setDrResult(null); setDrError(''); }}
+                    className="w-full border border-fa-primary text-fa-primary font-bold py-3 rounded-xl text-base hover:bg-fa-primary/10 transition-colors"
+                  >
+                    🏠 Generate Deal Room Link
+                  </button>
+                ) : (
+                  <div className="bg-fa-bg-base border border-fa-border-default rounded-2xl p-5 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-fa-text-primary">Generate Deal Room</h3>
+                      <button type="button" onClick={() => setShowDrPanel(false)} className="text-fa-text-muted hover:text-fa-text-primary text-xs">✕ Close</button>
+                    </div>
+
+                    {/* Login form if no token */}
+                    {!demoToken ? (
+                      <form onSubmit={handleDemoLogin} className="space-y-3">
+                        <p className="text-xs text-fa-text-muted">Sign in with demo account to generate links.</p>
+                        <input
+                          type="email"
+                          value={drLoginEmail}
+                          onChange={e => setDrLoginEmail(e.target.value)}
+                          placeholder="demo@forcedaction.io"
+                          className="w-full text-sm bg-fa-bg-card border border-fa-border-default rounded-lg px-3 py-2 text-fa-text-primary focus:outline-none focus:border-fa-primary"
+                        />
+                        <input
+                          type="password"
+                          value={drLoginPass}
+                          onChange={e => setDrLoginPass(e.target.value)}
+                          placeholder="Password"
+                          required
+                          className="w-full text-sm bg-fa-bg-card border border-fa-border-default rounded-lg px-3 py-2 text-fa-text-primary focus:outline-none focus:border-fa-primary"
+                        />
+                        {drLoginErr && <p className="text-xs text-red-400">{drLoginErr}</p>}
+                        <button type="submit" disabled={drLoginLoading} className="w-full bg-fa-primary text-fa-bg-base font-bold py-2 rounded-lg text-sm disabled:opacity-50">
+                          {drLoginLoading ? 'Signing in…' : 'Sign In'}
+                        </button>
+                      </form>
+                    ) : (
+                      /* Generator form */
+                      <form onSubmit={handleGenerateDealRoom} className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-fa-text-muted mb-1">Prospect name</label>
+                            <input
+                              value={drForm.prospect_name}
+                              onChange={e => setDrForm(f => ({ ...f, prospect_name: e.target.value }))}
+                              required
+                              placeholder="John Smith"
+                              className="w-full text-sm bg-fa-bg-card border border-fa-border-default rounded-lg px-3 py-2 text-fa-text-primary focus:outline-none focus:border-fa-primary"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-fa-text-muted mb-1">Prospect email</label>
+                            <input
+                              type="email"
+                              value={drForm.prospect_email}
+                              onChange={e => setDrForm(f => ({ ...f, prospect_email: e.target.value }))}
+                              required
+                              placeholder="john@example.com"
+                              className="w-full text-sm bg-fa-bg-card border border-fa-border-default rounded-lg px-3 py-2 text-fa-text-primary focus:outline-none focus:border-fa-primary"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-fa-text-muted mb-1">Avg job value ($)</label>
+                            <input
+                              type="number"
+                              value={drForm.job_value}
+                              onChange={e => setDrForm(f => ({ ...f, job_value: e.target.value }))}
+                              placeholder="5000"
+                              min={0}
+                              className="w-full text-sm bg-fa-bg-card border border-fa-border-default rounded-lg px-3 py-2 text-fa-text-primary focus:outline-none focus:border-fa-primary"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-fa-text-muted mb-1">Close rate (%)</label>
+                            <input
+                              type="number"
+                              value={drForm.close_rate}
+                              onChange={e => setDrForm(f => ({ ...f, close_rate: e.target.value }))}
+                              placeholder="20"
+                              min={0}
+                              max={100}
+                              className="w-full text-sm bg-fa-bg-card border border-fa-border-default rounded-lg px-3 py-2 text-fa-text-primary focus:outline-none focus:border-fa-primary"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-fa-text-muted">ZIP: <strong>{zipInput}</strong> · Vertical: <strong>{vertical}</strong> · County: <strong>{countyId}</strong></p>
+                        {drError && <p className="text-xs text-red-400">{drError}</p>}
+                        <button type="submit" disabled={drLoading} className="w-full bg-fa-primary text-fa-bg-base font-bold py-2.5 rounded-lg text-sm disabled:opacity-50">
+                          {drLoading ? 'Generating…' : 'Generate Deal Room'}
+                        </button>
+                      </form>
+                    )}
+
+                    {/* Result links */}
+                    {drResult && (
+                      <div className="space-y-2 pt-2 border-t border-fa-border-default">
+                        {[
+                          { key: 'deal', label: 'Deal Room Link (send to prospect)', url: drResult.deal_room_url },
+                          { key: 'checkout', label: 'Direct Checkout Link', url: drResult.prefilled_checkout_url },
+                        ].map(({ key, label, url }) => (
+                          <div key={key} className="bg-fa-bg-card rounded-xl p-3">
+                            <p className="text-xs text-fa-text-muted mb-1">{label}</p>
+                            <p className="text-xs text-fa-text-primary font-mono break-all mb-2">{url}</p>
+                            <button
+                              type="button"
+                              onClick={() => copyLink(key, url)}
+                              className={`text-xs font-semibold px-4 py-1.5 rounded-lg border transition-colors ${drCopied[key] ? 'bg-green-500/15 text-green-300 border-green-500/30' : 'bg-fa-primary/10 text-fa-primary border-fa-primary/30'}`}
+                            >
+                              {drCopied[key] ? 'Copied!' : 'Copy'}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
