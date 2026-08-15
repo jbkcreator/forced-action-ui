@@ -17,7 +17,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { DISTRESS_TAG_COLORS } from '../config/constants.js';
 import { fetchZipReveal, prepareCall, revealLead } from '../api/demo.js';
-import { demoLogin, createDemoDealRoom } from '../api/dealRoom.js';
+import { createDemoDealRoom } from '../api/dealRoom.js';
 
 const COUNTIES = [
   { value: 'hillsborough', label: 'Hillsborough' },
@@ -65,32 +65,14 @@ export default function DemoModePage() {
 
   const [piiVisible,   setPiiVisible]   = useState(false);  // default OFF = safe for screen share
 
-  // Deal room generator state
-  const [demoToken,    setDemoToken]    = useState(null);
+  // Deal room generator state — use subscriber JWT already in localStorage
+  const [demoToken,    setDemoToken]    = useState(() => localStorage.getItem('sub_access_token'));
   const [showDrPanel,  setShowDrPanel]  = useState(false);
-  const [drLoginEmail, setDrLoginEmail] = useState('demo@forcedaction.io');
-  const [drLoginPass,  setDrLoginPass]  = useState('');
-  const [drLoginErr,   setDrLoginErr]   = useState('');
-  const [drLoginLoading, setDrLoginLoading] = useState(false);
   const [drForm,       setDrForm]       = useState({ prospect_name: '', prospect_email: '', job_value: '', close_rate: '' });
   const [drLoading,    setDrLoading]    = useState(false);
   const [drResult,     setDrResult]     = useState(null);
   const [drError,      setDrError]      = useState('');
   const [drCopied,     setDrCopied]     = useState({});
-
-  async function handleDemoLogin(e) {
-    e.preventDefault();
-    setDrLoginErr('');
-    setDrLoginLoading(true);
-    try {
-      const res = await demoLogin(drLoginEmail, drLoginPass);
-      setDemoToken(res.access_token);
-    } catch (err) {
-      setDrLoginErr(err?.detail || 'Invalid credentials');
-    } finally {
-      setDrLoginLoading(false);
-    }
-  }
 
   async function handleGenerateDealRoom(e) {
     e.preventDefault();
@@ -354,33 +336,7 @@ export default function DemoModePage() {
                       <button type="button" onClick={() => setShowDrPanel(false)} className="text-fa-text-muted hover:text-fa-text-primary text-xs">✕ Close</button>
                     </div>
 
-                    {/* Login form if no token */}
-                    {!demoToken ? (
-                      <form onSubmit={handleDemoLogin} className="space-y-3">
-                        <p className="text-xs text-fa-text-muted">Sign in with demo account to generate links.</p>
-                        <input
-                          type="email"
-                          value={drLoginEmail}
-                          onChange={e => setDrLoginEmail(e.target.value)}
-                          placeholder="demo@forcedaction.io"
-                          className="w-full text-sm bg-fa-bg-card border border-fa-border-default rounded-lg px-3 py-2 text-fa-text-primary focus:outline-none focus:border-fa-primary"
-                        />
-                        <input
-                          type="password"
-                          value={drLoginPass}
-                          onChange={e => setDrLoginPass(e.target.value)}
-                          placeholder="Password"
-                          required
-                          className="w-full text-sm bg-fa-bg-card border border-fa-border-default rounded-lg px-3 py-2 text-fa-text-primary focus:outline-none focus:border-fa-primary"
-                        />
-                        {drLoginErr && <p className="text-xs text-red-400">{drLoginErr}</p>}
-                        <button type="submit" disabled={drLoginLoading} className="w-full bg-fa-primary text-fa-bg-base font-bold py-2 rounded-lg text-sm disabled:opacity-50">
-                          {drLoginLoading ? 'Signing in…' : 'Sign In'}
-                        </button>
-                      </form>
-                    ) : (
-                      /* Generator form */
-                      <form onSubmit={handleGenerateDealRoom} className="space-y-3">
+                    <form onSubmit={handleGenerateDealRoom} className="space-y-3">
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="block text-xs text-fa-text-muted mb-1">Prospect name</label>
@@ -435,7 +391,6 @@ export default function DemoModePage() {
                           {drLoading ? 'Generating…' : 'Generate Deal Room'}
                         </button>
                       </form>
-                    )}
 
                     {/* Result links */}
                     {drResult && (
