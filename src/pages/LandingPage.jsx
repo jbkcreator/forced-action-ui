@@ -322,7 +322,7 @@ function LandingContent() {
           sourceFlow={emailGate.flow === 'free' ? 'free_signup' : 'checkout'}
           title={emailGate.flow === 'free' ? 'Get your free dashboard access' : 'Enter your email to continue'}
           description={emailGate.flow === 'free'
-            ? "We'll set up your free dashboard with blurred leads in your county. Unlock the ones you want for $4 each."
+            ? "We'll set up your free dashboard with blurred leads in your county. Unlock standard leads for $4 each — premium hot leads are priced separately."
             : "We'll use this to set up your account and send your lead feed access."}
           successEmail={freeSignupSuccessEmail}
         />

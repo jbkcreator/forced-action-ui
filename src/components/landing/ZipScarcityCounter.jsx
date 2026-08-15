@@ -1,11 +1,12 @@
 export default function ZipScarcityCounter({ territoryAvailability }) {
   if (!territoryAvailability) return null;
 
-  const { total_zips, available_zips } = territoryAvailability;
+  const { available_zips } = territoryAvailability;
+  if (available_zips <= 0) return null;
 
   return (
     <p className="text-amber-400 text-sm font-semibold text-center mb-4">
-      {available_zips} of {total_zips} ZIPs still open in this county
+      Territory spots available in this county
     </p>
   );
 }

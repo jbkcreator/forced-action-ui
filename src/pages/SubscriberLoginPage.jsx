@@ -40,7 +40,7 @@ export default function SubscriberLoginPage() {
     setLoading(true);
     try {
       const data = await login({ email: isUuidMode ? undefined : email, feedUuid, password });
-      navigate(`/dashboard/${data.feed_uuid}`);
+      navigate(data.is_demo ? `/dashboard/${data.feed_uuid}/demo` : `/dashboard/${data.feed_uuid}`);
     } catch (err) {
       setError('Invalid credentials. Check your password or use Forgot password below.');
     } finally {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLanding } from './LandingContext';
-import { VERTICAL_LABELS } from '../../config/constants';
+import { VERTICAL_LABELS, FOUNDING_SPOT_CAP } from '../../config/constants';
 import usePolling from '../../hooks/usePolling';
 import { fetchFoundingSummary } from '../../api/landing';
 
@@ -74,7 +74,7 @@ export default function FoundingCounter() {
   );
 
   const remaining = data?.total_remaining ?? '—';
-  const total = data?.total_cap ?? 30;
+  const total = data?.total_cap ?? FOUNDING_SPOT_CAP;
   const isAvailable = data?.founding_available !== false;
   const taken = typeof remaining === 'number' ? total - remaining : 0;
   const pct = total > 0 ? (taken / total) * 100 : 0;
