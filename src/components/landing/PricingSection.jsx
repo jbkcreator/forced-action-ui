@@ -29,7 +29,7 @@ export default function PricingSection({ onCheckout, onStartFree }) {
           <div className="glass-card rounded-2xl p-6 text-center border border-yellow-400/20">
             <h3 className="text-base font-bold text-white mb-1">Not ready to commit?</h3>
             <p className="text-slate-400 text-sm mb-4">
-              No card required. See blurred leads in your county and unlock individual leads for $4. Premium hot leads (Platinum &amp; above) are priced separately.
+              No card required. See blurred leads in your county, standard leads unlock for $4; hot leads (Gold &amp; above) are $150.
             </p>
             <button
               type="button"
