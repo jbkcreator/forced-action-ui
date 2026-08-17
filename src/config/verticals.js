@@ -16,7 +16,6 @@ export const VERTICALS = {
     icon: 'home',
     roi: {
       avg_job_value: 8500,
-      monthly_revenue: 102000,
       headline: 'Roofers in {countyName} close 12+ storm/distress jobs/mo',
     },
   },

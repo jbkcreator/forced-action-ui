@@ -143,7 +143,9 @@ export default function PricingCard({ tier, isPopular, onCheckout, vertical, cou
                   boxShadow: '0 0 8px #fbbf24',
                 }}
               />
-              {spots.founding_remaining} of {spots.founding_cap} founding {spots.founding_remaining === 1 ? 'spot' : 'spots'} left
+              {spots.founding_remaining < spots.founding_cap
+                ? `${spots.founding_remaining} of ${spots.founding_cap} founding ${spots.founding_remaining === 1 ? 'spot' : 'spots'} left`
+                : `${spots.founding_cap} founding spots available`}
             </span>
           ) : (
             <span
