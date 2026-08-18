@@ -21,11 +21,11 @@ echo "== 0/5 save current state =="
 BEFORE=$(git rev-parse HEAD)
 echo "Current commit: $BEFORE"
 
-echo "== 1/5 checkout dev =="
-git checkout dev || fail "git checkout dev"
+echo "== 1/5 checkout main =="
+git checkout main || fail "git checkout main"
 
 echo "== 2/5 pull latest =="
-git pull origin dev || fail "git pull origin dev"
+git pull origin main || fail "git pull origin main"
 AFTER=$(git rev-parse HEAD)
 
 if [ "$BEFORE" = "$AFTER" ]; then
