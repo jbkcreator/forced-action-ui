@@ -17,6 +17,7 @@ fail() {
     exit 1
 }
 
+
 echo "== 0/5 save current state =="
 BEFORE=$(git rev-parse HEAD)
 echo "Current commit: $BEFORE"
