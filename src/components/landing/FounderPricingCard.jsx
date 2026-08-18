@@ -9,7 +9,7 @@ import { useLanding } from './LandingContext';
 // the backend TIER_DISPLAY['founder'] — product supplies final bullets.
 export default function FounderPricingCard({ onCheckout }) {
   const { pricing } = useLanding();
-  const [interval, setInterval] = useState('annual');
+  const [interval, setInterval] = useState('monthly');
 
   const tierPricing = pricing?.founder;
   if (!tierPricing) return null;

@@ -1,5 +1,4 @@
 import PricingCard from './PricingCard';
-import AnnualPricingCard from './AnnualPricingCard';
 import FounderPricingCard from './FounderPricingCard';
 
 export default function PricingSection({ onCheckout, onStartFree }) {
@@ -12,11 +11,9 @@ export default function PricingSection({ onCheckout, onStartFree }) {
           Founding members lock their rate forever — when spots fill or founding pricing ends, the price increases permanently. Cancel anytime.
         </p>
       </div>
-      <div className="grid grid-cols-1 gap-6 lg:gap-8 md:grid-cols-4">
-        <AnnualPricingCard onCheckout={onCheckout} />
+      <div className="grid grid-cols-1 gap-6 lg:gap-8 md:grid-cols-2">
         <PricingCard tier="starter" onCheckout={onCheckout} />
         <PricingCard tier="pro" isPopular onCheckout={onCheckout} />
-        <PricingCard tier="dominator" onCheckout={onCheckout} />
       </div>
 
       {/* Founder — premium tier, separate from the main grid (renders only when
@@ -29,7 +26,7 @@ export default function PricingSection({ onCheckout, onStartFree }) {
           <div className="glass-card rounded-2xl p-6 text-center border border-yellow-400/20">
             <h3 className="text-base font-bold text-white mb-1">Not ready to commit?</h3>
             <p className="text-slate-400 text-sm mb-4">
-              Start free — see blurred leads in your county and unlock the ones you want for $4 each. No card needed.
+              No card required. See blurred leads in your county, standard leads unlock for $4; hot leads (Gold &amp; above) are $150.
             </p>
             <button
               type="button"

@@ -48,7 +48,7 @@ export default function HeroBanner({ onStartFree }) {
         </div>
       )}
       <p className="text-xs text-slate-500 mt-3">
-        No card required. See blurred leads in your county and unlock individual leads for $4. Premium hot leads (Platinum &amp; above) are priced separately.
+        No card required. See blurred leads in your county, standard leads unlock for $4; hot leads (Gold &amp; above) are $150.
       </p>
 
       <HeroZipCheck onUnlock={onStartFree} />

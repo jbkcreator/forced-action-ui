@@ -513,7 +513,7 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 									</>
 							}
 						</p>
-						{!windowExpired && (
+						{!windowExpired && roi.monthly_revenue != null && (
 							<>
 								<p className="text-slate-400 text-xs mt-1">
 									Top-quartile performers report ≈ ${roi.monthly_revenue.toLocaleString()}/mo. Individual results vary significantly based on territory, vertical, and close rate.
