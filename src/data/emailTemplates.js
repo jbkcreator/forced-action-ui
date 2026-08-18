@@ -203,7 +203,7 @@ export default [
                 <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;">
                   <tr><td style="color:#94a3b8;padding:4px 0;">Plan</td><td style="color:#ffffff;text-align:right;padding:4px 0;">Pro / Roofing</td></tr>
                   <tr><td style="color:#94a3b8;padding:4px 0;">Territory</td><td style="color:#fbbf24;text-align:right;padding:4px 0;font-weight:600;">ZIP 33548, 33602</td></tr>
-                  <tr><td style="color:#94a3b8;padding:4px 0;">Amount</td><td style="color:#ffffff;text-align:right;padding:4px 0;">$1,100.00</td></tr>
+                  <tr><td style="color:#94a3b8;padding:4px 0;">Amount</td><td style="color:#ffffff;text-align:right;padding:4px 0;">$499.00</td></tr>
                   <tr><td style="color:#94a3b8;padding:4px 0;">Next billing date</td><td style="color:#ffffff;text-align:right;padding:4px 0;">April 23, 2026</td></tr>
                 </table>
               </td></tr>
@@ -657,7 +657,7 @@ export default [
                   <tr>
                     <td style="color:#94a3b8;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">Previous rate (founding)</td>
                     <td style="text-align:right;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-                      <span style="color:#ef4444;text-decoration:line-through;font-size:16px;font-weight:600;">$1,100/mo</span>
+                      <span style="color:#ef4444;text-decoration:line-through;font-size:16px;font-weight:600;">$499/mo</span>
                     </td>
                   </tr>
                   <tr>

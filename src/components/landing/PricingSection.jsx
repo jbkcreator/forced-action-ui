@@ -1,5 +1,4 @@
 import PricingCard from './PricingCard';
-import AnnualPricingCard from './AnnualPricingCard';
 import FounderPricingCard from './FounderPricingCard';
 
 export default function PricingSection({ onCheckout, onStartFree }) {
@@ -12,11 +11,9 @@ export default function PricingSection({ onCheckout, onStartFree }) {
           Founding members lock their rate forever — when spots fill or founding pricing ends, the price increases permanently. Cancel anytime.
         </p>
       </div>
-      <div className="grid grid-cols-1 gap-6 lg:gap-8 md:grid-cols-4">
-        <AnnualPricingCard onCheckout={onCheckout} />
+      <div className="grid grid-cols-1 gap-6 lg:gap-8 md:grid-cols-2">
         <PricingCard tier="starter" onCheckout={onCheckout} />
         <PricingCard tier="pro" isPopular onCheckout={onCheckout} />
-        <PricingCard tier="dominator" onCheckout={onCheckout} />
       </div>
 
       {/* Founder — premium tier, separate from the main grid (renders only when
