@@ -461,7 +461,7 @@ export default function DashboardPage() {
       const { url } = await createPortalSession(feedUuid);
       window.location.href = url;
     } catch {
-      alert('Unable to open the billing portal. Please email info@forcedactionleads.com');
+      alert('Unable to open the billing portal. Please email support@forcedactionleads.com');
     }
   }, [feedUuid]);
 
@@ -479,7 +479,7 @@ export default function DashboardPage() {
       const { url } = await createPortalSession(feedUuid);
       window.location.href = url;
     } catch {
-      alert('Unable to open the billing portal. Please email info@forcedactionleads.com');
+      alert('Unable to open the billing portal. Please email support@forcedactionleads.com');
     }
   }, [feedUuid]);
 

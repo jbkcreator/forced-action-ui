@@ -20,7 +20,6 @@ import ZipCollectorModal from '../components/landing/ZipCollectorModal';
 import StripeCheckoutModal from '../components/landing/StripeCheckoutModal';
 import WaitlistForm from '../components/landing/WaitlistForm';
 import DealOfTheDay from '../components/landing/DealOfTheDay';
-import RoiCalculator from '../components/landing/RoiCalculator';
 import useStripeCheckout from '../hooks/useStripeCheckout';
 import { createFreeSignup, logBusinessEvent } from '../api/phase2b';
 import { getAttribution } from '../utils/attribution';
@@ -287,12 +286,6 @@ function LandingContent() {
               )}
 
               {ctaMode === 'signup' && (
-                <div className="max-w-6xl mx-auto px-6 py-8">
-                  <RoiCalculator vertical={selectedVertical} onStartFree={handleStartFree} />
-                </div>
-              )}
-
-              {ctaMode === 'signup' && (
                 <div id="pricing" ref={pricingRef}>
                   <PricingSection onCheckout={handleCheckout} onStartFree={handleStartFree} />
                   <FeaturedTestimonial testimonials={landingData?.featured_testimonials} />
@@ -322,7 +315,7 @@ function LandingContent() {
           sourceFlow={emailGate.flow === 'free' ? 'free_signup' : 'checkout'}
           title={emailGate.flow === 'free' ? 'Get your free dashboard access' : 'Enter your email to continue'}
           description={emailGate.flow === 'free'
-            ? "We'll set up your free dashboard with blurred leads in your county. Unlock standard leads for $4 each — premium hot leads are priced separately."
+            ? "We'll set up your free dashboard with blurred leads in your county. Unlock any lead for $150."
             : "We'll use this to set up your account and send your lead feed access."}
           successEmail={freeSignupSuccessEmail}
         />

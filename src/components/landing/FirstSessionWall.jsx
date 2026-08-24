@@ -33,51 +33,9 @@ import { unlockHotLead } from '../../api/dashboard';
 import PaymentSheetModal from '../common/PaymentSheetModal';
 import LandingAttribution from './LandingAttribution';
 import Icon from '../ui/Icon';
-import { getVerticalRoi } from '../../config/verticals.js';
 
 const COUNTDOWN_SECONDS = 15 * 60;          // 15 minutes
 const LS_KEY = 'fa.landing.wall.expires';   // survive refresh within the window
-
-// ROI frames are now driven by config/verticals.js.  getVerticalRoi(vertical)
-// returns the frame for the active vertical and falls back to DEFAULT_ROI.
-// The old inline ROI_FRAMES dict is replaced below.
-const _LEGACY_ROI_FRAMES = {
-	roofing: {
-		avg_job_value: 8500,
-		monthly_revenue: 102000,
-		headline: 'Top roofers in {countyName} report closing 12+ storm/distress jobs/mo',
-	},
-	remediation: {
-		avg_job_value: 6500,
-		monthly_revenue: 52000,
-		headline: 'Top remediation contractors report averaging 8 distress calls/mo at ~$6,500 each',
-	},
-	public_adjusters: {
-		avg_job_value: 14000,
-		monthly_revenue: 112000,
-		headline: 'Top public adjusters report averaging 8 settled claims/mo',
-	},
-	investor: {
-		avg_deal_value: 22000,
-		monthly_revenue: 44000,
-		headline: 'Top distressed-property investors report averaging 2 deals/mo at $22K profit each',
-	},
-	plumbing: {
-		avg_job_value: 3200,
-		monthly_revenue: 48000,
-		headline: 'Top plumbers on distressed leads report averaging 15 emergency jobs/mo',
-	},
-	hvac: {
-		avg_job_value: 4800,
-		monthly_revenue: 48000,
-		headline: 'Top HVAC contractors report finding 10+ urgent replacements/mo via distress leads',
-	},
-};
-const DEFAULT_ROI = {
-	avg_job_value: 5000,
-	monthly_revenue: 50000,
-	headline: 'Contractors using Forced Action data report closing 30–50% more distressed jobs',
-};
 
 const UNLOCK_PRICE_CENTS = 400;                 // $4.00 — mid-range of v9 $2.50–$7 band
 const UNLOCK_PRICE = `$${(UNLOCK_PRICE_CENTS / 100).toFixed(2).replace(/\.00$/, '')}`;
@@ -312,7 +270,6 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 		if (windowExpired) localStorage.removeItem(LS_KEY);
 	}, [windowExpired]);
 
-	const roi = useMemo(() => getVerticalRoi(selectedVertical), [selectedVertical]);
 	const verticalLabel = (selectedVertical || '').charAt(0).toUpperCase() + (selectedVertical || '').slice(1);
 
 	// Begin the unlock flow for a specific blurred lead.
@@ -502,27 +459,9 @@ export default function FirstSessionWall({ onRequestUnlock }) {
 						<p className={`text-sm mt-1 ${windowExpired ? 'text-slate-500' : 'text-slate-300'}`}>
 							{windowExpired
 								? 'Your 15-minute priority window has passed. You can still unlock any lead below — subscribe to get unlimited access.'
-								: <>
-										{roi.headline.replace('{countyName}', countyName)}.{' '}
-										{roi.avg_job_value && (
-											<>One closed job ≈ <span className="text-white font-semibold">${roi.avg_job_value.toLocaleString()}</span> (industry avg).</>
-										)}
-										{roi.avg_deal_value && (
-											<>One closed deal ≈ <span className="text-white font-semibold">${roi.avg_deal_value.toLocaleString()}</span> profit (industry avg).</>
-										)}
-									</>
+								: 'Unlock any lead below to reveal the full address, owner, and phone — subscribe for unlimited access.'
 							}
 						</p>
-						{!windowExpired && roi.monthly_revenue != null && (
-							<>
-								<p className="text-slate-400 text-xs mt-1">
-									Top-quartile performers report ≈ ${roi.monthly_revenue.toLocaleString()}/mo. Individual results vary significantly based on territory, vertical, and close rate.
-								</p>
-								<p className="text-slate-500 text-xs mt-0.5 italic">
-									Earnings figures are illustrative estimates based on industry averages. They are not a guarantee or prediction of income.
-								</p>
-							</>
-						)}
 					</div>
 
 					<div className="flex flex-col items-end gap-1 shrink-0">
