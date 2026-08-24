@@ -37,7 +37,9 @@ import Icon from '../ui/Icon';
 const COUNTDOWN_SECONDS = 15 * 60;          // 15 minutes
 const LS_KEY = 'fa.landing.wall.expires';   // survive refresh within the window
 
-const UNLOCK_PRICE_CENTS = 400;                 // $4.00 — mid-range of v9 $2.50–$7 band
+// Public pricing is a flat $150 per lead — every lead on the landing wall
+// unlocks at the same rate, hot or not (matches the "$150 per lead" promise).
+const UNLOCK_PRICE_CENTS = 15000;               // $150.00
 const UNLOCK_PRICE = `$${(UNLOCK_PRICE_CENTS / 100).toFixed(2).replace(/\.00$/, '')}`;
 
 // D4: retarget Gold+ leads to the hot-lead unlock. /api/proof-leads doesn't
