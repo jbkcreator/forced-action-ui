@@ -102,8 +102,10 @@ export default function DealRoomGenerator({ token, onUnauthorized }) {
         onUnauthorized?.();
       } else if (err.status === 409) {
         setZipError('This ZIP is already held or locked.');
+      } else if (err.status === 422) {
+        setZipError(err.detail?.message || 'Not enough qualified leads available for this ZIP.');
       } else {
-        setError(err.detail || 'Something went wrong.');
+        setError(err.detail?.message || 'Something went wrong.');
       }
     } finally {
       setLoading(false);
