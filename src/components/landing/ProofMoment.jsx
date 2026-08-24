@@ -2,11 +2,11 @@
  * ProofMoment — the very first thing a brand-new subscriber sees.
  *
  * Renders exactly 3 real qualified leads: 1 fully revealed + 2 blurred.
- * The blurred pair carry "Unlock for $4" CTAs that open the Payment Sheet.
+ * The blurred pair carry "Unlock $150" CTAs that open the Payment Sheet.
  *
  * This is the v9 monetization-wall anchor: the user sees real value
  * (the revealed lead) right next to value they cannot reach without paying
- * (the two blurred ones). Countdown + ROI framing live in the separate
+ * (the two blurred ones). The countdown lives in the separate
  * MonetizationWall component; this one is pure lead presentation.
  *
  * Props:
@@ -113,7 +113,7 @@ function LeadBlurred({ lead, onUnlock }) {
           className="cta-primary text-xs px-4 py-1.5"
           type="button"
         >
-          Unlock $4
+          Unlock $150
         </button>
       </div>
     </div>

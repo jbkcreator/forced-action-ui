@@ -66,7 +66,7 @@ export default [
               </td></tr>
             </table>
             <p style="margin:0;font-size:13px;color:#64748b;">
-              Questions? Reply to this email or reach us at <a href="#" style="color:#fbbf24;text-decoration:none;">info@forcedactionleads.com</a>
+              Questions? Reply to this email or reach us at <a href="#" style="color:#fbbf24;text-decoration:none;">support@forcedactionleads.com</a>
             </p>
           </td>
         </tr>
@@ -145,7 +145,7 @@ export default [
               </td></tr>
             </table>
             <p style="margin:0;font-size:13px;color:#64748b;">
-              Questions? Reply to this email or reach us at <a href="#" style="color:#fbbf24;text-decoration:none;">info@forcedactionleads.com</a>
+              Questions? Reply to this email or reach us at <a href="#" style="color:#fbbf24;text-decoration:none;">support@forcedactionleads.com</a>
             </p>
           </td>
         </tr>
@@ -218,7 +218,7 @@ export default [
               </tr>
             </table>
             <p style="margin:0;font-size:13px;color:#64748b;">
-              Questions? <a href="#" style="color:#fbbf24;text-decoration:none;">info@forcedactionleads.com</a>
+              Questions? <a href="#" style="color:#fbbf24;text-decoration:none;">support@forcedactionleads.com</a>
             </p>
           </td>
         </tr>
@@ -294,7 +294,7 @@ export default [
               </tr>
             </table>
             <p style="margin:0;font-size:13px;color:#64748b;">
-              Questions? <a href="#" style="color:#fbbf24;text-decoration:none;">info@forcedactionleads.com</a>
+              Questions? <a href="#" style="color:#fbbf24;text-decoration:none;">support@forcedactionleads.com</a>
             </p>
           </td>
         </tr>
@@ -362,7 +362,7 @@ export default [
               </tr>
             </table>
             <p style="margin:0;font-size:13px;color:#64748b;">
-              Questions? <a href="#" style="color:#fbbf24;text-decoration:none;">info@forcedactionleads.com</a>
+              Questions? <a href="#" style="color:#fbbf24;text-decoration:none;">support@forcedactionleads.com</a>
             </p>
           </td>
         </tr>
@@ -430,7 +430,7 @@ export default [
               </tr>
             </table>
             <p style="margin:0;font-size:13px;color:#64748b;">
-              Questions? <a href="#" style="color:#fbbf24;text-decoration:none;">info@forcedactionleads.com</a>
+              Questions? <a href="#" style="color:#fbbf24;text-decoration:none;">support@forcedactionleads.com</a>
             </p>
           </td>
         </tr>
@@ -529,7 +529,7 @@ export default [
               </tr>
             </table>
             <p style="margin:0;font-size:13px;color:#64748b;">
-              Questions? <a href="#" style="color:#fbbf24;text-decoration:none;">info@forcedactionleads.com</a>
+              Questions? <a href="#" style="color:#fbbf24;text-decoration:none;">support@forcedactionleads.com</a>
             </p>
           </td>
         </tr>
@@ -597,7 +597,7 @@ export default [
               </tr>
             </table>
             <p style="margin:0;font-size:13px;color:#64748b;">
-              Questions? <a href="#" style="color:#fbbf24;text-decoration:none;">info@forcedactionleads.com</a>
+              Questions? <a href="#" style="color:#fbbf24;text-decoration:none;">support@forcedactionleads.com</a>
             </p>
           </td>
         </tr>
@@ -686,7 +686,7 @@ export default [
               </tr>
             </table>
             <p style="margin:0;font-size:13px;color:#64748b;">
-              Questions? <a href="#" style="color:#fbbf24;text-decoration:none;">info@forcedactionleads.com</a>
+              Questions? <a href="#" style="color:#fbbf24;text-decoration:none;">support@forcedactionleads.com</a>
             </p>
           </td>
         </tr>

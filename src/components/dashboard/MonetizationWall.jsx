@@ -201,10 +201,9 @@ export default function MonetizationWall({
   }
   if (!state) return null;  // still loading
 
-  // Backend field names: roi.live_lead_count, roi.avg_job_value, roi.monthly_revenue.
+  // Backend field: roi.live_lead_count. Job-value / monthly-revenue projections
+  // were removed from the wall (earnings-claim risk) — no longer rendered.
   const leadCount = roi?.live_lead_count ?? state?.qualified_lead_count ?? '—';
-  const avgJobValue = roi?.avg_job_value ?? roi?.avg_deal_value;
-  const monthlyRevenue = roi?.monthly_revenue;
   const verticalLabel = vertical.charAt(0).toUpperCase() + vertical.slice(1);
 
   return (
@@ -232,15 +231,7 @@ export default function MonetizationWall({
           <p className="text-slate-300 text-sm mt-1">
             <span className="text-yellow-400 font-semibold">{leadCount}</span> qualified {verticalLabel.toLowerCase()} leads
             active in Hillsborough County right now.
-            {avgJobValue && (
-              <> One closed job ≈ <span className="text-white font-semibold">${avgJobValue.toLocaleString()}</span> (industry avg).</>
-            )}
           </p>
-          {monthlyRevenue && (
-            <p className="text-slate-400 text-xs mt-1">
-              Typical top-quartile {verticalLabel.toLowerCase()} contractor: ≈ ${monthlyRevenue.toLocaleString()}/mo (industry avg — your results will vary).
-            </p>
-          )}
         </div>
 
         <div className="flex items-center gap-4 flex-wrap">
