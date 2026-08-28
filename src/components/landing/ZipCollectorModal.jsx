@@ -156,7 +156,8 @@ export default function ZipCollectorModal({ isOpen, onClose, tier, initialZip, o
                 const isSelected = selected.includes(z.zip_code);
                 const isTaken = z.status === 'taken';
                 const isGrace = z.status === 'grace';
-                const isDisabled = isTaken || isGrace;
+                const isNoInventory = z.status === 'no_inventory';
+                const isDisabled = isTaken || isGrace || isNoInventory;
                 const atLimit = selected.length >= limit && !isSelected;
 
                 let borderColor = 'rgba(255,255,255,0.08)';
@@ -175,6 +176,11 @@ export default function ZipCollectorModal({ isOpen, onClose, tier, initialZip, o
                 } else if (isGrace) {
                   borderColor = 'rgba(251,191,36,0.2)';
                   bg = 'rgba(251,191,36,0.04)';
+                  cursor = 'not-allowed';
+                  opacity = 0.5;
+                } else if (isNoInventory) {
+                  borderColor = 'rgba(148,163,184,0.2)';
+                  bg = 'rgba(148,163,184,0.04)';
                   cursor = 'not-allowed';
                   opacity = 0.5;
                 } else if (atLimit) {
@@ -202,7 +208,13 @@ export default function ZipCollectorModal({ isOpen, onClose, tier, initialZip, o
                       {z.zip_code}
                     </div>
                     <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                      {isTaken ? 'Taken' : isGrace ? 'Opening soon' : `${z.lead_count} leads`}
+                      {isTaken
+                        ? 'Taken'
+                        : isGrace
+                        ? 'Opening soon'
+                        : isNoInventory
+                        ? 'No inventory yet'
+                        : `${z.lead_count} leads`}
                     </div>
                   </button>
                 );

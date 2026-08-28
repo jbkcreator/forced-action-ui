@@ -61,7 +61,13 @@ export default function ZipChecker({ onZipChecked, countyId: externalCountyId, o
       const data = await apiCheckZip(trimmed, selectedVertical, countyId);
       const label = VERTICAL_LABELS[selectedVertical];
       setCheckedZip(trimmed);
-      if (onZipChecked) onZipChecked(trimmed);
+
+      // Only a ZIP we can actually sell should ever be carried into the
+      // checkout picker — an invalid or already-taken ZIP must never be
+      // preselected there.
+      if (onZipChecked && (data.status === 'available' || data.status === 'grace')) {
+        onZipChecked(trimmed);
+      }
 
       const inServiceArea = data.status !== 'invalid';
       trackEvent('zip_checked', { zip: trimmed, results_returned: inServiceArea });

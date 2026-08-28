@@ -66,9 +66,9 @@ describe('ActivationTracker (T-B12-05)', () => {
     expect(onUnlockFirstLead).toHaveBeenCalledTimes(1);
   });
 
-  it('shows "Window closed" instead of a growing clock once past 5 minutes', () => {
+  it('renders nothing once past the 5-minute activation window', () => {
     const sixMinAgo = new Date(Date.now() - 6 * 60 * 1000).toISOString();
-    render(
+    const { container } = render(
       <ActivationTracker
         subscriber={subscriber({
           activation: { signup_time: sixMinAgo, first_leads_shown_time: sixMinAgo, first_unlock_time: null },
@@ -77,7 +77,9 @@ describe('ActivationTracker (T-B12-05)', () => {
         onUnlockFirstLead={vi.fn()}
       />,
     );
-    expect(screen.getByText(/window closed/i)).toBeInTheDocument();
-    expect(screen.getByText(/unlock anytime below/i)).toBeInTheDocument();
+    // H-12: a stale "Get your first lead in 5 minutes" card with no clock
+    // left would otherwise contradict the Monetization Wall's own live
+    // countdown shown elsewhere on the same dashboard.
+    expect(container).toBeEmptyDOMElement();
   });
 });

@@ -202,6 +202,23 @@ export default function DashboardPage() {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
+  // H-07 — GA4 completion event for the $150/$99 hot-lead unlock. Stripe
+  // redirects back here with these params once the charge actually succeeds,
+  // so this is the one place that fires on completion rather than intent.
+  useEffect(() => {
+    if (searchParams.get('hot_unlock') !== 'true') return;
+    trackEvent('unlock', {
+      lead_id: searchParams.get('lead_id') || null,
+      price: Number(searchParams.get('price')) || null,
+      currency: 'USD',
+    });
+    const next = new URLSearchParams(searchParams);
+    next.delete('hot_unlock');
+    next.delete('lead_id');
+    next.delete('price');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   // Stage 5 — bundle deep link from SMS dispatcher
   const bundleParam = searchParams.get('bundle');
   const variantParam = searchParams.get('variant') || 'a';
@@ -444,6 +461,11 @@ export default function DashboardPage() {
     logBusinessEvent('PAYMENT_SUCCEEDED', {
       feedUuid,
       payload: { product: 'lead_unlock', property_id: unlockState.lead?.property_id },
+    });
+    trackEvent('unlock', {
+      lead_id: unlockState.lead?.property_id ?? null,
+      price: 4,
+      currency: 'USD',
     });
     setUnlockState((s) => ({ ...s, open: false }));
     // Match FirstSessionWall timing: webhook needs ~1s to stamp SentLead.
@@ -1048,8 +1070,8 @@ export default function DashboardPage() {
               {!isPaused && <LeadPackSection onOpenModal={handleOpenLpModal} />}
 
               {/* Stage 6: Save / Pause CTA — dashboard entry into the 60-day pause flow.
-                  Modal already mounted below; this is the missing trigger after the refactor. */}
-              {!isPaused && (
+                  Only relevant to a subscriber who is actually paying (and has billing to stop). */}
+              {!isPaused && subscriber.tier !== 'free' && (
                 <section
                   data-testid="dashboard-pause-cta"
                   aria-label="Manage subscription"
