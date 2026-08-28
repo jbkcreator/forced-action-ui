@@ -45,6 +45,7 @@ const DealSubmitPage = lazy(() => import('./pages/DealSubmitPage'));
 const BankruptcyAlertSuccessPage = lazy(() => import('./pages/BankruptcyAlertSuccessPage'));
 const DealRoomPage = lazy(() => import('./pages/DealRoomPage'));
 const DemoDealRoomPage = lazy(() => import('./pages/DemoDealRoomPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
 
 // Admin section pages
 const OperatorDashboardSection = lazy(() => import('./components/admin/sections/OperatorDashboardSection'));
@@ -115,6 +116,7 @@ export default function App() {
               section. LandingPage scrolls to #pricing on hash. */}
           <Route path="/pricing" element={<Navigate to="/#pricing" replace />} />
           <Route path="/success" element={withBoundary(<SuccessPage />)} />
+          <Route path="/terms-and-conditions" element={withBoundary(<TermsPage />)} />
           <Route path="/bankruptcy-alerts/success" element={withBoundary(<BankruptcyAlertSuccessPage />)} />
           {/* Subscriber feed auth (fa061) — public */}
           <Route path="/login"                         element={withBoundary(<SubscriberLoginPage />)} />

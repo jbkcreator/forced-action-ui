@@ -15,8 +15,10 @@
  * thin accent border + p-5/my-4) rather than the landing-page TrustBar,
  * which is sized/spaced for a full-width hero section, not a compact card.
  *
- * Stops rendering once first_unlock_time is set (activation complete) or the
- * subscriber is no longer on the free tier.
+ * Stops rendering once first_unlock_time is set (activation complete), the
+ * subscriber is no longer on the free tier, or the 5-minute window has
+ * passed — a stale "5 minutes" nudge with no clock left would otherwise sit
+ * on screen alongside the Monetization Wall's own, unrelated countdown.
  */
 import { useEffect, useState } from 'react';
 import Icon from '../ui/Icon';
@@ -56,9 +58,10 @@ export default function ActivationTracker({ subscriber, leadCount, onUnlockFirst
     return () => clearInterval(id);
   }, [signupTime, unlocked]);
 
-  if (subscriber?.tier !== 'free' || unlocked || !signupTime) return null;
-
   const withinWindow = elapsed <= ACTIVATION_WINDOW_SECONDS;
+
+  if (subscriber?.tier !== 'free' || unlocked || !signupTime || !withinWindow) return null;
+
   const remaining = Math.max(0, ACTIVATION_WINDOW_SECONDS - elapsed);
 
   return (
@@ -76,19 +79,12 @@ export default function ActivationTracker({ subscriber, leadCount, onUnlockFirst
             {' '}Unlock one to see the owner + contact info.
           </p>
         </div>
-        {withinWindow ? (
-          <div className="shrink-0 text-right">
-            <span className="font-mono text-lg font-bold text-fa-status-available">
-              {formatClock(remaining)}
-            </span>
-            <p className="text-[11px] text-fa-text-muted">left in your activation window</p>
-          </div>
-        ) : (
-          <div className="shrink-0 text-right">
-            <p className="text-xs font-semibold text-fa-status-taken">Window closed</p>
-            <p className="text-[11px] text-fa-text-muted">unlock anytime below</p>
-          </div>
-        )}
+        <div className="shrink-0 text-right">
+          <span className="font-mono text-lg font-bold text-fa-status-available">
+            {formatClock(remaining)}
+          </span>
+          <p className="text-[11px] text-fa-text-muted">left in your activation window</p>
+        </div>
       </div>
 
       {leadsShown && (
