@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Next Deal Lending</title>
+<meta name="description" content="Capital for your next flip or build in Florida and Georgia. A real person picks up.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#15283A;--navy-deep:#0F1F2E;--paper:#F2F4F3;--white:#FFFFFF;--gold:#E8B130;--gold-deep:#C9951C;
+  --green:#2E6A5C;--green-tint:#DCE8E4;--mist:#C9D3DC;--ink-2:#3E4F5E;--ink-3:#34444F;--ink-4:#4A5A68;
+  --line:#D3DBD8;--line-2:#B9C4C0;--field:#8A99A6;--terms:#E4E9E7;--rule:#3A4D60;--red:#B8472F;--slate:#2A3E52;
+  --gutter:80px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:"Archivo","Helvetica Neue",Helvetica,sans-serif;background:var(--paper);color:var(--navy);-webkit-font-smoothing:antialiased}
+a{color:var(--navy)}a:hover{color:var(--green)}
+a:focus-visible,input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+h1,h2,h3,p{margin:0}
+.m{display:none}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:56px;padding:0 28px;font-size:18px;font-weight:750;text-decoration:none;border-radius:4px;font-family:inherit}
+.btn-gold{background:var(--gold);color:var(--navy)}.btn-gold:hover{color:var(--navy);filter:brightness(1.05)}
+.btn-ghost{border:2px solid var(--paper);color:var(--paper)}.btn-ghost:hover{color:var(--paper);background:rgba(242,244,243,.08)}
+
+header{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:26px var(--gutter);background:var(--navy);color:var(--paper)}
+.brand{display:flex;align-items:center;gap:14px;font-size:26px;font-weight:850;font-stretch:72%;white-space:nowrap}
+nav{display:flex;gap:30px;align-items:center;font-size:16px}
+nav a.link{color:var(--paper);text-decoration:none}nav a.link:hover{color:var(--gold)}
+nav .call{min-height:44px;padding:0 20px;font-size:16px;font-weight:700}
+
+.hero{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:72px;align-items:center;padding:104px var(--gutter) 112px;background:var(--navy);color:var(--paper)}
+.hero-copy{display:flex;flex-direction:column;gap:32px}
+.hero h1{font-size:104px;line-height:.92;font-weight:900;font-stretch:64%;letter-spacing:-1px}
+.hero p{max-width:610px;font-size:21px;line-height:1.5;color:var(--mist)}
+.ctas{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.reassure{display:flex;gap:28px;flex-wrap:wrap;font-size:15px;color:var(--mist)}
+.note{position:relative;transform:rotate(-3deg);background:var(--gold);color:var(--navy);padding:64px 40px 44px;border-radius:6px;display:flex;flex-direction:column;gap:14px;box-shadow:0 24px 48px rgba(5,14,24,.45)}
+.note::before{content:"";position:absolute;top:20px;left:50%;width:22px;height:22px;margin-left:-11px;border-radius:50%;background:var(--navy)}
+.note .k{font-size:18px;font-weight:600}
+.note .h{font-size:50px;line-height:1;font-weight:900;font-stretch:70%}
+.note .b{font-size:17px;line-height:1.45}
+
+.markets{padding:30px var(--gutter);background:var(--navy-deep);color:var(--mist);display:flex;gap:12px 36px;flex-wrap:wrap;align-items:center;font-size:16px}
+.markets strong{color:var(--gold);font-weight:700}
+
+.section{padding:112px var(--gutter) 104px;display:flex;flex-direction:column;gap:48px}
+.h2-xl{font-size:76px;line-height:.94;font-weight:900;font-stretch:64%}
+.h2-l{font-size:56px;line-height:1;font-weight:850;font-stretch:70%}
+.lead{font-size:20px;line-height:1.5;color:var(--ink-2)}
+.body{font-size:18px;line-height:1.55;color:var(--ink-2)}
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:48px}
+.col{display:flex;flex-direction:column;gap:16px;padding-top:24px;border-top:3px solid var(--navy)}
+.col h3{font-size:30px;font-weight:850;font-stretch:72%}
+.col.sm h3{font-size:26px;font-weight:800;font-stretch:100%}
+.what-head{display:flex;justify-content:space-between;align-items:flex-end;gap:56px}
+.what-head h2{max-width:640px}.what-head p{max-width:430px}
+#what{gap:56px}
+
+.card{margin:0 var(--gutter);background:var(--white);border:1px solid var(--line);border-radius:6px}
+.check{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);overflow:hidden}
+.check-in{padding:56px 56px 60px;display:flex;flex-direction:column;gap:26px}
+.check-in h2{font-size:52px;line-height:1;font-weight:900;font-stretch:66%}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:15px;font-weight:600}
+.f input,.f select{min-height:52px;padding:0 14px;font-size:18px;font-family:inherit;border:1.5px solid var(--field);border-radius:4px;background:var(--white);color:var(--navy);width:100%}
+.small{font-size:14px;line-height:1.55;color:var(--ink-4)}
+.check-out{padding:56px 48px 60px;background:var(--navy);color:var(--paper);display:flex;flex-direction:column;gap:24px}
+.check-out .lbl{font-size:16px;color:var(--mist)}
+.profit{font-size:72px;line-height:1;font-weight:900;font-stretch:66%}
+.margin{font-size:17px;color:var(--mist)}
+.max{display:flex;flex-direction:column;gap:4px;padding-top:18px;border-top:1px solid var(--rule)}
+.max .v{font-size:34px;font-weight:800;font-stretch:72%}
+.verdict{padding:16px 18px;border-radius:4px;font-size:18px;line-height:1.4;font-weight:700}
+.v-empty{background:var(--slate);color:var(--paper)}.v-strong{background:var(--gold);color:var(--navy)}
+.v-tight{background:var(--paper);color:var(--navy)}.v-no{background:var(--red);color:var(--white)}
+.check-out .btn{margin-top:auto}
+
+.why{padding:72px 64px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:72px}
+.why h2{font-size:52px;line-height:1;font-weight:850;font-stretch:70%}
+.why-l{display:flex;flex-direction:column;gap:32px}
+.promises{display:flex;flex-direction:column;gap:14px;padding:28px;background:var(--paper);border-radius:4px}
+.promises .t{font-size:19px;font-weight:800}
+.promises div:not(.t){font-size:17px;line-height:1.5;color:var(--ink-3)}
+.why-r{display:flex;flex-direction:column;gap:32px}
+.why-r div{display:flex;flex-direction:column;gap:8px}
+.why-r h3{font-size:22px;font-weight:800}
+
+.steps{margin:0;padding:0;list-style:none}
+.steps li{display:flex;flex-direction:column;gap:12px}
+.steps .n{font-size:88px;line-height:.9;font-weight:900;font-stretch:62%;color:var(--gold-deep)}
+.steps h3{font-size:24px;font-weight:800}
+
+.start{padding:104px var(--gutter);background:var(--navy);color:var(--paper);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:80px}
+.start-l{display:flex;flex-direction:column;gap:28px}
+.start-l h2{font-size:60px;line-height:.98;font-weight:900;font-stretch:66%}
+.start-l>p{font-size:19px;line-height:1.5;color:var(--mist)}
+.four{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:22px}
+.four li{display:flex;gap:16px;align-items:flex-start;font-size:18px;line-height:1.5}
+.four svg{flex-shrink:0;margin-top:2px}.four strong{color:var(--white)}
+form.deal{background:var(--paper);color:var(--navy);border-radius:6px;padding:44px;display:flex;flex-direction:column;gap:20px}
+form.deal h3{font-size:30px;font-weight:850;font-stretch:72%}
+form.deal .fields{gap:18px}
+form.deal .f input,form.deal .f select{min-height:48px;font-size:16px}
+.consent{display:flex;gap:12px;align-items:flex-start;font-size:13px;line-height:1.55;color:var(--ink-3)}
+.consent input{width:22px;height:22px;margin:0;flex-shrink:0}
+form.deal button{min-height:56px;background:var(--navy);color:var(--paper);font-size:18px;font-weight:750;font-family:inherit;border:0;border-radius:4px;cursor:pointer}
+form.deal button:hover{background:var(--navy-deep)}
+.form-status{font-size:15px;font-weight:600}
+
+.deals{margin:104px var(--gutter) 0;padding:56px 64px;background:var(--green);color:var(--paper);border-radius:6px;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:48px;align-items:center}
+.deals div:first-child{display:flex;flex-direction:column;gap:14px}
+.deals h2{font-size:44px;line-height:1.02;font-weight:850;font-stretch:72%}
+.deals p{font-size:19px;line-height:1.5;color:var(--green-tint)}
+.deals .end{display:flex;justify-content:flex-end}
+.btn-paper{background:var(--paper);color:var(--navy)}.btn-paper:hover{color:var(--navy);background:var(--white)}
+
+.faq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:40px 64px}
+.faq div{display:flex;flex-direction:column;gap:10px;padding-top:20px;border-top:1px solid var(--line-2)}
+.faq h3{font-size:21px;font-weight:800}
+.faq p{font-size:17px;line-height:1.6;color:var(--ink-2)}
+
+.terms{padding:88px var(--gutter) 104px;background:var(--terms);display:flex;flex-direction:column;gap:44px}
+.terms h2{font-size:40px;line-height:1;font-weight:850;font-stretch:72%}
+.terms-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:44px 64px}
+.terms-grid div{display:flex;flex-direction:column;gap:10px}
+.terms-grid h3{font-size:21px;font-weight:800}
+.terms-grid p{font-size:16px;line-height:1.6;color:var(--ink-3)}
+
+footer{padding:48px var(--gutter) 56px;background:var(--navy);color:var(--mist);display:flex;flex-direction:column;gap:18px}
+.foot-top{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+.foot-top .name{font-size:24px;font-weight:850;font-stretch:72%;color:var(--paper)}
+.foot-top .contact{display:flex;gap:12px 28px;flex-wrap:wrap;font-size:16px}
+.foot-top a{color:var(--paper)}
+footer p{max-width:980px;font-size:14px;line-height:1.6}
+
+@media (max-width:1100px){
+  :root{--gutter:40px}
+  nav a.link{display:none}
+  .hero{grid-template-columns:1fr;gap:56px;padding:72px var(--gutter) 88px}
+  .hero h1{font-size:80px}
+  .note{max-width:460px}
+  .why,.start,.check,.deals{grid-template-columns:1fr}
+  .why{gap:48px;padding:56px 40px}
+  .start{gap:56px}
+  .deals .end{justify-content:flex-start}
+  .what-head{flex-direction:column;align-items:flex-start;gap:24px}
+}
+@media (max-width:720px){
+  :root{--gutter:16px}
+  .d{display:none}.m{display:inline}
+  header{padding:16px var(--gutter)}
+  .brand{font-size:21px;gap:10px}.brand svg{width:28px;height:28px}
+  nav .call{padding:0 16px}
+  .hero{padding:48px var(--gutter) 64px;gap:48px}
+  .hero h1{font-size:58px;letter-spacing:-.5px}
+  .hero p{font-size:18px}
+  .ctas .btn{width:100%}
+  .reassure{gap:8px 20px;font-size:14px}
+  .note{padding:56px 28px 32px}.note .h{font-size:40px}
+  .markets{padding:22px var(--gutter);font-size:15px;line-height:1.5;display:block}
+  .markets span{display:inline}.markets span:not(:last-child)::after{content:", "}
+  .markets strong{margin-right:6px}
+  .section{padding:72px var(--gutter) 64px;gap:32px}
+  #what{gap:36px}
+  .h2-xl{font-size:52px}.h2-l{font-size:42px}
+  .cols3{grid-template-columns:1fr;gap:32px}
+  .card{margin:0 var(--gutter)}
+  .check-in{padding:32px 20px 36px;gap:20px}.check-in h2{font-size:40px}
+  .fields{grid-template-columns:1fr;gap:16px}
+  .check-out{padding:32px 20px 36px;gap:20px}
+  .profit{font-size:56px}
+  .why{padding:36px 20px;gap:36px}.why h2{font-size:38px}
+  .start{padding:72px var(--gutter);gap:40px}.start-l h2{font-size:44px}
+  form.deal{padding:28px 20px}
+  .deals{margin:72px var(--gutter) 0;padding:36px 20px;gap:28px}.deals h2{font-size:34px}
+  .deals .btn{width:100%}
+  .faq,.terms-grid{grid-template-columns:1fr;gap:28px}
+  .terms{padding:64px var(--gutter) 72px;gap:32px}.terms h2{font-size:32px}
+  footer{padding:40px var(--gutter) 48px}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="#" class="brand" style="color:var(--paper);text-decoration:none">
+    <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#E8B130" stroke-width="3" aria-hidden="true"><path d="M4 26 L14 16 L20 22 L30 8"/><path d="M22 8 L30 8 L30 16"/></svg>
+    Next Deal Lending
+  </a>
+  <nav aria-label="Main">
+    <a class="link" href="#what">What we do</a>
+    <a class="link" href="#check">Deal check</a>
+    <a class="link" href="#how">How it works</a>
+    <a class="link" href="#faq">Questions</a>
+    <a class="link" href="#start">Start a deal</a>
+    <a class="btn btn-gold call" href="tel:[LOCAL NUMBER]"><span class="d">Call [LOCAL NUMBER]</span><span class="m">Call</span></a>
+  </nav>
+</header>
+
+<main>
+<section class="hero">
+  <div class="hero-copy">
+    <h1>Capital for your next flip or build. A real person picks up.</h1>
+    <p>We help Florida and Georgia investors find deals, check the numbers, and get matched with the right capital. One person on your side the whole way.<span class="d"> No app, no phone tree.</span></p>
+    <div class="ctas">
+      <a class="btn btn-gold" href="#start">Tell us about your deal</a>
+      <a class="btn btn-ghost" href="tel:[LOCAL NUMBER]"><span class="d">Call us</span><span class="m">Call [LOCAL NUMBER]</span></a>
+    </div>
+    <div class="reassure"><span>Free first call</span><span>No credit pull to talk</span><span>No obligation</span></div>
+  </div>
+  <aside class="note">
+    <div class="k">Missed our call?</div>
+    <div class="h">Call that number back.</div>
+    <div class="b">Callbacks ring the person who reached out to you, ahead of anything else in our queue.</div>
+  </aside>
+</section>
+
+<section class="markets" aria-label="Markets">
+  <strong>Working in</strong>
+  <span>Tampa Bay</span><span>Orlando</span><span>Jacksonville</span><span>South Florida</span><span>Southwest Florida</span><span>Atlanta</span><span>Savannah</span><span>and statewide in Florida and Georgia</span>
+</section>
+
+<section id="what" class="section">
+  <div class="what-head">
+    <h2 class="h2-xl">Find the deal. Check the numbers. Fund it.</h2>
+    <p class="lead">Most lenders only do the last part. We help with all three<span class="d">, so you are not stitching together a deal source, a spreadsheet and a lender on your own</span>.</p>
+  </div>
+  <div class="cols3">
+    <div class="col">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#15283A" stroke-width="2.5" aria-hidden="true"><circle cx="17" cy="17" r="11"/><path d="M25 25 L35 35"/></svg>
+      <h3>Find</h3>
+      <p class="body">Tell us your buy box and we send off market opportunities in the markets you work.<span class="d"> You decide what is worth a look.</span></p>
+    </div>
+    <div class="col">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#15283A" stroke-width="2.5" aria-hidden="true"><rect x="7" y="5" width="26" height="30" rx="2"/><path d="M13 13 H27 M13 20 H27 M13 27 H20"/></svg>
+      <h3>Evaluate</h3>
+      <p class="body">We run the deal with you before you commit: purchase, rehab, after repair value and exit. If it does not pencil, we will tell you.</p>
+    </div>
+    <div class="col">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#15283A" stroke-width="2.5" aria-hidden="true"><path d="M5 30 L15 20 L22 27 L35 12"/><path d="M27 12 L35 12 L35 20"/></svg>
+      <h3>Fund</h3>
+      <p class="body">When the numbers work, we match you with capital that fits the deal and your experience<span class="d">, then book a time to walk through it</span>.</p>
+    </div>
+  </div>
+</section>
+
+<section id="check" class="card check" aria-labelledby="check-title">
+  <div class="check-in">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <h2 id="check-title">Quick deal check</h2>
+      <p class="body"><span class="d">Plug in your numbers for a fast read. It is a rule of thumb, not an offer or a loan quote.</span><span class="m">A fast rule of thumb read, not an offer or a loan quote.</span></p>
+    </div>
+    <div class="fields">
+      <label class="f">Purchase price ($)<input id="dc-price" type="number" inputmode="numeric" min="0" step="1000" value="180000"></label>
+      <label class="f">Rehab budget ($)<input id="dc-rehab" type="number" inputmode="numeric" min="0" step="1000" value="45000"></label>
+      <label class="f">After repair value ($)<input id="dc-arv" type="number" inputmode="numeric" min="0" step="1000" value="300000"></label>
+      <label class="f">Selling and holding costs (% of ARV)<input id="dc-costs" type="number" inputmode="decimal" min="0" max="30" step="1" value="10"></label>
+    </div>
+    <p class="small d">The 70% rule is a common investor shorthand: purchase plus rehab at or under 70% of after repair value leaves room for costs and profit.</p>
+  </div>
+  <div class="check-out" aria-live="polite">
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div class="lbl">Estimated profit</div>
+      <div class="profit" id="dc-profit">$0</div>
+      <div class="margin" id="dc-margin">0.0% of after repair value</div>
+    </div>
+    <div class="max">
+      <div class="lbl">Max purchase at the 70% rule</div>
+      <div class="v" id="dc-max">$0</div>
+    </div>
+    <div class="verdict v-empty" id="dc-verdict">Enter an after repair value to see a read.</div>
+    <a class="btn btn-gold" href="#start">Have us check it properly</a>
+  </div>
+</section>
+
+<section id="who" class="section">
+  <h2 class="h2-l">Who we fund</h2>
+  <div class="cols3">
+    <div class="col sm"><h3>Fix and flip investors</h3><p class="body">Purchase and rehab financing for single family homes, townhomes and small multifamily, from your first project to your fortieth.</p></div>
+    <div class="col sm"><h3>Builders</h3><p class="body">Ground up construction, teardowns and rebuilds, ADUs and major additions for builders with completed projects behind them.</p></div>
+    <div class="col sm"><h3>Cash buyers</h3><p class="body">Closed with cash and want that money working on the next deal? We can talk about pulling it back out.</p></div>
+  </div>
+</section>
+
+<section class="card why">
+  <div class="why-l">
+    <h2>Apps are fine until your deal is not a template.</h2>
+    <div class="promises">
+      <div class="t">Our promises</div>
+      <div>We never charge you to talk or to look at a deal.</div>
+      <div>We never pull your credit just to have a conversation.</div>
+      <div>We never quote a number we cannot stand behind.</div>
+      <div>We never sell your information.</div>
+    </div>
+  </div>
+  <div class="why-r">
+    <div><h3>One person, start to finish</h3><p class="body">The person you talk to first is the person who sees it through.<span class="d"> You will never re-explain your deal to a new rep.</span></p></div>
+    <div><h3>Local, and glad to meet at the property</h3><p class="body"><span class="d">We are based in Tampa and work Florida and Georgia.</span><span class="m">We are based in Tampa.</span> If it helps to walk the job together, we will come to you.</p></div>
+    <div><h3>Institutional capital behind the conversation</h3><p class="body"><span class="d">You get a human on the phone and established capital partners behind the deal. You do not have to choose between the two.</span><span class="m">A human on the phone and established capital partners behind the deal.</span></p></div>
+  </div>
+</section>
+
+<section id="how" class="section">
+  <h2 class="h2-l">How it works</h2>
+  <ol class="steps cols3">
+    <li><div class="n">1</div><h3>Tell us about the deal</h3><p class="body">The property, the plan and your experience. Five minutes<span class="d"> on the phone or the form below</span> is usually enough.</p></li>
+    <li><div class="n">2</div><h3>Book a time to talk</h3><p class="body"><span class="d">We set a specific time with a capital specialist and text you a confirmation, a reminder the night before and one before the call.</span><span class="m">A specific time with a capital specialist, with a text confirmation and reminders.</span></p></li>
+    <li><div class="n">3</div><h3>Get matched with capital</h3><p class="body"><span class="d">We walk you through the options that fit your deal. </span>Real terms come from our capital partners, never from a guess on a first call.</p></li>
+  </ol>
+</section>
+
+<section id="start" class="start">
+  <div class="start-l">
+    <h2>Start with four answers.</h2>
+    <p class="d">These are the first things we ask on every call. Have them in mind and the conversation goes fast.</p>
+    <ul class="four">
+      <li><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E8B130" stroke-width="2.5" aria-hidden="true"><path d="M4 12 L10 18 L20 6"/></svg><div><strong>Your track record.</strong> <span class="d">How many flips or builds you have finished in the last three years.</span><span class="m">Flips or builds finished in the last three years.</span></div></li>
+      <li><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E8B130" stroke-width="2.5" aria-hidden="true"><path d="M4 12 L10 18 L20 6"/></svg><div><strong>The deal.</strong> <span class="d">A property under contract, or what you are looking for right now.</span><span class="m">Under contract, or what you are looking for.</span></div></li>
+      <li><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E8B130" stroke-width="2.5" aria-hidden="true"><path d="M4 12 L10 18 L20 6"/></svg><div><strong>Your credit, roughly.</strong> <span class="d">A ballpark is plenty. </span>We never pull credit to talk.</div></li>
+      <li><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E8B130" stroke-width="2.5" aria-hidden="true"><path d="M4 12 L10 18 L20 6"/></svg><div><strong>Reserves.</strong> <span class="d">Cash on hand to carry the project and handle a surprise.</span><span class="m">Cash to carry the project and handle a surprise.</span></div></li>
+    </ul>
+  </div>
+  <!-- Form target (GoHighLevel pipeline) not configured yet: set data-endpoint once the GHL form/webhook URL is provided. -->
+  <form class="deal" id="deal-form" data-endpoint="" novalidate>
+    <h3>Tell us about your deal</h3>
+    <div class="fields">
+      <label class="f">Name<input type="text" name="name" autocomplete="name" required></label>
+      <label class="f">Mobile number<input type="tel" name="phone" autocomplete="tel" required></label>
+      <label class="f">Email<input type="email" name="email" autocomplete="email"></label>
+      <label class="f">Property city<input type="text" name="property_city"></label>
+      <label class="f">What are you doing?<select name="deal_type"><option>Fix and flip</option><option>Ground up build</option><option>Pull cash out of a property</option><option>Just want deals sent to me</option></select></label>
+      <label class="f">Projects finished, last 3 years<select name="completed_projects_3y"><option>None yet</option><option>1 to 2</option><option>3 to 5</option><option>6 or more</option></select></label>
+    </div>
+    <label class="consent"><input type="checkbox" name="sms_consent" value="yes"><span>I agree that Next Deal Lending may call and text me at the number above about my inquiry, including with automated technology. Consent is not a condition of any financing. Calls are recorded. Message frequency varies and message and data rates may apply. Reply STOP to opt out, HELP for help.</span></label>
+    <button type="submit">Send my deal</button>
+    <p class="form-status" id="form-status" role="status" hidden></p>
+    <p class="small">We call back during business hours, usually the same day.</p>
+  </form>
+</section>
+
+<section class="deals">
+  <div>
+    <h2>Want to see deals before they hit the market?</h2>
+    <p>We send active investors off market opportunities in the areas they buy. <span class="d">Tell us your market and your buy box, and we will send what fits.</span><span class="m">Tell us your market and buy box.</span></p>
+  </div>
+  <div class="end"><a class="btn btn-paper" href="#start">Get on the deal list</a></div>
+</section>
+
+<section id="faq" class="section">
+  <h2 class="h2-l">Straight answers</h2>
+  <div class="faq">
+    <div><h3>How did you get my number?</h3><p>We reach out to property owners and investors using public property and business records. If you would rather not hear from us, say so<span class="d"> on the call</span> or reply STOP, and we will stop.</p></div>
+    <div><h3>Are you a lender?</h3><p><span class="d">No. We connect investors with independent capital partners. We handle the conversation and the fit. Our partners review and approve the financing.</span><span class="m">No. We connect investors with independent capital partners, who review and approve the financing.</span></p></div>
+    <div><h3>Do I need experience?</h3><p><span class="d">It helps and it opens more options, but it is not always required. If you are newer, tell us about the deal and we will be honest about what fits.</span><span class="m">It helps and opens more options, but it is not always required. We will be honest about what fits.</span></p></div>
+    <div><h3>Will you pull my credit?</h3><p><span class="d">Not to talk. We only ask for a rough range. Nothing is pulled unless you decide to move forward with a capital partner.</span><span class="m">Not to talk. A rough range is all we ask for until you choose to move forward.</span></p></div>
+    <div><h3>What kinds of properties?</h3><p>Residential with one to four units<span class="d">: single family, townhomes and small multifamily</span>. Flips, ground up construction and cash out after a cash purchase.</p></div>
+    <div><h3>Can you move fast?</h3><p>Tell us your closing date on the first call. We will tell you honestly whether it is realistic<span class="d"> before you spend any time or money</span>.</p></div>
+  </div>
+</section>
+
+<section id="terms" class="terms">
+  <h2>Call recording, texts and opting out</h2>
+  <div class="terms-grid">
+    <div><h3>Call recording</h3><p>All calls to and from Next Deal Lending are recorded for quality, training and record keeping. We tell you at the start of every call. By staying on the line, you consent to the recording.</p></div>
+    <div><h3>Text messages</h3><p>If you text us or give us your mobile number, you agree to receive texts from Next Deal Lending about your inquiry, including appointment confirmations and reminders. Message frequency varies. Message and data rates may apply. Reply HELP for help.</p></div>
+    <div><h3>How to opt out</h3><p><span class="d">Reply STOP to any text to stop texts.</span><span class="m">Reply STOP to any text.</span> Tell anyone on our team you do not want calls, or email [OPT-OUT EMAIL], and we will add you to our do not call list. An opt out from any channel stops calls and texts from us.</p></div>
+    <div><h3>Privacy</h3><p>We use your information to respond to your inquiry and connect you with capital partners you ask to hear about. We do not sell your information. We do not share mobile numbers or text opt in data with third parties for their marketing.</p></div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="foot-top">
+    <div class="name">Next Deal Lending</div>
+    <div class="contact"><span>Tampa, Florida</span><a href="tel:[LOCAL NUMBER]">[LOCAL NUMBER]</a><a href="mailto:[EMAIL]">[EMAIL]</a></div>
+  </div>
+  <p>Next Deal Lending is not a lender and does not make loans. Financing is provided by independent capital partners and is subject to their review and approval. Nothing on this site is an offer or commitment to lend. © 2026 Next Deal Lending.</p>
+</footer>
+
+<script>
+(function () {
+  var ids = ["price", "rehab", "arv", "costs"];
+  var el = function (id) { return document.getElementById(id); };
+  var num = function (v) { var x = Number(v); return isFinite(x) && x > 0 ? x : 0; };
+  var money = function (v) { return (v < 0 ? "-$" : "$") + Math.round(Math.abs(v)).toLocaleString("en-US"); };
+
+  function render() {
+    var price = num(el("dc-price").value), rehab = num(el("dc-rehab").value);
+    var arv = num(el("dc-arv").value), costs = num(el("dc-costs").value);
+    var profit = arv - price - rehab - arv * costs / 100;
+    var margin = arv > 0 ? profit / arv * 100 : 0;
+    var maxBuy = Math.max(0, arv * 0.7 - rehab);
+    var verdict, cls;
+    if (arv <= 0) { verdict = "Enter an after repair value to see a read."; cls = "v-empty"; }
+    else if (price + rehab <= arv * 0.7) { verdict = "Strong. This one pencils under the 70% rule."; cls = "v-strong"; }
+    else if (profit > 0 && margin >= 10) { verdict = "Workable, but tight. Worth a closer look."; cls = "v-tight"; }
+    else { verdict = "Does not pencil yet at this price."; cls = "v-no"; }
+    el("dc-profit").textContent = money(profit);
+    el("dc-margin").textContent = margin.toFixed(1) + "% of after repair value";
+    el("dc-max").textContent = money(maxBuy);
+    var v = el("dc-verdict");
+    v.textContent = verdict;
+    v.className = "verdict " + cls;
+  }
+  ids.forEach(function (id) { el("dc-" + id).addEventListener("input", render); });
+  render();
+
+  var form = el("deal-form"), status = el("form-status");
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!form.name.value.trim() || !form.phone.value.trim()) {
+      status.hidden = false;
+      status.textContent = "Please add your name and mobile number.";
+      return;
+    }
+    var endpoint = form.getAttribute("data-endpoint");
+    if (!endpoint) {
+      status.hidden = false;
+      status.textContent = "This form is not connected yet. Please call us instead.";
+      return;
+    }
+    var data = new FormData(form);
+    data.set("sms_consent", form.sms_consent.checked ? "yes" : "no");
+    fetch(endpoint, { method: "POST", body: data })
+      .then(function (r) {
+        if (!r.ok) throw new Error(String(r.status));
+        form.reset();
+        status.hidden = false;
+        status.textContent = "Thanks. We will call you back during business hours.";
+      })
+      .catch(function () {
+        status.hidden = false;
+        status.textContent = "Something went wrong sending your deal. Please call us instead.";
+      });
+  });
+})();
+</script>
+</body>
+</html>
