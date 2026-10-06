@@ -109,6 +109,7 @@ form.deal .f input,form.deal .f select{min-height:48px;font-size:16px}
 .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .consent{display:flex;gap:12px;align-items:flex-start;font-size:13px;line-height:1.55;color:var(--ink-3)}
 .consent input{width:22px;height:22px;margin:0;flex-shrink:0}
+.consent+.consent{margin-top:12px}
 form.deal button{min-height:56px;background:var(--navy);color:var(--paper);font-size:18px;font-weight:750;font-family:inherit;border:0;border-radius:4px;cursor:pointer}
 form.deal button:hover{background:var(--navy-deep)}
 .form-status{font-size:15px;font-weight:600}
@@ -341,6 +342,7 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
       <label class="f">Projects finished, last 3 years<select name="completed_projects_3y"><option>None yet</option><option>1 to 2</option><option>3 to 5</option><option>6 or more</option></select></label>
     </div>
     <label class="consent"><input type="checkbox" name="sms_consent" value="yes"><span>I agree that Next Deal Lending may call and text me at the number above about my inquiry, including with automated technology. Consent is not a condition of any financing. Calls are recorded. Message frequency varies and message and data rates may apply. Reply STOP to opt out, HELP for help.</span></label>
+    <label class="consent"><input type="checkbox" name="deal_drop_optin" value="yes"><span>Send me the Next Deal Lending weekly Deal Drop: off market deals in the areas I buy. I can unsubscribe at any time.</span></label>
     <button type="submit">Send my deal</button>
     <p class="form-status" id="form-status" role="status" hidden></p>
     <p class="small">We call back during business hours, usually the same day.</p>
@@ -431,6 +433,7 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
     }
     var data = new FormData(form);
     data.set("sms_consent", form.sms_consent.checked ? "yes" : "no");
+    data.set("deal_drop_optin", form.deal_drop_optin.checked ? "yes" : "no");
     data.set("consent_text", form.querySelector(".consent span").textContent.trim());
     data.set("page_url", window.location.href);
     fetch(endpoint, { method: "POST", body: data })
