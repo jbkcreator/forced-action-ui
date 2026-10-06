@@ -106,8 +106,10 @@ form.deal{background:var(--paper);color:var(--navy);border-radius:6px;padding:44
 form.deal h3{font-size:30px;font-weight:850;font-stretch:72%}
 form.deal .fields{gap:18px}
 form.deal .f input,form.deal .f select{min-height:48px;font-size:16px}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .consent{display:flex;gap:12px;align-items:flex-start;font-size:13px;line-height:1.55;color:var(--ink-3)}
 .consent input{width:22px;height:22px;margin:0;flex-shrink:0}
+.consent+.consent{margin-top:12px}
 form.deal button{min-height:56px;background:var(--navy);color:var(--paper);font-size:18px;font-weight:750;font-family:inherit;border:0;border-radius:4px;cursor:pointer}
 form.deal button:hover{background:var(--navy-deep)}
 .form-status{font-size:15px;font-weight:600}
@@ -211,6 +213,7 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
     <div class="ctas">
       <a class="btn btn-gold" href="#start">Tell us about your deal</a>
       <a class="btn btn-ghost" href="tel:[LOCAL NUMBER]"><span class="d">Call us</span><span class="m">Call [LOCAL NUMBER]</span></a>
+      <a class="btn btn-ghost" href="sms:[LOCAL NUMBER]">Text us</a>
     </div>
     <div class="reassure"><span>Free first call</span><span>No credit pull to talk</span><span>No obligation</span></div>
   </div>
@@ -327,8 +330,9 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
     </ul>
   </div>
   <!-- Form target (GoHighLevel pipeline) not configured yet: set data-endpoint once the GHL form/webhook URL is provided. -->
-  <form class="deal" id="deal-form" data-endpoint="" novalidate>
+  <form class="deal" id="deal-form" data-endpoint="/api/lending/web-leads" novalidate>
     <h3>Tell us about your deal</h3>
+    <div class="hp" aria-hidden="true"><label>Leave this field empty<input type="text" name="company_website" tabindex="-1" autocomplete="off"></label></div>
     <div class="fields">
       <label class="f">Name<input type="text" name="name" autocomplete="name" required></label>
       <label class="f">Mobile number<input type="tel" name="phone" autocomplete="tel" required></label>
@@ -338,6 +342,7 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
       <label class="f">Projects finished, last 3 years<select name="completed_projects_3y"><option>None yet</option><option>1 to 2</option><option>3 to 5</option><option>6 or more</option></select></label>
     </div>
     <label class="consent"><input type="checkbox" name="sms_consent" value="yes"><span>I agree that Next Deal Lending may call and text me at the number above about my inquiry, including with automated technology. Consent is not a condition of any financing. Calls are recorded. Message frequency varies and message and data rates may apply. Reply STOP to opt out, HELP for help.</span></label>
+    <label class="consent"><input type="checkbox" name="deal_drop_optin" value="yes"><span>Send me the Next Deal Lending weekly Deal Drop: off market deals in the areas I buy. I can unsubscribe at any time.</span></label>
     <button type="submit">Send my deal</button>
     <p class="form-status" id="form-status" role="status" hidden></p>
     <p class="small">We call back during business hours, usually the same day.</p>
@@ -369,7 +374,7 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
   <div class="terms-grid">
     <div><h3>Call recording</h3><p>All calls to and from Next Deal Lending are recorded for quality, training and record keeping. We tell you at the start of every call. By staying on the line, you consent to the recording.</p></div>
     <div><h3>Text messages</h3><p>If you text us or give us your mobile number, you agree to receive texts from Next Deal Lending about your inquiry, including appointment confirmations and reminders. Message frequency varies. Message and data rates may apply. Reply HELP for help.</p></div>
-    <div><h3>How to opt out</h3><p><span class="d">Reply STOP to any text to stop texts.</span><span class="m">Reply STOP to any text.</span> Tell anyone on our team you do not want calls, or email [OPT-OUT EMAIL], and we will add you to our do not call list. An opt out from any channel stops calls and texts from us.</p></div>
+    <div><h3>How to opt out</h3><p><span class="d">Reply STOP to any text to stop texts.</span><span class="m">Reply STOP to any text.</span> Tell anyone on our team you do not want calls, or email <a href="mailto:optout@nextdeallending.com">optout@nextdeallending.com</a>, and we will add you to our do not call list. An opt out from any channel stops calls and texts from us.</p></div>
     <div><h3>Privacy</h3><p>We use your information to respond to your inquiry and connect you with capital partners you ask to hear about. We do not sell your information. We do not share mobile numbers or text opt in data with third parties for their marketing.</p></div>
   </div>
 </section>
@@ -378,8 +383,9 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
 <footer>
   <div class="foot-top">
     <div class="name">Next Deal Lending</div>
-    <div class="contact"><span>Tampa, Florida</span><a href="tel:[LOCAL NUMBER]">[LOCAL NUMBER]</a><a href="mailto:[EMAIL]">[EMAIL]</a></div>
+    <div class="contact"><span>Tampa, Florida</span><a href="tel:[LOCAL NUMBER]">[LOCAL NUMBER]</a><a href="sms:[LOCAL NUMBER]">Text us</a><a href="mailto:hello@nextdeallending.com">hello@nextdeallending.com</a></div>
   </div>
+  <p>HEU AI LLC, 971 US Highway 202N, Ste N, Branchburg, NJ 08876</p>
   <p>Next Deal Lending is not a lender and does not make loans. Financing is provided by independent capital partners and is subject to their review and approval. Nothing on this site is an offer or commitment to lend. © 2026 Next Deal Lending.</p>
 </footer>
 
@@ -427,16 +433,32 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
     }
     var data = new FormData(form);
     data.set("sms_consent", form.sms_consent.checked ? "yes" : "no");
+    data.set("deal_drop_optin", form.deal_drop_optin.checked ? "yes" : "no");
+    data.set("consent_text", form.querySelector(".consent span").textContent.trim());
+    data.set("page_url", window.location.href);
     fetch(endpoint, { method: "POST", body: data })
       .then(function (r) {
+        if (r.status === 422) {
+          return r.json().then(function (j) {
+            var err = new Error("invalid");
+            err.userMessage = typeof j.detail === "string" ? j.detail : null;
+            throw err;
+          });
+        }
         if (!r.ok) throw new Error(String(r.status));
-        form.reset();
-        status.hidden = false;
-        status.textContent = "Thanks. We will call you back during business hours.";
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          form.reset();
+          status.hidden = false;
+          status.textContent = j.duplicate
+            ? "We already have your request from a few minutes ago. We will be in touch."
+            : j.will_contact
+              ? "Thanks. We will call you back during business hours."
+              : "Thanks. We got your request.";
+        });
       })
-      .catch(function () {
+      .catch(function (err) {
         status.hidden = false;
-        status.textContent = "Something went wrong sending your deal. Please call us instead.";
+        status.textContent = (err && err.userMessage) || "Something went wrong sending your deal. Please call us instead.";
       });
   });
 })();
