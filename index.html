@@ -464,6 +464,13 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
         status.textContent = (err && err.userMessage) || "Something went wrong sending your deal. Please call us instead.";
       });
   });
+
+  // Web fonts load after the browser jumps to a #anchor and resize the text above it, so jump again once they are in.
+  if (window.location.hash) {
+    var target = document.getElementById(window.location.hash.slice(1));
+    var fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+    if (target) fontsReady.then(function () { target.scrollIntoView(); });
+  }
 })();
 </script>
 </body>
