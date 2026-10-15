@@ -1,6 +1,11 @@
 (function () {
   'use strict';
 
+  if (window.top !== window.self) {
+    document.body.textContent = 'This page cannot be shown inside another page.';
+    return;
+  }
+
   var apiMeta = document.querySelector('meta[name="api-base"]');
   var BASE = (apiMeta && apiMeta.content) || '/api/lending/routing';
   var KEY = 'ndl_routing_admin_secret';
@@ -12,6 +17,10 @@
 
   var meta = null;
   var state = { tab: 'lenders', lenders: [], openEdit: null, openBoxes: null, files: [], fileFilter: { status: '', q: '' }, selectedFile: null, reasons: [] };
+
+  var seq = {};
+  function nextSeq(name) { seq[name] = (seq[name] || 0) + 1; return seq[name]; }
+  function isCurrent(name, token) { return seq[name] === token; }
 
   // ---------- helpers ----------
 
@@ -183,7 +192,9 @@
   // ---------- lenders ----------
 
   function loadLenders() {
+    var token = nextSeq('view');
     return guard(api('/lenders')).then(function (rows) {
+      if (!isCurrent('view', token)) return;
       state.lenders = rows;
       renderLenders();
     });
@@ -240,7 +251,7 @@
   }
 
   function patchLender(id, body, okMessage) {
-    return guard(api('/lenders/' + id, { method: 'PATCH', body: body })).then(function () { toast(okMessage); return loadLenders(); }).catch(function () { return loadLenders(); });
+    return guard(api('/lenders/' + id, { method: 'PATCH', body: body })).then(function () { toast(okMessage); return loadLenders(); }).catch(function (err) { if (err.message !== 'locked') return loadLenders(); });
   }
 
   function move(index, delta) {
@@ -395,7 +406,8 @@
       // Re-boxing adds the new box first and removes the old one only after that succeeded, so a failure never leaves the lender with no box.
       guard(api('/lenders/' + lenderId + '/boxes', { method: 'POST', body: body })).then(function () {
         if (existing) return guard(api('/lenders/' + lenderId + '/boxes/' + existing.id, { method: 'DELETE' }));
-      }).then(function () { toast(existing ? 'Box updated' : 'Box added'); renderBoxes(lenderId); });
+      }).then(function () { toast(existing ? 'Box updated' : 'Box added'); renderBoxes(lenderId); })
+        .catch(function () { renderBoxes(lenderId); });
     } },
       h('h3', null, existing ? 'Edit box' : 'Add a box'),
       h('div', { class: 'wide' }, h('label', null, 'Loan types'), h('div', { class: 'checks' }, types.map(function (t) { return t.el; }))),
@@ -416,7 +428,9 @@
     var qs = [];
     if (state.fileFilter.status) qs.push('status=' + encodeURIComponent(state.fileFilter.status));
     if (state.fileFilter.q) qs.push('q=' + encodeURIComponent(state.fileFilter.q));
+    var token = nextSeq('view');
     return guard(api('/files' + (qs.length ? '?' + qs.join('&') : ''))).then(function (res) {
+      if (!isCurrent('view', token)) return;
       state.files = res.files;
       renderFiles();
       if (state.selectedFile) return openFile(state.selectedFile);
@@ -458,7 +472,11 @@
     });
     var slot = document.getElementById('file-detail');
     if (!slot) { state.tab = 'files'; return switchTab('files'); }
-    return guard(Promise.all([api('/files/' + ref.id + fileQuery(ref)), reasonsList()])).then(function (res) { renderFileDetail(slot, res[0], res[1]); });
+    var token = nextSeq('file');
+    return guard(Promise.all([api('/files/' + ref.id + fileQuery(ref)), reasonsList()])).then(function (res) {
+      if (!isCurrent('file', token) || document.getElementById('file-detail') !== slot) return;
+      renderFileDetail(slot, res[0], res[1]);
+    });
   }
 
   function reasonsList() {
@@ -478,9 +496,24 @@
         h('dt', null, 'Product'), h('dd', null, title(f.loan_type) + ' · ' + money(f.loan_amount) + ' · ' + (f.property_state || '—')),
         h('dt', null, 'Current lender'), h('dd', { id: 'fact-current' }, rec.current ? rec.current.name + ' (position ' + rec.current.position + ')' : '—'),
         h('dt', null, 'Next in line'), h('dd', { id: 'fact-next' }, rec.next ? rec.next.name + ' (position ' + rec.next.position + ')' : 'No lender left — it would go to the hold queue')),
+      requeueControls(rec),
       declineControls(rec, reasons),
       h('h3', null, 'Route history'),
       historyList(rec.history)));
+  }
+
+  function requeueControls(rec) {
+    var f = rec.file;
+    if (f.status !== 'held' && f.status !== 'exhausted') return null;
+    var ref = fileRef(f);
+    var btn = h('button', { class: 'btn gold', type: 'button', id: 'requeue-btn', onclick: function () {
+      btn.disabled = true;
+      guard(api('/files/' + ref.id + '/requeue' + fileQuery(ref), { method: 'POST' })).then(function () {
+        toast('Sent back to the router'); return refreshAfterAction(ref);
+      }).catch(function () { btn.disabled = false; });
+    } }, 'Send back to the router');
+    return h('div', { class: 'decline-row' }, btn,
+      h('span', { class: 'hint' }, 'Use this after signing a lender or editing a box. A lender that already declined it is skipped.'));
   }
 
   function declineControls(rec, reasons) {
@@ -496,7 +529,9 @@
     var outcomeBtns = meta.outcome_actions.map(function (action) {
       var btn = h('button', { class: 'btn ghost small', type: 'button', 'data-outcome': action, onclick: function () {
         if (btn.getAttribute('data-armed') !== '1') { btn.setAttribute('data-armed', '1'); btn.textContent = 'Confirm ' + action + '?'; setTimeout(function () { btn.setAttribute('data-armed', '0'); btn.textContent = 'Mark ' + action; }, 4000); return; }
-        guard(api('/files/' + ref.id + '/outcome' + fileQuery(ref), { method: 'POST', body: { action: action } })).then(function (r) { toast(r.detail === 'recorded' ? 'Recorded ' + action : 'Already recorded'); return refreshAfterAction(ref); });
+        btn.disabled = true;
+        guard(api('/files/' + ref.id + '/outcome' + fileQuery(ref), { method: 'POST', body: { action: action } })).then(function (r) { toast(r.detail === 'recorded' ? 'Recorded ' + action : 'Already recorded'); return refreshAfterAction(ref); })
+          .catch(function () { btn.disabled = false; });
       } }, 'Mark ' + action);
       return btn;
     });
@@ -520,10 +555,19 @@
   // ---------- hold queue ----------
 
   function loadHold() {
+    var token = nextSeq('view');
     return guard(api('/hold-queue')).then(function (res) {
+      if (!isCurrent('view', token)) return;
       var v = view();
       clear(v);
-      v.appendChild(h('div', { class: 'bar' }, h('h2', { class: 'grow' }, 'Hold queue'), h('span', { class: 'muted' }, res.count + ' file(s)')));
+      v.appendChild(h('div', { class: 'bar' }, h('h2', { class: 'grow' }, 'Hold queue'),
+        h('span', { class: 'muted' }, res.truncated ? 'Showing the newest ' + res.count + ' files' : res.count + ' file(s)'),
+        h('button', { class: 'btn gold', type: 'button', id: 'requeue-all-btn', onclick: function () {
+          if (!window.confirm('Send every file held with no lender match back to the router? The routing sweep routes them in batches.')) return;
+          guard(api('/hold-queue/requeue', { method: 'POST', body: { reason: 'no_match' } })).then(function (r) {
+            toast(r.reopened + ' file(s) reopened'); return loadHold();
+          });
+        } }, 'Re-route all with no match')));
       v.appendChild(h('p', { class: 'hint' }, 'Files no signed lender matched, or every matching lender declined. Nothing is dropped; each one needs a person.'));
       if (!res.files.length) { v.appendChild(h('div', { class: 'empty' }, 'The hold queue is empty.')); return; }
       v.appendChild(h('div', { class: 'scroll' }, h('table', null,
@@ -540,13 +584,15 @@
   // ---------- decline reasons ----------
 
   function loadReasons() {
+    var token = nextSeq('view');
     return guard(api('/decline-reasons')).then(function (rows) {
+      if (!isCurrent('view', token)) return;
       var v = view();
       clear(v);
       var code = h('input', { type: 'text', maxlength: 50, placeholder: 'e.g. appraisal_low' });
       var label = h('input', { type: 'text', maxlength: 200, placeholder: 'Shown to the team' });
       v.appendChild(h('h2', null, 'Decline reasons'));
-      v.appendChild(h('p', { class: 'hint' }, 'The fixed list of reasons a lender can decline for. A decline must use one of these codes; “unspecified” is what a one-click decline records.'));
+      v.appendChild(h('p', { class: 'hint' }, 'The fixed list of reasons a lender can decline for. A decline must use one of these codes; “other” is what a one-click decline records.'));
       v.appendChild(h('form', { class: 'panel', onsubmit: function (ev) {
         ev.preventDefault();
         var c = code.value.trim().toLowerCase().replace(/\s+/g, '_');
