@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lender routing admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="api-base" content="/api/lending/routing">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<header class="top">
+  <h1>Lender routing</h1>
+  <span class="sub">Next Deal Lending &middot; internal</span>
+  <button type="button" id="lock" class="btn ghost" hidden>Lock</button>
+</header>
+<main id="app"></main>
+<div id="toast" role="status" aria-live="polite"></div>
+<noscript><p class="notice">This screen needs JavaScript.</p></noscript>
+<script src="admin.js" defer></script>
+</body>
+</html>
