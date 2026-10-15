@@ -37,6 +37,12 @@
   }
   function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); }
 
+  function fileRef(f) { return { id: f.file_id, source: f.source }; }
+  function sameFile(a, b) { return !!a && !!b && a.id === b.id && a.source === b.source; }
+  function fileQuery(ref) { return '?source=' + encodeURIComponent(ref.source); }
+  function fileLabel(f) { return (f.source === 'partner' ? 'Partner file #' : 'File #') + f.file_id; }
+  function fromWhere(f) { return f.source === 'partner' ? 'Partner' + (f.partner_name ? ': ' + f.partner_name : '') : 'LendingFlow'; }
+
   function money(n) { return (n === null || n === undefined) ? '—' : '$' + Number(n).toLocaleString('en-US'); }
   function when(iso) { return iso ? new Date(iso).toLocaleString() : ''; }
   function title(s) { return String(s || '').replace(/_/g, ' ').toLowerCase().replace(/(^| )\w/g, function (c) { return c.toUpperCase(); }); }
@@ -431,12 +437,12 @@
     if (!state.files.length) left.appendChild(h('div', { class: 'empty' }, 'No files match.'));
     else {
       left.appendChild(h('div', { class: 'scroll' }, h('table', { id: 'files-table' },
-        h('thead', null, h('tr', null, ['File', 'Borrower', 'Product', 'Amount', 'Status', 'Lender', 'Updated'].map(function (c) { return h('th', null, c); }))),
+        h('thead', null, h('tr', null, ['File', 'From', 'Borrower', 'Product', 'Amount', 'Status', 'Lender', 'Updated'].map(function (c) { return h('th', null, c); }))),
         h('tbody', null, state.files.map(function (f) {
-          return h('tr', { class: 'click' + (state.selectedFile === f.lead_id ? ' sel' : ''), 'data-file': f.lead_id, tabindex: 0,
-            onclick: function () { openFile(f.lead_id); },
-            onkeydown: function (ev) { if (ev.key === 'Enter') openFile(f.lead_id); } },
-            h('td', null, '#' + f.lead_id), h('td', null, [f.first_name, f.last_name].filter(Boolean).join(' ') || '—'),
+          return h('tr', { class: 'click' + (sameFile(state.selectedFile, fileRef(f)) ? ' sel' : ''), 'data-file': f.source + ':' + f.file_id, tabindex: 0,
+            onclick: function () { openFile(fileRef(f)); },
+            onkeydown: function (ev) { if (ev.key === 'Enter') openFile(fileRef(f)); } },
+            h('td', null, '#' + f.file_id), h('td', null, fromWhere(f)), h('td', null, [f.first_name, f.last_name].filter(Boolean).join(' ') || '—'),
             h('td', null, title(f.loan_type)), h('td', { class: 'num' }, money(f.loan_amount)), h('td', null, statusBadge(f.status)),
             h('td', null, f.current_lender_name ? f.current_lender_name + ' (#' + f.route_position + ')' : (f.hold_reason ? title(f.hold_reason) : '—')),
             h('td', null, when(f.updated_at)));
@@ -445,14 +451,14 @@
     v.appendChild(h('div', { class: 'split' }, left, right));
   }
 
-  function openFile(id) {
-    state.selectedFile = id;
+  function openFile(ref) {
+    state.selectedFile = ref;
     Array.prototype.forEach.call(document.querySelectorAll('#files-table tr.click'), function (tr) {
-      tr.classList.toggle('sel', tr.getAttribute('data-file') === String(id));
+      tr.classList.toggle('sel', tr.getAttribute('data-file') === ref.source + ':' + ref.id);
     });
     var slot = document.getElementById('file-detail');
     if (!slot) { state.tab = 'files'; return switchTab('files'); }
-    return guard(Promise.all([api('/files/' + id), reasonsList()])).then(function (res) { renderFileDetail(slot, res[0], res[1]); });
+    return guard(Promise.all([api('/files/' + ref.id + fileQuery(ref)), reasonsList()])).then(function (res) { renderFileDetail(slot, res[0], res[1]); });
   }
 
   function reasonsList() {
@@ -465,8 +471,9 @@
     var f = rec.file;
     var name = [f.first_name, f.last_name].filter(Boolean).join(' ') || 'Unknown borrower';
     slot.appendChild(h('div', { class: 'panel', id: 'file-panel' },
-      h('h2', null, 'File #' + f.lead_id + ' · ' + name),
-      h('div', null, statusBadge(f.status), ' ', f.hold_reason ? h('span', { class: 'muted' }, title(f.hold_reason)) : null),
+      h('h2', null, fileLabel(f) + ' · ' + name),
+      h('div', null, statusBadge(f.status), ' ', f.hold_reason ? h('span', { class: 'muted' }, title(f.hold_reason)) : null,
+        f.source === 'partner' ? h('span', { class: 'muted' }, ' · from ' + (f.partner_name || 'a partner')) : null),
       h('dl', { class: 'facts' },
         h('dt', null, 'Product'), h('dd', null, title(f.loan_type) + ' · ' + money(f.loan_amount) + ' · ' + (f.property_state || '—')),
         h('dt', null, 'Current lender'), h('dd', { id: 'fact-current' }, rec.current ? rec.current.name + ' (position ' + rec.current.position + ')' : '—'),
@@ -477,19 +484,19 @@
   }
 
   function declineControls(rec, reasons) {
-    var id = rec.file.lead_id;
+    var ref = fileRef(rec.file);
     if (!rec.can_decline) return h('p', { class: 'hint' }, 'Nothing to decline: this file is not currently with a lender.');
     var reason = h('select', { 'aria-label': 'Decline reason' }, reasons.map(function (r) { return h('option', { value: r.code, selected: r.code === meta.default_decline_reason }, r.label); }));
     var decline = h('button', { class: 'btn danger', type: 'button', id: 'decline-btn', onclick: function () {
       decline.disabled = true;
-      guard(api('/files/' + id + '/decline', { method: 'POST', body: { reason_code: reason.value } })).then(function () {
-        toast('Declined. The file moved on.'); return refreshAfterAction(id);
+      guard(api('/files/' + ref.id + '/decline' + fileQuery(ref), { method: 'POST', body: { reason_code: reason.value } })).then(function () {
+        toast('Declined. The file moved on.'); return refreshAfterAction(ref);
       }).catch(function () { decline.disabled = false; });
     } }, 'Decline ' + rec.current.name);
     var outcomeBtns = meta.outcome_actions.map(function (action) {
       var btn = h('button', { class: 'btn ghost small', type: 'button', 'data-outcome': action, onclick: function () {
         if (btn.getAttribute('data-armed') !== '1') { btn.setAttribute('data-armed', '1'); btn.textContent = 'Confirm ' + action + '?'; setTimeout(function () { btn.setAttribute('data-armed', '0'); btn.textContent = 'Mark ' + action; }, 4000); return; }
-        guard(api('/files/' + id + '/outcome', { method: 'POST', body: { action: action } })).then(function (r) { toast(r.detail === 'recorded' ? 'Recorded ' + action : 'Already recorded'); return refreshAfterAction(id); });
+        guard(api('/files/' + ref.id + '/outcome' + fileQuery(ref), { method: 'POST', body: { action: action } })).then(function (r) { toast(r.detail === 'recorded' ? 'Recorded ' + action : 'Already recorded'); return refreshAfterAction(ref); });
       } }, 'Mark ' + action);
       return btn;
     });
@@ -498,8 +505,8 @@
       h('div', { class: 'decline-row' }, h('span', { class: 'hint' }, 'Records an outcome for ' + rec.current.name + (meta.seat_cap_counted_action ? ' (the seat cap counts "' + meta.seat_cap_counted_action + '").' : '.')), outcomeBtns));
   }
 
-  function refreshAfterAction(id) {
-    return loadFiles().then(function () { return openFile(id); });
+  function refreshAfterAction(ref) {
+    return loadFiles().then(function () { return openFile(ref); });
   }
 
   function historyList(history) {
@@ -520,11 +527,11 @@
       v.appendChild(h('p', { class: 'hint' }, 'Files no signed lender matched, or every matching lender declined. Nothing is dropped; each one needs a person.'));
       if (!res.files.length) { v.appendChild(h('div', { class: 'empty' }, 'The hold queue is empty.')); return; }
       v.appendChild(h('div', { class: 'scroll' }, h('table', null,
-        h('thead', null, h('tr', null, ['File', 'Borrower', 'Product', 'Amount', 'Status', 'Why', 'Since'].map(function (c) { return h('th', null, c); }))),
+        h('thead', null, h('tr', null, ['File', 'From', 'Borrower', 'Product', 'Amount', 'Status', 'Why', 'Since'].map(function (c) { return h('th', null, c); }))),
         h('tbody', null, res.files.map(function (f) {
-          return h('tr', { class: 'click', tabindex: 0, onclick: function () { state.selectedFile = f.lead_id; state.fileFilter = { status: '', q: '' }; switchTab('files'); },
-            onkeydown: function (ev) { if (ev.key === 'Enter') { state.selectedFile = f.lead_id; switchTab('files'); } } },
-            h('td', null, '#' + f.lead_id), h('td', null, [f.first_name, f.last_name].filter(Boolean).join(' ') || '—'), h('td', null, title(f.loan_type)),
+          return h('tr', { class: 'click', tabindex: 0, onclick: function () { state.selectedFile = fileRef(f); state.fileFilter = { status: '', q: '' }; switchTab('files'); },
+            onkeydown: function (ev) { if (ev.key === 'Enter') { state.selectedFile = fileRef(f); switchTab('files'); } } },
+            h('td', null, '#' + f.file_id), h('td', null, fromWhere(f)), h('td', null, [f.first_name, f.last_name].filter(Boolean).join(' ') || '—'), h('td', null, title(f.loan_type)),
             h('td', { class: 'num' }, money(f.loan_amount)), h('td', null, statusBadge(f.status)), h('td', null, title(f.hold_reason)), h('td', null, when(f.updated_at)));
         })))));
     });
