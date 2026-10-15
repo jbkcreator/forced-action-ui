@@ -317,10 +317,18 @@
   function renderBoxes(lenderId) {
     var slot = document.getElementById('boxes-' + lenderId);
     if (!slot) return;
+    var lender = state.lenders.filter(function (l) { return l.id === lenderId; })[0];
+    if (lender && lender.rule_keys && lender.rule_keys.length) {
+      clear(slot);
+      slot.appendChild(h('h3', null, 'Rules'));
+      slot.appendChild(h('p', { class: 'notice' }, 'This lender’s rules come from the T-05 rule values (' + lender.rule_keys.join(', ') +
+        '), the same numbers the lead card uses. Edit them in lending.lender_rule_values; a box added here would be ignored.'));
+      return;
+    }
     guard(api('/lenders/' + lenderId + '/boxes')).then(function (boxes) {
       clear(slot);
       slot.appendChild(h('h3', null, 'Product boxes'));
-      slot.appendChild(h('p', { class: 'hint' }, 'A file matches a lender when it fits at least one box. No boxes means the lender accepts everything except DSCR (DSCR needs a box that lists it).'));
+      slot.appendChild(h('p', { class: 'hint' }, 'A file matches a lender when it fits at least one box. A lender with no boxes (and no T-05 rules) is never routed to, so add at least one before signing it.'));
       if (!boxes.length) slot.appendChild(h('div', { class: 'empty' }, 'No boxes yet.'));
       else {
         slot.appendChild(h('div', { class: 'scroll' }, h('table', null,
