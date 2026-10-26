@@ -114,6 +114,7 @@ form.deal .f input,form.deal .f select{min-height:48px;font-size:16px}
 form.deal button{min-height:56px;background:var(--navy);color:var(--paper);font-size:18px;font-weight:750;font-family:inherit;border:0;border-radius:4px;cursor:pointer}
 form.deal button:hover{background:var(--navy-deep)}
 .form-status{font-size:15px;font-weight:600}
+.f-err{font-size:13px;font-weight:600;color:#a4262c}
 
 .deals{margin:104px var(--gutter) 0;padding:56px 64px;background:var(--green);color:var(--paper);border-radius:6px;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:48px;align-items:center}
 .deals div:first-child{display:flex;flex-direction:column;gap:14px}
@@ -337,7 +338,7 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
       <label class="f">Name<input type="text" name="name" autocomplete="name" required></label>
       <label class="f">Mobile number<input type="tel" name="phone" autocomplete="tel" required></label>
       <label class="f">Email<input type="email" name="email" autocomplete="email"></label>
-      <label class="f">Loan amount ($)<input type="text" name="loan_amount" inputmode="numeric" autocomplete="off" maxlength="40"></label>
+      <label class="f">Loan amount ($)<input type="text" name="loan_amount" inputmode="text" autocomplete="off" maxlength="40" placeholder="$250,000" aria-describedby="loan-amount-error"><span class="f-err" id="loan-amount-error" role="alert" hidden></span></label>
       <label class="f">Property address<input type="text" name="property_address" autocomplete="street-address" maxlength="200"></label>
       <label class="f">Property city<input type="text" name="property_city"></label>
       <label class="f">Property state<select name="property_state"><option value="">Choose one</option><option value="AL">Alabama</option><option value="AK">Alaska</option><option value="AZ">Arizona</option><option value="AR">Arkansas</option><option value="CA">California</option><option value="CO">Colorado</option><option value="CT">Connecticut</option><option value="DE">Delaware</option><option value="DC">District of Columbia</option><option value="FL">Florida</option><option value="GA">Georgia</option><option value="HI">Hawaii</option><option value="ID">Idaho</option><option value="IL">Illinois</option><option value="IN">Indiana</option><option value="IA">Iowa</option><option value="KS">Kansas</option><option value="KY">Kentucky</option><option value="LA">Louisiana</option><option value="ME">Maine</option><option value="MD">Maryland</option><option value="MA">Massachusetts</option><option value="MI">Michigan</option><option value="MN">Minnesota</option><option value="MS">Mississippi</option><option value="MO">Missouri</option><option value="MT">Montana</option><option value="NE">Nebraska</option><option value="NV">Nevada</option><option value="NH">New Hampshire</option><option value="NJ">New Jersey</option><option value="NM">New Mexico</option><option value="NY">New York</option><option value="NC">North Carolina</option><option value="ND">North Dakota</option><option value="OH">Ohio</option><option value="OK">Oklahoma</option><option value="OR">Oregon</option><option value="PA">Pennsylvania</option><option value="RI">Rhode Island</option><option value="SC">South Carolina</option><option value="SD">South Dakota</option><option value="TN">Tennessee</option><option value="TX">Texas</option><option value="UT">Utah</option><option value="VT">Vermont</option><option value="VA">Virginia</option><option value="WA">Washington</option><option value="WV">West Virginia</option><option value="WI">Wisconsin</option><option value="WY">Wyoming</option></select></label>
@@ -430,6 +431,9 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
   form.deal_drop_optin.addEventListener("change", function () {
     form.email.required = form.deal_drop_optin.checked;
   });
+  var loanError = el("loan-amount-error");
+  var clearLoanError = function () { loanError.hidden = true; loanError.textContent = ""; form.loan_amount.removeAttribute("aria-invalid"); };
+  form.loan_amount.addEventListener("input", clearLoanError);
   form.addEventListener("submit", function (e) {
     e.preventDefault();
     if (!form.name.value.trim() || !form.phone.value.trim()) {
@@ -449,6 +453,8 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
       status.textContent = "This form is not connected yet. Please call us instead.";
       return;
     }
+    clearLoanError();
+    var sentDealDrop = form.deal_drop_optin.checked;
     var data = new FormData(form);
     data.set("sms_consent", form.sms_consent.checked ? "yes" : "no");
     data.set("call_consent", form.call_consent.checked ? "yes" : "no");
@@ -465,6 +471,11 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
             throw err;
           });
         }
+        if (r.status === 429) {
+          var tooMany = new Error("rate limited");
+          tooMany.userMessage = "Too many requests from this connection. Please try again in a little while, or call us.";
+          throw tooMany;
+        }
         if (!r.ok) throw new Error(String(r.status));
         return r.json().catch(function () { return {}; }).then(function (j) {
           form.reset();
@@ -473,13 +484,24 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
           status.textContent = j.duplicate
             ? "We already have your request from a few minutes ago. We will be in touch."
             : j.will_contact
-              ? "Thanks. We will call you back during business hours."
-              : "Thanks. We got your request.";
+              ? "Thanks. We will call you back during business hours." + (sentDealDrop ? " You are also on the Deal Drop list." : "")
+              : sentDealDrop
+                ? "Thanks. You are on the Deal Drop list. We will email you the weekly Deal Drop."
+                : "Thanks. We got your request.";
         });
       })
       .catch(function (err) {
+        var msg = err && err.userMessage;
+        if (msg && /loan amount/i.test(msg)) {
+          loanError.textContent = msg;
+          loanError.hidden = false;
+          form.loan_amount.setAttribute("aria-invalid", "true");
+          form.loan_amount.focus();
+          status.hidden = true;
+          return;
+        }
         status.hidden = false;
-        status.textContent = (err && err.userMessage) || "Something went wrong sending your deal. Please call us instead.";
+        status.textContent = msg || "Something went wrong sending your deal. Please call us instead.";
       });
   });
 
