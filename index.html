@@ -202,7 +202,7 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
     <a class="link" href="#how">How it works</a>
     <a class="link" href="#faq">Questions</a>
     <a class="link" href="#start">Start a deal</a>
-    <a class="btn btn-gold call" href="tel:+17274369951"><span class="d">Call (727) 436-9951</span><span class="m">Call</span></a>
+    <a class="btn btn-gold call" href="tel:+16562211100"><span class="d">Call (656) 221-1100</span><span class="m">Call</span></a>
   </nav>
 </header>
 
@@ -213,7 +213,7 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
     <p>We help Florida and Georgia investors find deals, check the numbers, and get matched with the right capital. One person on your side the whole way.<span class="d"> No app, no phone tree.</span></p>
     <div class="ctas">
       <a class="btn btn-gold" href="#start">Tell us about your deal</a>
-      <a class="btn btn-ghost" href="tel:+17274369951"><span class="d">Call us</span><span class="m">Call (727) 436-9951</span></a>
+      <a class="btn btn-ghost" href="tel:+16562211100"><span class="d">Call us</span><span class="m">Call (656) 221-1100</span></a>
       <a class="btn btn-ghost" href="sms:+16562211100">Text us</a>
     </div>
     <div class="reassure"><span>Free first call</span><span>No credit pull to talk</span><span>No obligation</span></div>
@@ -337,13 +337,17 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
       <label class="f">Name<input type="text" name="name" autocomplete="name" required></label>
       <label class="f">Mobile number<input type="tel" name="phone" autocomplete="tel" required></label>
       <label class="f">Email<input type="email" name="email" autocomplete="email"></label>
+      <label class="f">Loan amount ($)<input type="text" name="loan_amount" inputmode="numeric" autocomplete="off" maxlength="40"></label>
+      <label class="f">Property address<input type="text" name="property_address" autocomplete="street-address" maxlength="200"></label>
       <label class="f">Property city<input type="text" name="property_city"></label>
+      <label class="f">Property state<select name="property_state"><option value="">Choose one</option><option value="AL">Alabama</option><option value="AK">Alaska</option><option value="AZ">Arizona</option><option value="AR">Arkansas</option><option value="CA">California</option><option value="CO">Colorado</option><option value="CT">Connecticut</option><option value="DE">Delaware</option><option value="DC">District of Columbia</option><option value="FL">Florida</option><option value="GA">Georgia</option><option value="HI">Hawaii</option><option value="ID">Idaho</option><option value="IL">Illinois</option><option value="IN">Indiana</option><option value="IA">Iowa</option><option value="KS">Kansas</option><option value="KY">Kentucky</option><option value="LA">Louisiana</option><option value="ME">Maine</option><option value="MD">Maryland</option><option value="MA">Massachusetts</option><option value="MI">Michigan</option><option value="MN">Minnesota</option><option value="MS">Mississippi</option><option value="MO">Missouri</option><option value="MT">Montana</option><option value="NE">Nebraska</option><option value="NV">Nevada</option><option value="NH">New Hampshire</option><option value="NJ">New Jersey</option><option value="NM">New Mexico</option><option value="NY">New York</option><option value="NC">North Carolina</option><option value="ND">North Dakota</option><option value="OH">Ohio</option><option value="OK">Oklahoma</option><option value="OR">Oregon</option><option value="PA">Pennsylvania</option><option value="RI">Rhode Island</option><option value="SC">South Carolina</option><option value="SD">South Dakota</option><option value="TN">Tennessee</option><option value="TX">Texas</option><option value="UT">Utah</option><option value="VT">Vermont</option><option value="VA">Virginia</option><option value="WA">Washington</option><option value="WV">West Virginia</option><option value="WI">Wisconsin</option><option value="WY">Wyoming</option></select></label>
+      <label class="f">Credit band<select name="credit_band"><option value="">Choose one</option><option>Under 600</option><option>600-639</option><option>640-679</option><option>680-719</option><option>720+</option><option>Not sure</option></select></label>
       <label class="f">What are you doing?<select name="deal_type"><option>Fix and flip</option><option>Ground up build</option><option>Pull cash out of a property</option><option>Just want deals sent to me</option></select></label>
       <label class="f">Projects finished, last 3 years<select name="completed_projects_3y"><option>None yet</option><option>1 to 2</option><option>3 to 5</option><option>6 or more</option></select></label>
     </div>
-    <label class="consent"><input type="checkbox" name="sms_consent" value="yes"><span>I agree that Next Deal Lending may call and text me at the number above with transactional messages about my inquiry, such as replies, missed-call follow-ups, and call confirmations and reminders, including with automated technology. Consent is not a condition of any financing. Calls are recorded. Message frequency varies and message and data rates may apply. Reply STOP to opt out, HELP for help.</span></label>
-    <!-- Deal Drop opt-in hidden until the client confirms it is still live (C3): remove "hidden" to show it. -->
-    <label class="consent"><input type="checkbox" name="deal_drop_optin" value="yes"><span>Optional: I agree to receive the Next Deal Lending weekly Deal Drop, marketing (promotional) text messages with off market deals in the areas I buy, at the number above. About one message per week. Message and data rates may apply. Reply HELP for help, STOP to opt out. Not required to send this form.</span></label>
+    <label class="consent"><input type="checkbox" name="sms_consent" value="yes"><span id="sms-consent-text">I agree to receive text messages from Next Deal Lending at the number above about my inquiry, including replies, missed-call follow-ups, and call confirmations and reminders. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. Consent is not a condition of any financing.</span></label>
+    <label class="consent"><input type="checkbox" name="call_consent" value="yes"><span id="call-consent-text">I agree that Next Deal Lending may call me at the number above about my inquiry, including with automated technology. Calls are recorded. Consent is not a condition of any financing. To stop calls, tell us on any call or email optout@nextdeallending.com.</span></label>
+    <label class="consent"><input type="checkbox" name="deal_drop_optin" value="yes"><span>Optional: Send me the weekly Next Deal Lending Deal Drop by email, with off-market deals in the areas I buy, at the email address above. About one email per week. Unsubscribe any time with the link in any email or by emailing optout@nextdeallending.com. Not required to send this form.</span></label>
     <p class="small">See our <a href="/privacy/">Privacy Policy</a> and <a href="/terms/">Terms</a>.</p>
     <button type="submit">Send my deal</button>
     <p class="form-status" id="form-status" role="status" hidden></p>
@@ -362,7 +366,7 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
 <section id="faq" class="section">
   <h2 class="h2-l">Straight answers</h2>
   <div class="faq">
-    <div><h3>How did you get my number?</h3><p>Only because you gave it to us. We text you only if you ticked the consent box on our form or texted us first. If you would rather not hear from us, reply STOP or tell us<span class="d"> on a call</span>, and we will stop.</p></div>
+    <div><h3>How did you get my number?</h3><p>Only because you gave it to us. We text you only if you ticked the text message box on our form or texted us first, and we call you only if you ticked the call box. If you would rather not hear from us, reply STOP to a text, or tell us<span class="d"> on a call</span>, and we will stop.</p></div>
     <div><h3>Are you a lender?</h3><p><span class="d">No. We connect investors with independent capital partners. We handle the conversation and the fit. Our partners review and approve the financing.</span><span class="m">No. We connect investors with independent capital partners, who review and approve the financing.</span></p></div>
     <div><h3>Do I need experience?</h3><p><span class="d">It helps and it opens more options, but it is not always required. If you are newer, tell us about the deal and we will be honest about what fits.</span><span class="m">It helps and opens more options, but it is not always required. We will be honest about what fits.</span></p></div>
     <div><h3>Will you pull my credit?</h3><p><span class="d">Not to talk. We only ask for a rough range. Nothing is pulled unless you decide to move forward with a capital partner.</span><span class="m">Not to talk. A rough range is all we ask for until you choose to move forward.</span></p></div>
@@ -374,9 +378,9 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
 <section id="terms" class="terms">
   <h2>Call recording, texts and opting out</h2>
   <div class="terms-grid">
-    <div><h3>Call recording</h3><p>All calls to and from Next Deal Lending are recorded for quality, training and record keeping. We tell you at the start of every call. By staying on the line, you consent to the recording.</p></div>
-    <div><h3>Text messages</h3><p>If you tick the consent box on our form or text us first, you agree to receive texts from Next Deal Lending about your inquiry, including appointment confirmations and reminders. Message frequency varies. Message and data rates may apply. Reply HELP for help.</p></div>
-    <div><h3>How to opt out</h3><p><span class="d">Reply STOP to any text to stop texts.</span><span class="m">Reply STOP to any text.</span> Tell anyone on our team you do not want calls, or email <a href="mailto:optout@nextdeallending.com">optout@nextdeallending.com</a>, and we will add you to our do not call list. An opt out from any channel stops calls and texts from us.</p></div>
+    <div><h3>Call recording</h3><p>All calls to and from Next Deal Lending are recorded for quality, training and record keeping. We tell you at the start of every call. By staying on the line, you consent to the recording. We call you about your inquiry only if you tick the call box on our form or call us first.</p></div>
+    <div><h3>Text messages</h3><p>If you tick the text message box on our form or text us first, you agree to receive texts from Next Deal Lending about your inquiry, including replies, missed-call follow-ups, and call confirmations and reminders. Message frequency varies. Message and data rates may apply. Reply HELP for help. Calls have their own box on the form, and the weekly Deal Drop is sent by email only.</p></div>
+    <div><h3>How to opt out</h3><p><span class="d">Reply STOP to any text to stop texts.</span><span class="m">Reply STOP to any text.</span> Tell anyone on our team you do not want calls, or email <a href="mailto:optout@nextdeallending.com">optout@nextdeallending.com</a>, and we will add you to our do not call list. To stop the weekly Deal Drop email, use the unsubscribe link in any email or email us. An opt out from any channel stops calls and texts from us.</p></div>
     <div><h3>Privacy</h3><p>We use your information to respond to your inquiry and connect you with capital partners you ask to hear about. We do not sell your information. We do not share mobile numbers or text opt in data with third parties for their marketing. Read our full <a href="/privacy/">Privacy Policy</a>.</p></div>
   </div>
 </section>
@@ -385,10 +389,10 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
 <footer>
   <div class="foot-top">
     <div class="name">Next Deal Lending</div>
-    <div class="contact"><span>Tampa, Florida</span><a href="tel:+17274369951">(727) 436-9951</a><a href="sms:+16562211100">Text us</a><a href="mailto:hello@nextdeallending.com">hello@nextdeallending.com</a><a href="mailto:optout@nextdeallending.com">optout@nextdeallending.com</a></div>
+    <div class="contact"><span>Tampa, Florida</span><a href="tel:+16562211100">(656) 221-1100</a><a href="sms:+16562211100">Text us</a><a href="mailto:hello@nextdeallending.com">hello@nextdeallending.com</a><a href="mailto:optout@nextdeallending.com">optout@nextdeallending.com</a></div>
   </div>
   <p><a href="/privacy/">Privacy Policy</a> · <a href="/terms/">Terms</a></p>
-  <p>HEU AI LLC, 971 US Highway 202N, Ste N, Branchburg, NJ 08876</p>
+  <p>Next Deal Lending is operated by HEU AI LLC, 971 US Highway 202N, Ste N, Branchburg, NJ 08876</p>
   <p>Next Deal Lending is not a lender and does not make loans. Financing is provided by independent capital partners and is subject to their review and approval. Nothing on this site is an offer or commitment to lend. © 2026 Next Deal Lending.</p>
 </footer>
 
@@ -421,11 +425,22 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
   render();
 
   var form = el("deal-form"), status = el("form-status");
+  // The label shown next to a box, sent with the form so the server can check it against the approved wording.
+  var label = function (id) { return el(id).textContent.replace(/\s+/g, " ").trim(); };
+  form.deal_drop_optin.addEventListener("change", function () {
+    form.email.required = form.deal_drop_optin.checked;
+  });
   form.addEventListener("submit", function (e) {
     e.preventDefault();
     if (!form.name.value.trim() || !form.phone.value.trim()) {
       status.hidden = false;
       status.textContent = "Please add your name and mobile number.";
+      return;
+    }
+    if (form.deal_drop_optin.checked && !form.email.value.trim()) {
+      status.hidden = false;
+      status.textContent = "Please add your email to get the Deal Drop, or untick it.";
+      form.email.focus();
       return;
     }
     var endpoint = form.getAttribute("data-endpoint");
@@ -436,8 +451,10 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
     }
     var data = new FormData(form);
     data.set("sms_consent", form.sms_consent.checked ? "yes" : "no");
+    data.set("call_consent", form.call_consent.checked ? "yes" : "no");
     data.set("deal_drop_optin", form.deal_drop_optin.checked ? "yes" : "no");
-    data.set("consent_text", form.querySelector(".consent span").textContent.trim());
+    data.set("consent_text", label("sms-consent-text"));
+    data.set("call_consent_text", label("call-consent-text"));
     data.set("page_url", window.location.href);
     fetch(endpoint, { method: "POST", body: data })
       .then(function (r) {
@@ -451,6 +468,7 @@ footer p{max-width:980px;font-size:14px;line-height:1.6}
         if (!r.ok) throw new Error(String(r.status));
         return r.json().catch(function () { return {}; }).then(function (j) {
           form.reset();
+          form.email.required = false;
           status.hidden = false;
           status.textContent = j.duplicate
             ? "We already have your request from a few minutes ago. We will be in touch."
